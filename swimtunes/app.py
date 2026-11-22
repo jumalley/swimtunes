@@ -81,6 +81,7 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
     app = create_app(lib)
     server = make_server("127.0.0.1", port, app, threaded=True)
     app.config["SHUTDOWN"] = lambda: threading.Thread(target=server.shutdown, daemon=True).start()
+    app.config["RESTART"] = None  # set by the updater: command that starts the new version
     url = f"http://localhost:{port}"
 
     print("=" * 56)
@@ -90,7 +91,7 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
     print("  Close this window (or click Quit in the dashboard) to stop.")
     print("=" * 56, flush=True)
 
-    if open_browser:
+    if open_browser and not os.environ.pop("SWIMTUNES_NO_BROWSER", None):
         threading.Timer(0.8, webbrowser.open, [url]).start()
     if idle_minutes:
         threading.Thread(target=_idle_watch, args=(app, idle_minutes), daemon=True).start()
@@ -98,6 +99,16 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    server.server_close()
+    if app.config["RESTART"]:
+        from .updater import restart
+        print("Restarting with the new version…", flush=True)
+        cmd = list(app.config["RESTART"])
+        if "ui" in cmd:  # running from source: keep the same music folder and port
+            i = cmd.index("ui")
+            cmd[i:i] = ["--library", str(lib.root)]
+            cmd += ["--port", str(port)]
+        restart(cmd)
     return 0
 
 
@@ -120,6 +131,8 @@ def main() -> int:
     lib = Library()
     _fix_stdio(lib)
     _unquarantine()
+    from .updater import cleanup_old_versions
+    cleanup_old_versions()
     try:
         return serve(lib, idle_minutes=IDLE_MINUTES)
     except Exception as e:  # keep the window open so the user can read what went wrong

@@ -129,29 +129,13 @@ def cmd_trash(lib, a):
 
 def cmd_doctor(lib, a):
     """Check that everything SwimTunes needs is there."""
-    import subprocess
-    import yt_dlp
     from . import TAG, __version__, tools
-    ok = True
-    print(f"SwimTunes   {TAG if TAG != 'dev' else __version__}")
+    print(f"SwimTunes    {TAG if TAG != 'dev' else __version__}")
     print(f"Music folder {lib.root}")
-    print(f"yt-dlp      {yt_dlp.version.__version__}")
-    for name, path, args in (("ffmpeg", tools.ffmpeg_path(), ["-version"]), ("deno", tools.deno_path(), ["--version"])):
-        version = ""
-        if path:
-            try:
-                out = subprocess.run([path, *args], capture_output=True, text=True, timeout=60).stdout
-                version = out.splitlines()[0] if out else ""
-            except Exception as e:
-                version = f"FAILED TO RUN: {e}"
-        print(f"{name:<11} {version or 'MISSING'}  ({path or '-'})")
-        ok = ok and bool(version) and not version.startswith("FAILED")
-    try:
-        import yt_dlp_ejs  # noqa: F401  (YouTube challenge solver scripts)
-        print("yt-dlp-ejs  ok")
-    except ImportError:
-        print("yt-dlp-ejs  MISSING")
-        ok = False
+    rows = tools.health()
+    for r in rows:
+        print(f"{'OK ' if r['ok'] else 'NO '} {r['name']}: {r['detail']}")
+    ok = all(r["ok"] for r in rows)
     print("All good!" if ok else "Something is missing: YouTube downloads may fail.")
     return 0 if ok else 1
 

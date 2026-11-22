@@ -24,7 +24,8 @@ a = Analysis(
     [os.path.join(SPECPATH, "launcher.py")],
     pathex=[ROOT],
     binaries=[(os.path.join(stage, "ffmpeg" + EXT), "bin"), (os.path.join(stage, "deno" + EXT), "bin")],
-    datas=[(os.path.join(ROOT, "swimtunes", "templates"), os.path.join("swimtunes", "templates"))],
+    datas=[(os.path.join(ROOT, "swimtunes", "templates"), os.path.join("swimtunes", "templates")),
+           (os.path.join(ROOT, "swimtunes", "static"), os.path.join("swimtunes", "static"))],
     hiddenimports=collect_submodules("swimtunes"),
     # the helper programs are bundled above; don't pull in their (large) Python packages too
     excludes=["imageio_ffmpeg", "deno", "tkinter", "pytest", "PIL"],

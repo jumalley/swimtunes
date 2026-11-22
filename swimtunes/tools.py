@@ -52,3 +52,34 @@ def deno_path() -> str | None:
     except Exception:
         pass
     return shutil.which("deno")
+
+
+def health() -> list[dict]:
+    """What SwimTunes needs, and whether it's there. Shown in Settings."""
+    import subprocess
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    rows = []
+    try:
+        import yt_dlp
+        rows.append({"name": "YouTube downloader (yt-dlp)", "ok": True, "detail": yt_dlp.version.__version__})
+    except Exception as e:
+        rows.append({"name": "YouTube downloader (yt-dlp)", "ok": False, "detail": str(e)})
+    for name, label, path, args in (("ffmpeg", "MP3 converter (ffmpeg)", ffmpeg_path(), ["-version"]),
+                                    ("deno", "YouTube helper (deno)", deno_path(), ["--version"])):
+        detail, ok = "missing", False
+        if path:
+            try:
+                out = subprocess.run([path, *args], capture_output=True, text=True, timeout=60,
+                                     creationflags=flags).stdout
+                first = out.splitlines()[0] if out else ""
+                ok = bool(first)
+                detail = (first.split(" Copyright")[0] if first else "doesn't start")
+            except Exception as e:
+                detail = f"doesn't start: {e}"
+        rows.append({"name": label, "ok": ok, "detail": detail, "path": path})
+    try:
+        import yt_dlp_ejs  # noqa: F401
+        rows.append({"name": "YouTube challenge solver (yt-dlp-ejs)", "ok": True, "detail": "installed"})
+    except ImportError:
+        rows.append({"name": "YouTube challenge solver (yt-dlp-ejs)", "ok": False, "detail": "missing"})
+    return rows

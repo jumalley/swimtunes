@@ -116,3 +116,28 @@ def fmt_size(n: int | float) -> str:
             return f"{n:.0f} {unit}" if unit in ("B", "KB") else f"{n:.1f} {unit}"
         n /= 1024
     return f"{n:.1f} GB"
+
+
+_CYR = dict(zip("абвгдеёжзийклмнопрстуфхцчшщъыьэюяіїєґў",
+                ["a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r", "s", "t",
+                 "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya", "i", "yi", "ye", "g", "u"]))
+
+
+def has_cyrillic(s: str) -> bool:
+    return any("Ѐ" <= c <= "ӿ" for c in s or "")
+
+
+def translit(s: str) -> str:
+    """Cyrillic -> Latin, so 'Кино' and 'Kino' can be compared."""
+    return "".join(_CYR.get(c, _CYR.get(c.lower(), c)) if "Ѐ" <= c <= "ӿ" else c for c in s or "")
+
+
+def similar(a: str, b: str) -> float:
+    """0..1 similarity of two names, ignoring case, accents, punctuation and alphabet."""
+    from difflib import SequenceMatcher
+    a, b = _squash(translit(a)), _squash(translit(b))
+    if not a or not b:
+        return 0.0
+    if a == b or a.replace(" ", "") == b.replace(" ", ""):
+        return 1.0
+    return SequenceMatcher(None, a, b).ratio()

@@ -284,7 +284,7 @@ def test_version_and_quit(lib):
     app = create_app(lib)
     c = app.test_client()
     v = c.get("/api/version").get_json()
-    assert v["app"] == "swimtunes" and v["can_quit"] is False and v["latest"] is None
+    assert v["app"] == "swimtunes" and v["can_quit"] is False and v["update"] is None
     assert c.post("/api/quit", json={}).status_code == 400   # not started by the app launcher
     stopped = []
     app.config["SHUTDOWN"] = lambda: stopped.append(1)

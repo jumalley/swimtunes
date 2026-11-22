@@ -19,12 +19,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mutagen import MutagenError
-from mutagen.id3 import ID3, TALB, TIT2, TPE1, TRCK, TXXX, ID3NoHeaderError
+from mutagen.id3 import ID3, TALB, TBPM, TCON, TDRC, TIT2, TPE1, TRCK, TXXX, ID3NoHeaderError
 from mutagen.mp3 import MP3
 
 from .text import same_song, safe_name, song_key, split_artist_title
 
 SOURCE_TAG = "swimtunes_source"
+META_TAG = "swimtunes_meta"
 TRASH = ".trash"
 CONFIG_FILE = ".swimtunes.json"
 DEFAULT_CONFIG = {
@@ -33,6 +34,8 @@ DEFAULT_CONFIG = {
     "bitrate": 192,
     "normalize": False,        # even out loudness between songs
     "dupe_scope": "library",   # "library" = no song twice anywhere; "folder" = only within a folder
+    "rules": [],               # [{"folder": "doomer", "keywords": ["post-punk", "coldwave"]}, ...]
+    "sort_mode": "one",        # last used way of sorting new songs
 }
 
 
@@ -52,6 +55,7 @@ class Track:
     source: str | None
     track_no: int | None
     added: float
+    meta: dict | None = None   # genre, bpm, year, tags, country, cyrillic (None = not looked up yet)
 
     @property
     def key(self) -> tuple[str, str]:
@@ -72,7 +76,15 @@ class Track:
             "size": self.size,
             "source": self.source,
             "track_no": self.track_no,
+            "meta": _with_country_name(self.meta),
         }
+
+
+def _with_country_name(meta: dict | None) -> dict | None:
+    if not meta:
+        return meta
+    from .meta import country_name
+    return {**meta, "country_name": country_name(meta.get("country", ""))}
 
 
 def read_track(path: Path, folder: str) -> Track:
@@ -80,6 +92,7 @@ def read_track(path: Path, folder: str) -> Track:
     source = None
     track_no = None
     duration = 0.0
+    meta = None
     try:
         audio = MP3(path)
         duration = audio.info.length
@@ -92,6 +105,15 @@ def read_track(path: Path, folder: str) -> Track:
             src = tags.getall(f"TXXX:{SOURCE_TAG}")
             if src:
                 source = str(src[0].text[0])
+            m = tags.getall(f"TXXX:{META_TAG}")
+            if m:
+                try:
+                    meta = json.loads(str(m[0].text[0]))
+                except ValueError:
+                    meta = None
+            elif "TCON" in tags:  # genre written by another program
+                meta = {"genre": str(tags["TCON"].text[0]), "bpm": None, "year": None, "tags": [],
+                        "country": "", "cyrillic": False, "partial": True}
             if "TRCK" in tags:
                 try:
                     track_no = int(str(tags["TRCK"].text[0]).split("/")[0])
@@ -103,11 +125,33 @@ def read_track(path: Path, folder: str) -> Track:
         a, t = split_artist_title(path.stem)
         title, artist = t, artist or a
     st = path.stat()
-    return Track(path, folder, title, artist, duration, st.st_size, source, track_no, st.st_mtime)
+    return Track(path, folder, title, artist, duration, st.st_size, source, track_no, st.st_mtime, meta)
+
+
+def write_meta(path: Path, meta: dict) -> None:
+    """Store genre / tempo / year / styles in the MP3 (also as standard tags other players show)."""
+    try:
+        tags = ID3(path)
+    except ID3NoHeaderError:
+        tags = ID3()
+    _set_meta(tags, meta)
+    tags.save(path, v2_version=3)
+
+
+def _set_meta(tags, meta: dict) -> None:
+    meta = {k: v for k, v in meta.items() if k not in ("partial", "country_name")}
+    tags.delall(f"TXXX:{META_TAG}")
+    tags.add(TXXX(encoding=3, desc=META_TAG, text=json.dumps(meta, ensure_ascii=False)))
+    if meta.get("genre"):
+        tags.setall("TCON", [TCON(encoding=3, text=meta["genre"])])
+    if meta.get("bpm"):
+        tags.setall("TBPM", [TBPM(encoding=3, text=str(int(meta["bpm"])))])
+    if meta.get("year"):
+        tags.setall("TDRC", [TDRC(encoding=3, text=str(meta["year"]))])
 
 
 def write_tags(path: Path, *, title: str, artist: str, album: str,
-               source: str | None = None, track_no: int | None = None) -> None:
+               source: str | None = None, track_no: int | None = None, meta: dict | None = None) -> None:
     try:
         tags = ID3(path)
     except ID3NoHeaderError:
@@ -120,6 +164,8 @@ def write_tags(path: Path, *, title: str, artist: str, album: str,
     if source:
         tags.delall(f"TXXX:{SOURCE_TAG}")
         tags.add(TXXX(encoding=3, desc=SOURCE_TAG, text=source))
+    if meta:
+        _set_meta(tags, meta)
     tags.save(path, v2_version=3)  # ID3v2.3 = widest player compatibility
 
 

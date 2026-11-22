@@ -1,10 +1,13 @@
 # 🏊 SwimTunes
 
-Put your music on swimming earphones (Shokz OpenSwim and similar) the easy way.
-Paste a **YouTube** or **Spotify** link, and SwimTunes downloads the songs as MP3s,
-**skips songs you already have**, and copies them onto your earphones.
+Put your music on swimming earphones (Shokz OpenSwim, OpenSwim Pro and similar) the easy way.
+Paste a **YouTube** or **Spotify** link, see the songs with their **genre, style, tempo and country**,
+choose which folder each one goes into, and download them as MP3s. Songs you already have are skipped,
+and SwimTunes keeps your earphones in sync, including the folders you made before you had SwimTunes.
 
-![SwimTunes](docs/screenshots/1-library.png)
+Everything happens in a simple page in your web browser. No commands to type.
+
+![Preview before downloading](docs/screenshots/3-preview.png)
 
 ## Download
 
@@ -20,11 +23,12 @@ Nothing else to install. SwimTunes includes everything it needs.
 
 ### First start on Windows
 
-1. Double-click **SwimTunes-Windows.exe**. (Tip: move it to your Desktop first.)
+1. Double-click **SwimTunes-Windows.exe**. (Tip: put it in a folder like *Documents\SwimTunes* first.)
 2. Windows may say **"Windows protected your PC"**. Click **More info**, then **Run anyway**.
    This only happens the first time, because SwimTunes is a free app that isn't registered with Microsoft.
 3. A black window opens, and then SwimTunes opens in your web browser.
-   **Leave the black window open** while you use SwimTunes. Close it when you're done.
+   **Leave the black window open** while you use SwimTunes. Close it (or click **Quit**) when you're done.
+4. Optional: in **Settings**, click **Put a SwimTunes icon on my desktop**.
 
 ### First start on Mac
 
@@ -32,63 +36,101 @@ Nothing else to install. SwimTunes includes everything it needs.
 2. Double-click **SwimTunes**. The first time, your Mac says it *can't check the app for malicious software*.
    Click **Done** (or **OK**).
 3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to
-   *"SwimTunes was blocked"*. Enter your password if asked.
-   This only happens the first time, because SwimTunes is a free app that isn't registered with Apple.
+   *"SwimTunes was blocked"*. Enter your password if asked. This only happens the first time.
 4. SwimTunes opens in your web browser. To stop it, click **Quit** at the top right of the page.
 
-After the first time, just double-click SwimTunes like any other app.
+### Updates
+
+When a new version is out, a banner appears at the top of the page. Click **Update now**:
+SwimTunes downloads the new version, restarts, and the page reloads by itself. You can also check
+in **Settings → Updates**.
+
+![Update banner and settings](docs/screenshots/8-settings-update.png)
 
 ## How to use it
 
-**1. Download music.** On YouTube or Spotify, click **Share → Copy link**, paste the link into **Download**,
-and click **Download MP3s**. Whole playlists work. Songs you already have are skipped automatically.
+### 1. Bring in the songs already on your earphones
 
-<img src="docs/screenshots/2-download-log.png" width="320" alt="Downloading a playlist; songs already in the library are skipped">
+Connect the earphones with their charging cable and open the **Earphones** tab. SwimTunes finds them,
+shows each folder on them and whether SwimTunes has it. Click **Import** to copy those songs into SwimTunes,
+keeping your folders and their play order. Songs that exist only on the earphones are **never** deleted.
 
-**2. Check your folders.** Each playlist gets its own folder. You see how many songs it has, how long it lasts,
-and how full your earphones will be. You can rename folders, move songs, or delete them.
+![Earphones](docs/screenshots/1-earphones-import.png)
 
-![A folder](docs/screenshots/3-download-done.png)
+### 2. Let SwimTunes learn how you sort your music
 
-**3. Copy to your earphones.** Connect the earphones with their charging cable, open the **Earphones** tab,
-pick them, and click **Copy to earphones**. When it says *Sync finished*, eject them before unplugging.
+Click **Edit my rules → Learn from my folders**. SwimTunes looks up every song and finds what each of
+your folders has in common: a style, a country, Cyrillic titles… You can edit the rules or write your own.
 
-![Copy to earphones](docs/screenshots/6-sync.png)
+<img src="docs/screenshots/2-learned-rules.png" width="720" alt="Rules learned from the user's folders">
 
-### Duplicates
+### 3. Add music
 
-SwimTunes won't download a song you already have, even if it's a different video of it
-("Official Video", "Lyrics", "Remastered", "feat." and so on are ignored). The **Duplicates** tab
-finds doubles that are already in your folders. Pick the copy to keep and remove the rest.
+In **Add music**, paste YouTube or Spotify links (**Share → Copy link**) and click **Find songs**.
+Nothing is downloaded yet: you see every song with its genre, style, tempo, year and the artist's country,
+and songs you already have are left out. Then pick how to sort them:
 
-![Duplicates](docs/screenshots/5-duplicates.png)
+| Sort the songs | Example folders |
+|---|---|
+| **My folder rules** | doomer, mood, ruski… (the best-matching rule wins) |
+| **By genre** | Pop, Rock, Rap & Hip Hop, Electro |
+| **By style** | Post-Punk, House, Synth-Pop, Coldwave |
+| **By swim tempo** | Easy (under 100 BPM), Steady, Fast, Sprint (140+ BPM) |
+| **By decade** | 1980s, 1990s, 2000s |
+| **By artist's country** | Russia, France, USA |
+| **By artist** | one folder per artist |
+| **All in one folder** | the playlist's name, or any folder you type |
 
-### Settings
+You can change the folder of any song, untick songs you don't want, then click **Download**.
 
-Choose your earphones' size (4 GB OpenSwim or 32 GB OpenSwim Pro), the sound quality,
-and whether all songs should play at the same volume.
+![Sorted by genre](docs/screenshots/4-preview-genre.png)
 
-![Settings](docs/screenshots/7-settings.png)
+Tempo comes from Deezer when it knows it. Otherwise SwimTunes measures it from the audio after downloading.
 
-It also has a dark mode and works on small screens:
+### 4. Sort the songs you already have
 
-<p><img src="docs/screenshots/8-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/9-phone.png" width="22%" alt="Phone-sized window"></p>
+**Sort my songs** uses the same sorting options on songs that are already in SwimTunes. It shows where
+each song would go, and nothing moves until you click **Move**.
 
-> The screenshots use a sample library: the songs are silent demo files and the download is simulated.
+![Sort my songs](docs/screenshots/5-sort-my-songs.png)
+
+### 5. Copy to your earphones
+
+Back in **Earphones**, click **Copy to earphones**. Only folders that changed are copied, in playlist order
+(the earphones play songs in the order they were copied). When it says *Sync finished*, eject the earphones.
+
+![Copy to earphones](docs/screenshots/7-sync.png)
+
+### Also
+
+- **Songs**: every folder with its songs, genre, tempo, length and size. Rename, delete, move songs, search.
+- **Duplicates**: finds doubles already in your folders ("Official Video", "Lyrics", "feat."… are ignored).
+- **Settings**: earphone size (filled in automatically from your earphones), MP3 quality, even out the volume, health check.
+- Dark mode and small screens are supported.
+
+![Library](docs/screenshots/6-library.png)
+
+<p><img src="docs/screenshots/9-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/10-phone.png" width="22%" alt="Phone-sized window"></p>
+
+> Screenshots use sample data: the songs are silent demo files and downloads are simulated,
+> but genre, style and country come from the real Deezer and MusicBrainz databases.
 
 ## Questions
 
-**Where are my MP3s?** In the **Music** folder of your computer, inside **SwimTunes**. Click **📂 Music folder** at the top of the page to open it.
+**Where are my MP3s?** In the **Music** folder of your computer, inside **SwimTunes**. Click **📂 Music folder** at the top of the page.
 
-**Downloads stopped working.** YouTube changes things now and then. When a new version of SwimTunes is out,
-a banner at the top of the page tells you. Download the new version and replace the old app with it.
-New versions are built automatically every month.
+**Downloads stopped working.** YouTube changes things now and then. Update SwimTunes (banner at the top, or
+Settings → Updates). New versions are built automatically every month.
 
-**My Spotify playlist only downloaded about 100 songs.** Spotify only shows the first ~100 songs to apps like this.
+**Where does the genre information come from?** From [Deezer](https://www.deezer.com) (genre, tempo, year) and
+[MusicBrainz](https://musicbrainz.org) (styles, country). Both are free and need no account. Lookups are saved,
+so each song is looked up only once.
+
+**My Spotify playlist only shows about 100 songs.** Spotify only shows the first ~100 songs to apps like this.
 For longer playlists, convert the playlist to YouTube with [playlistbuddy.com](https://playlistbuddy.com) and paste the YouTube playlist link instead.
 
-**It says the earphones aren't found.** Make sure they're connected with the charging cable to the computer (not to a wall plug),
-wait 10 seconds and click **Look again**. On a Mac they also appear in Finder's sidebar; on Windows, in **This PC**.
+**It says the earphones aren't found.** Connect them to the computer with the charging cable (not to a wall plug),
+wait 10 seconds and click **Look again**. On Windows they appear in **This PC** (e.g. *SWIM PRO (H:)*).
 
 **Is this allowed?** Only download music you're allowed to: your own uploads, free music, or what the law where you live allows for personal use.
 
@@ -96,58 +138,51 @@ wait 10 seconds and click **Look again**. On a Mac they also appear in Finder's 
 
 ## For developers
 
-Everything in the app is also available from Python, as a command line tool.
+### Running from source
 
 ```bash
+git clone https://github.com/jumalley/swimtunes.git
+cd swimtunes
 pip install -e .
-swimtunes ui                      # the dashboard (same as the app)
+python -m swimtunes ui
+```
+
+A copy made with `git clone` updates itself from the dashboard too (it runs `git pull`, installs new
+requirements if needed and restarts). ffmpeg and Deno (needed for YouTube) are installed from PyPI.
+
+### Command line
+
+Everything is in the dashboard, but a command line exists for scripting:
+
+```bash
 swimtunes download "https://www.youtube.com/playlist?list=..." -f "Morning Swim"
-swimtunes download "https://open.spotify.com/playlist/..."      # folder = playlist name
-swimtunes stats                   # folders with song count, length, size
-swimtunes stats "Morning Swim"    # songs in one folder
+swimtunes stats [FOLDER]          # folders / songs with length and size
 swimtunes dupes [--fix]           # list duplicates / move extra copies to the trash
-swimtunes folder rename "Morning Swim" "Warm Up"
-swimtunes move "Warm Up/Coldplay - Yellow.mp3" "Cool Down"
-swimtunes sync /Volumes/SWIM      # or E:\ on Windows
-swimtunes config capacity_gb 32
+swimtunes sync H:\                # copy to the earphones (never deletes songs only on them)
 swimtunes doctor                  # check ffmpeg, deno and yt-dlp
 ```
 
-If the `swimtunes` command isn't found, use `python -m swimtunes ...` instead.
-The music folder is `~/Music/SwimTunes`; change it with `--library` or the `SWIMTUNES_LIBRARY` environment variable.
-ffmpeg and Deno (which YouTube downloads need) are installed from PyPI, so no separate setup is required.
+Use `python -m swimtunes ...` if the `swimtunes` command isn't found. The music folder is `~/Music/SwimTunes`
+(change it with `--library` or the `SWIMTUNES_LIBRARY` environment variable).
 
-Example output:
+### How it's organized
 
-```text
-$ swimtunes stats
-Folder         Songs   Length      Size
--------------  -----  -------  --------
-Cool Down          4    17:28   24.0 MB
-Interval Sets      6    27:34   37.9 MB
-Long Swim          4    15:34   21.4 MB
-Morning Swim       8    32:18   44.4 MB
-TOTAL             22  1:32:55  127.8 MB
-
-Earphones: 127.8 MB of 4 GB (3% full)
-⚠ 2 duplicate song(s). Run `swimtunes dupes` to see them.
-```
-
-### Settings
-
-| setting | default | |
-|---|---|---|
-| `capacity_gb` | 4 | 4 = OpenSwim, 32 = OpenSwim Pro |
-| `bitrate` | 192 | 128 / 192 / 256 / 320 kbps. 192 fits about 1,400 songs in 4 GB |
-| `normalize` | false | make all songs about equally loud |
-| `dupe_scope` | library | `library` = never the same song twice anywhere; `folder` = only within a folder |
+| file | what it does |
+|---|---|
+| `swimtunes/downloader.py` | find songs behind a link (yt-dlp, Spotify embed page), download + convert to MP3 |
+| `swimtunes/meta.py` | genre/tempo/year (Deezer), styles/country (MusicBrainz), tempo measurement |
+| `swimtunes/sorter.py` | sorting modes, folder rules, learning rules from existing folders |
+| `swimtunes/library.py` | the music folder: tags, stats, duplicates, trash |
+| `swimtunes/device.py` | find the earphones, compare, import, sync in play order |
+| `swimtunes/updater.py` | in-app updates (release download or git pull) |
+| `swimtunes/web.py`, `templates/index.html` | the dashboard |
 
 ### How the apps are built
 
 [`.github/workflows/build-apps.yml`](.github/workflows/build-apps.yml) runs the tests, builds the
 Windows and Mac apps with PyInstaller ([`packaging/swimtunes.spec`](packaging/swimtunes.spec)), checks
 each one with `doctor`, and publishes them as a GitHub release. It runs on every code change and once a month,
-so the apps always include a recent yt-dlp. To build locally: `pip install . pyinstaller pillow && pyinstaller packaging/swimtunes.spec`.
+so the apps always include a recent yt-dlp.
 
 ### Tests
 
