@@ -5,12 +5,11 @@ import time
 import urllib.parse
 
 import pytest
+from helpers import FakeDownloader
 
 from swimtunes import accounts, spotify
 from swimtunes.downloader import Downloader
-from swimtunes.library import Library
 from swimtunes.web import create_app
-from test_swimtunes import FakeDownloader
 
 
 @pytest.fixture(autouse=True)
@@ -18,11 +17,6 @@ def home(tmp_path, monkeypatch):
     monkeypatch.setenv("SWIMTUNES_HOME", str(tmp_path / "home"))
     accounts._pending.clear()
     return tmp_path / "home"
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 # ---------- YouTube ----------
@@ -141,7 +135,7 @@ def connect_spotify(monkeypatch):
 
 
 def test_spotify_login_and_private_playlist(monkeypatch):
-    fake = connect_spotify(monkeypatch)
+    connect_spotify(monkeypatch)
     st = accounts.status()
     assert st["spotify"] == {"client_id": "0123456789abcdef0123456789abcdef", "connected": True, "user": "Jules"}
     assert "RT1" not in str(st) and "AT1" not in str(st)          # secrets never leave the server

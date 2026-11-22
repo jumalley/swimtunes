@@ -56,6 +56,8 @@ const nf = (x, d = 1) => new Intl.NumberFormat(LANG, { minimumFractionDigits: d,
 const dur = s => { s = Math.round(s || 0); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
   return h ? `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${m}:${String(x).padStart(2,'0')}`; };
 const longDur = s => { s = Math.round(s || 0); const h = Math.floor(s/3600), m = Math.round(s%3600/60); return h ? t('dur.hm', { h, m }) : t('dur.m', { m }); };
+// "H:\\" stays as is; a long folder path keeps only its end ("…/Music/SwimTunes")
+const shortPath = p => { p = String(p || ''); if (p.length <= 26) return p; const parts = p.split(/[\\/]/).filter(Boolean); return '…' + (p.includes('\\') ? '\\' : '/') + parts.slice(-2).join(p.includes('\\') ? '\\' : '/'); };
 const size = b => b >= 1e9 ? `${nf(b/1e9, 2)} ${t('unit.gb')}` : `${nf(b/1e6, 1)} ${t('unit.mb')}`;
 function countryName(code) {
   if (!code) return '';
@@ -312,7 +314,7 @@ function renderCards() {
     c.onkeydown = e => { if (e.key === 'Enter') openFolder(c.dataset.f); };
   });
   $('cards').querySelectorAll('.pic-btn').forEach(b => b.onclick = () => openPictures(b.dataset.pic));
-  $('cards-dev').innerHTML = EAR?.path ? ICON('fa-solid fa-plug') + ' ' + esc(t('cards.ear_on', { path: EAR.path })) : ICON('fa-solid fa-plug-circle-xmark') + ' ' + esc(t('cards.ear_off'));
+  $('cards-dev').innerHTML = EAR?.path ? ICON('fa-solid fa-plug') + ' ' + esc(t('cards.ear_on', { path: shortPath(EAR.path) })) : ICON('fa-solid fa-plug-circle-xmark') + ' ' + esc(t('cards.ear_off'));
 }
 function renderHero() {
   const f = LIB?.folders.find(f => f.name === CURRENT);
@@ -429,8 +431,8 @@ function renderSongs() {
 function updateSel() { $('btn-delsel').disabled = !SELECTED.size; $('btn-delsel-text').textContent = SELECTED.size ? t('songs.delete_n', { n: SELECTED.size }) : t('songs.delete_selected'); }
 function selectAll(on) { document.querySelectorAll('#songs input[data-p]').forEach(cb => { cb.checked = on; on ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); }); updateSel(); }
 async function refresh() { await loadLibrary(); if (CURRENT !== null && !LIB.folders.some(f => f.name === CURRENT)) CURRENT = null; await openFolder(CURRENT); }
-async function createFolder() {
-  const name = $('new-folder').value.trim(); if (!name) return;
+async function createFolder(fromPrompt) {
+  const name = (fromPrompt ? prompt(t('side.new_folder')) || '' : $('new-folder').value).trim(); if (!name) return;
   const r = await api('/api/folders', { method: 'POST', body: { name } });
   $('new-folder').value = ''; CURRENT = r.name; await refresh(); showTab('songs');
 }
@@ -941,6 +943,7 @@ async function loadDupes() {
       <td>${ICON('fa-regular fa-folder')} ${esc(x.folder)}</td><td class="t">${esc(x.filename)}</td><td class="num">${dur(x.duration)}</td></tr>`).join('')}</table>
     <button class="danger" style="margin-top:8px" onclick="resolveDupe(${gi})">${ICON('fa-regular fa-trash-can')}${t('dup.remove_others')}</button></div>`).join('')
     : `<div class="empty">${ICON('fa-solid fa-circle-check', ' style="color:var(--ok)"')} ${t('dup.none')}</div>`;
+  $('dupes-remove-all').disabled = !DUPES.length;
 }
 function extraCopies(gi) { const keep = +document.querySelector(`input[name="keep-${gi}"]:checked`).value; return DUPES[gi].filter((_, i) => i !== keep).map(x => x.path); }
 async function resolveDupe(gi) { await api('/api/tracks/delete', { method: 'POST', body: { paths: extraCopies(gi) } }); await refresh(); loadDupes(); }
@@ -951,7 +954,7 @@ async function removeAllDupes() {
 }
 
 // ---------- settings, updates, health ----------
-async function saveSettings() {
+async function saveSettings() {   // preferences save as soon as one changes
   await api('/api/config', { method: 'POST', body: { capacity_gb: +$('cfg-capacity_gb').value, bitrate: +$('cfg-bitrate').value,
     dupe_scope: $('cfg-dupe_scope').value, normalize: $('cfg-normalize').value === 'true' } });
   toast(t('common.saved')); refresh();
@@ -1137,9 +1140,11 @@ async function loadStatus() {
   fv.querySelector('i').className = s.update ? 'fa-solid fa-circle-arrow-up' : 'fa-solid fa-tag';
   fv.querySelector('span').textContent = s.update ? t('f.update', { v: s.update }) : `SwimTunes ${s.tag !== 'dev' ? s.tag : s.version}`;
   const fd = $('f-device');
-  fd.querySelector('span').textContent = s.device ? t('f.device', { label: s.device.label, path: s.device.path, free: size(s.device.free) }) : t('f.no_device');
+  fd.querySelector('span').textContent = s.device ? t('f.device', { label: s.device.label, path: shortPath(s.device.path), free: size(s.device.free) }) : t('f.no_device');
+  if (s.device) fd.dataset.tipRaw = s.device.path; else delete fd.dataset.tipRaw;
   fd.className = 'item' + (s.device ? ' ok' : '');
-  $('f-folder').querySelector('span').textContent = s.library;
+  $('f-folder').querySelector('span').textContent = shortPath(s.library);
+  $('f-folder').dataset.tipRaw = s.library;
 }
 const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings' };
 async function pollActivity() {
@@ -1177,6 +1182,7 @@ async function renderAll() {
   if (!$('tab-settings').classList.contains('hidden')) loadHealth();
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+['cfg-capacity_gb', 'cfg-bitrate', 'cfg-dupe_scope', 'cfg-normalize'].forEach(id => $(id).addEventListener('change', saveSettings));
 $('dupe-scope').addEventListener('change', e => e.target.dataset.touched = 1);
 $('new-folder').onkeydown = e => { if (e.key === 'Enter') createFolder(); };
 $('device-path').onkeydown = e => { if (e.key === 'Enter') useManualPath(); };

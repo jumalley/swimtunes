@@ -8,7 +8,6 @@ import shutil
 import subprocess
 import tempfile
 import threading
-import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -154,7 +153,7 @@ class Downloader:
                 import yt_dlp
                 try:
                     with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "no_color": True, **opts}) as y:
-                        y.cookiejar                     # reads the browser's login now
+                        _ = y.cookiejar                 # reads the browser's login now
                     self._login_ok = True
                 except Exception as e:
                     self._login_ok = False

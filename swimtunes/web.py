@@ -439,7 +439,14 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     # ---------- earphones ----------
     @app.get("/api/drives")
     def drives():
-        return jsonify(device.find_drives())
+        found = device.find_drives()
+        saved = lib.config()["device_path"]   # a location typed in by hand earlier
+        if saved and os.path.isdir(saved) and not any(os.path.normcase(d["path"]) == os.path.normcase(saved) for d in found):
+            import shutil
+            u = shutil.disk_usage(saved)
+            found.append({"path": saved, "label": os.path.basename(saved.rstrip("/\\")) or saved, "total": u.total,
+                          "free": u.free, "likely": True, "saved": True})
+        return jsonify(found)
 
     @app.get("/api/device")
     def device_compare():

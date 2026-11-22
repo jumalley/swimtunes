@@ -108,6 +108,7 @@
           <div><h2><i class="fa-solid fa-layer-group"></i><span data-i18n="cards.title">Your playlists</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.cards"></i></h2><small class="muted" id="cards-sub"></small></div>
           <div class="row">
             <span class="swim-pick fit" data-tip="tip.swim_minutes"><i class="fa-solid fa-person-swimming"></i><span data-i18n="cards.swim_is">One swim:</span><select id="swim-min" onchange="setSwimMinutes(this.value)"></select></span>
+            <button onclick="createFolder(true)" data-tip="tip.new_folder"><i class="fa-solid fa-folder-plus"></i><span data-i18n="cards.new_folder">New folder</span></button>
             <button onclick="showAllSongs()"><i class="fa-solid fa-list"></i><span data-i18n="cards.all_songs">List every song</span></button>
           </div>
         </div>
@@ -203,7 +204,7 @@
       <p class="muted" data-i18n="dup.help">Same YouTube video, or same artist and title (ignoring “Official Video”, “Lyrics”, “feat.”, “Remastered” and so on). The oldest copy is ticked as the one to keep.</p>
       <div class="row" style="margin-bottom:12px">
         <select id="dupe-scope" onchange="loadDupes()" data-tip="tip.dupe_scope"><option value="library" data-i18n="dup.all">Across all folders</option><option value="folder" data-i18n="dup.within">Within each folder only</option></select>
-        <button class="danger" onclick="removeAllDupes()" data-tip="tip.trash_songs"><i class="fa-regular fa-trash-can"></i><span data-i18n="dup.remove_all">Remove all extra copies</span></button>
+        <button class="danger" id="dupes-remove-all" onclick="removeAllDupes()" data-tip="tip.trash_songs"><i class="fa-regular fa-trash-can"></i><span data-i18n="dup.remove_all">Remove all extra copies</span></button>
       </div>
       <div id="dupes"></div>
     </section>
@@ -257,7 +258,7 @@
           <div><label><i class="fa-solid fa-language"></i><span data-i18n="set.language">Language</span></label><select id="cfg-language" class="lang-select" onchange="setLanguage(this.value)"></select></div>
           <div></div>
         </div>
-        <div class="row" style="margin-top:16px"><button class="primary" onclick="saveSettings()"><i class="fa-solid fa-check"></i><span data-i18n="common.save">Save</span></button></div>
+        <p class="muted small" data-i18n="set.autosave">Changes are saved right away.</p>
       </div>
 
       <div class="panel">

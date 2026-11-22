@@ -1,19 +1,12 @@
 """Live feedback, stopping jobs, translations of server messages and folder names."""
 import time
 
-import pytest
+from helpers import POP, RUSKI, FakeDownloader, add_song
 
 from swimtunes import sorter
-from swimtunes.i18n import Msg, as_entry, msg
-from swimtunes.library import Library, LibraryError
+from swimtunes.i18n import as_entry, msg
+from swimtunes.library import LibraryError
 from swimtunes.web import create_app
-from test_features import POP, RUSKI
-from test_swimtunes import FakeDownloader, add_song
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 def wait(c, jid, until=("done", "error")):

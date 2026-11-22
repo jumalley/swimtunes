@@ -64,7 +64,7 @@ def health() -> list[dict]:
         rows.append({"name": "YouTube downloader (yt-dlp)", "ok": True, "detail": yt_dlp.version.__version__})
     except Exception as e:
         rows.append({"name": "YouTube downloader (yt-dlp)", "ok": False, "detail": str(e)})
-    for name, label, path, args in (("ffmpeg", "MP3 converter (ffmpeg)", ffmpeg_path(), ["-version"]),
+    for _name, label, path, args in (("ffmpeg", "MP3 converter (ffmpeg)", ffmpeg_path(), ["-version"]),
                                     ("deno", "YouTube helper (deno)", deno_path(), ["--version"])):
         detail, ok = "missing", False
         if path:

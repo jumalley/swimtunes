@@ -1,33 +1,21 @@
 """Download reliability, speed, covers and importing from the earphones."""
 import os
-import subprocess
 import time
 from pathlib import Path
 
 import pytest
+from helpers import FakeDownloader, add_song, make_audio, tiny_jpeg
 
 from swimtunes import device, tools
 from swimtunes.downloader import Downloader, error_kind
-from swimtunes.library import Library, read_cover, write_cover, write_tags
+from swimtunes.library import read_cover, write_cover, write_tags
 from swimtunes.web import create_app
-from test_swimtunes import FakeDownloader, add_song, make_audio
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 @pytest.fixture(autouse=True)
 def fat32_order(monkeypatch):
     monkeypatch.setattr(device, "_play_order",
                         lambda folder: sorted(os.listdir(folder), key=lambda f: (folder / f).stat().st_mtime_ns))
-
-
-def tiny_jpeg(path: Path) -> bytes:
-    subprocess.run([tools.ffmpeg_path(), "-y", "-v", "error", "-f", "lavfi", "-i", "color=c=red:s=64x36", "-frames:v", "1",
-                    str(path)], check=True)
-    return path.read_bytes()
 
 
 # ---------- errors ----------

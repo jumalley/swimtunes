@@ -1,32 +1,14 @@
 import json
-import subprocess
 import time
 from pathlib import Path
 
 import pytest
+from helpers import FakeDownloader, add_song, make_audio
 
 from swimtunes import device, spotify, tools
-from swimtunes.downloader import Downloader, score_search_result, youtube_meta
-from swimtunes.library import Library, LibraryError, write_tags
+from swimtunes.downloader import score_search_result, youtube_meta
+from swimtunes.library import LibraryError
 from swimtunes.text import norm_title, safe_name, same_song, song_key
-
-
-def make_audio(path: Path, seconds: float = 2, freq: int = 440) -> Path:
-    subprocess.run([tools.ffmpeg_path(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"sine=f={freq}:d={seconds}",
-                    "-c:a", "libmp3lame", "-b:a", "64k", str(path)], check=True)
-    return path
-
-
-def add_song(lib: Library, folder: str, artist: str, title: str, source=None, seconds=2) -> Path:
-    lib.create_folder(folder)
-    p = make_audio(lib.root / folder / f"{artist} - {title}.mp3", seconds)
-    write_tags(p, title=title, artist=artist, album=folder, source=source, track_no=lib.next_track_no(folder))
-    return p
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 # ---------- text ----------
@@ -135,36 +117,6 @@ def test_config(lib):
 
 
 # ---------- downloader ----------
-class FakeDownloader(Downloader):
-    """Pretends to be YouTube."""
-    VIDEOS = {
-        "v1": {"id": "v1", "title": "Daft Punk - One More Time (Official Video)", "channel": "Daft Punk", "duration": 320},
-        "v2": {"id": "v2", "title": "Get Lucky", "channel": "Daft Punk - Topic", "duration": 248},
-        "v3": {"id": "v3", "title": "Daft Punk - One More Time [Lyrics]", "channel": "LyricsGuy", "duration": 321},
-    }
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        self.fetched = []
-
-    def list_entries(self, url):
-        if "list=" in url:
-            return "My Swim Mix", [dict(self.VIDEOS[i]) for i in ("v1", "v2", "v3", "v1")]
-        return "", [dict(self.VIDEOS[url.split("v=")[1]])]
-
-    def video_info(self, vid):
-        return dict(self.VIDEOS[vid])
-
-    def search(self, query, n=6):
-        return [{"id": "s-live", "title": query + " (Live)", "channel": "x", "duration": 200},
-                {"id": "s-good", "title": query + " (Official Audio)", "channel": "x", "duration": 180}]
-
-    def fetch_cover(self, it, workdir):
-        return None   # no network in tests
-
-    def fetch_audio(self, vid, tmpdir):
-        self.fetched.append(vid)
-        return make_audio(tmpdir / f"{vid}.wav", 1)
 
 
 def test_download_playlist_skips_dupes(lib):

@@ -1,24 +1,13 @@
 """Sorting, genre lookup, earphones import/compare, preview flow."""
 import os
 import time
-from pathlib import Path
 
 import pytest
+from helpers import DOOMER, POP, RUSKI, FakeDownloader, add_song, make_audio
 
 from swimtunes import device, sorter
-from swimtunes.library import Library, write_meta, write_tags
+from swimtunes.library import write_meta
 from swimtunes.meta import MetaLookup, facts, tempo_label
-from test_swimtunes import FakeDownloader, add_song, make_audio
-
-DOOMER = {"genre": "Rock", "bpm": None, "year": 2018, "tags": ["post-punk", "coldwave", "dark wave"],
-          "country": "BY", "cyrillic": True}
-RUSKI = {"genre": "Rock", "bpm": 120, "year": 1988, "tags": ["russian rock", "soviet"], "country": "RU", "cyrillic": True}
-POP = {"genre": "Pop", "bpm": 103, "year": 2020, "tags": ["dance-pop", "electropop"], "country": "GB", "cyrillic": False}
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 @pytest.fixture(autouse=True)
@@ -140,6 +129,7 @@ def make_device(tmp_path):
         for s in songs:
             make_audio(dev / folder / f"{s}.mp3", 1)
     import subprocess
+
     from swimtunes import tools
     subprocess.run([tools.ffmpeg_path(), "-y", "-v", "error", "-f", "lavfi", "-i", "sine=f=330:d=1", "-c:a", "aac",
                     str(dev / "mood" / "Lana Del Rey - Video Games.m4a")], check=True)   # not an MP3
@@ -189,7 +179,6 @@ def test_capacity_from_drive_size():
 def test_preview_sort_download(lib):
     from swimtunes.web import create_app
     add_song(lib, "doomer", "Daft Punk", "One More Time")
-    meta = {"Daft Punk": POP, "Get Lucky": POP}
 
     class FakeLookup:
         def lookup(self, artist, title, hints=None):

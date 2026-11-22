@@ -2,17 +2,11 @@
 import time
 
 import pytest
+from helpers import FakeDownloader
 
 from swimtunes.downloader import youtube_song
-from swimtunes.library import Library
 from swimtunes.meta import MetaLookup, guess_from_text
 from swimtunes.web import create_app
-from test_swimtunes import FakeDownloader
-
-
-@pytest.fixture
-def lib(tmp_path):
-    return Library(tmp_path / "lib")
 
 
 @pytest.mark.parametrize("text,genre,tags", [

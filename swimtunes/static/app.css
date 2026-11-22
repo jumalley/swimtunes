@@ -260,3 +260,22 @@ button.chip { cursor: pointer; font-size: 12px; padding: 2px 9px; }
 .bt-row button { flex: 0 0 auto; }
 .bt-warn { color: var(--warn); margin: 10px 0 0; }
 .bt-help { margin: 10px 0 0; }
+
+/* phones: tabs first, compact header, two cards per row; folders are in the Songs tab */
+@media (max-width: 860px) {
+  aside { display: none; }
+  header { gap: 10px 18px; padding: 10px 14px; }
+  header .stats { gap: 16px; }
+  .stat b { font-size: 15px; }
+  .tabs { flex-wrap: wrap; overflow: visible; gap: 0; }
+  .tabs button { flex: 1 1 33%; justify-content: center; padding: 9px 6px; font-size: 13px; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .card-body { padding: 8px 10px 10px; }
+  .card-body .name { font-size: 14px; }
+  .card .genres, .card-foot > small { display: none; }
+  .hero .art-wrap { max-width: 160px; }
+  /* the picture button becomes a small icon in the corner, so tapping a card opens it */
+  .cards .pic-btn { top: 6px; right: 6px; bottom: auto; padding: 6px 8px; }
+  .cards .pic-btn span { display: none; }
+}
+@media (max-width: 600px) { .panel .row > div { flex-basis: 100%; } }

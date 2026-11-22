@@ -1,8 +1,11 @@
 name: Build apps
 
-# Builds the double-click apps and publishes them as a GitHub release.
-# Runs on every change to the code, and once a month so the YouTube
-# downloader (yt-dlp) inside the apps stays up to date.
+# Builds the apps and publishes them as a GitHub release.
+#  - When the version in swimtunes/__init__.py changes: release "v<version>" (e.g. v0.9.0).
+#    Pushes that don't change the version only run the tests (tests.yml).
+#  - Once a month (and when started by hand): the same version rebuilt with the newest
+#    YouTube downloader (yt-dlp), released as "v<version>.<run number>" (e.g. v0.9.0.57),
+#    so installed copies update to it.
 on:
   push:
     branches: [main]
@@ -16,28 +19,31 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install -e ".[test]"
-      - run: pytest -q
+    uses: ./.github/workflows/tests.yml
 
   version:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      skip: ${{ steps.tag.outputs.skip }}
     steps:
       - uses: actions/checkout@v4
       - id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          base=$(python3 -c "import re;print('.'.join(re.search(r'__version__ = \"([^\"]+)\"', open('swimtunes/__init__.py').read()).group(1).split('.')[:2]))")
-          echo "tag=v${base}.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          version=$(python3 -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('swimtunes/__init__.py').read()).group(1))")
+          if [ "${{ github.event_name }}" = "push" ]; then tag="v${version}"; else tag="v${version}.${{ github.run_number }}"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "$tag is already released: nothing to build."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"; echo "Building $tag"
+          fi
 
   build:
     needs: [test, version]
+    if: needs.version.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -100,6 +106,7 @@ jobs:
 
   release:
     needs: [build, version]
+    if: needs.version.outputs.skip == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
