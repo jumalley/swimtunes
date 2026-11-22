@@ -497,11 +497,12 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     # ---------- folder pictures ----------
     @app.get("/api/folders/<name>/picture")
     def folder_picture(name):
-        from flask import send_file
+        from flask import Response
         p = lib.folder_cover(name)
         if not p:
             return err(msg("err.no_cover", "No picture"), 404)
-        return send_file(p, mimetype="image/jpeg", max_age=0)
+        # read it whole: a file still open for the browser can't be replaced or removed on Windows
+        return Response(p.read_bytes(), mimetype="image/jpeg", headers={"Cache-Control": "no-cache"})
 
     @app.post("/api/folders/<name>/picture")
     def set_folder_picture(name):
