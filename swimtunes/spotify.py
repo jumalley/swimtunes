@@ -90,23 +90,34 @@ def fetch(url: str, timeout: float = 20) -> dict:
             raise SpotifyError("Connect your Spotify account (Settings) to get your Liked Songs.")
         return accounts.spotify_liked()
     kind, sid = parse_url(url)
+    api_missing = False
     if accounts.spotify_token():
         try:
-            return accounts.spotify_collection(kind, sid)
+            data = accounts.spotify_collection(kind, sid)
+            if data["tracks"]:
+                return data
+            # Spotify's API gives no songs for some playlists it doesn't let apps read
+            # (other people's or Spotify's own): use the public page below instead.
         except accounts.SpotifyAuthError as e:
-            if e.code == 404:
-                raise SpotifyError("Spotify can't find this playlist for your account. Check the link.") from None
+            api_missing = e.code == 404
             # fall back to the public page below
     req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             html = r.read().decode("utf-8", "replace")
     except OSError as e:
+        if api_missing:
+            raise SpotifyError("Spotify can't find this playlist for your account. Check the link.") from None
         raise SpotifyError(f"Couldn't reach Spotify: {e}") from e
     try:
-        return parse_embed_html(html)
+        data = parse_embed_html(html)
     except SpotifyError:
+        if api_missing:
+            raise SpotifyError("Spotify can't find this playlist for your account. Check the link.") from None
         if kind == "playlist":
             raise SpotifyError("Couldn't read this Spotify playlist. If it is private, connect your Spotify "
                                "account in Settings.") from None
         raise
+    if not data["tracks"]:
+        raise SpotifyError("No songs found in this Spotify link. Is the playlist empty or private?")
+    return data

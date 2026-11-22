@@ -205,6 +205,7 @@ async function loadLibrary() {
   renderBatteryFooter();
   for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
   $('cfg-root').value = LIB.root;
+  $('cfg-auto_update').checked = LIB.config.auto_update !== false;
   RULES = LIB.config.rules || [];
   $('rules-count').textContent = RULES.length ? t('rules.count', { n: RULES.length }) : t('rules.none');
   const src = $('org-source').value;
@@ -975,9 +976,23 @@ async function checkUpdate() {
 async function applyUpdate() {
   if (!confirm(t('upd.confirm'))) return;
   const r = await api('/api/update/apply', { method: 'POST' });
+  await followUpdate(r.id, false);
+}
+let FOLLOWING_UPDATE = null;
+async function followUpdate(id, auto) {
+  if (FOLLOWING_UPDATE === id) return;
+  FOLLOWING_UPDATE = id;
   $('update-btn').disabled = true;
-  const j = await followJob(r.id, { log: 'upd-log', onUpdate: j => { $('update-changes').innerHTML = `<li>${esc(tEntry(j.log[j.log.length - 1]) || t('upd.updating'))}</li>`; } });
-  if (j.status !== 'done') { $('update-btn').disabled = false; showTab('settings'); return; }
+  if (auto) showClosed(t('ov.auto_updating_t'), t('ov.auto_updating'));
+  const j = await followJob(id, { log: 'upd-log', onUpdate: j => {
+    const line = tEntry(j.log[j.log.length - 1]) || t('upd.updating');
+    $('update-changes').innerHTML = `<li>${esc(line)}</li>`;
+    if (auto) showClosed(t('ov.auto_updating_t') + (j.current ? ` (${j.current})` : ''), line);
+  } });
+  if (j.status !== 'done') {   // failed: keep working with this version, the banner stays
+    $('overlay').classList.add('hidden'); $('update-btn').disabled = false; FOLLOWING_UPDATE = null;
+    toast(t('upd.auto_failed')); return;
+  }
   UPDATING = true;
   showClosed(t('ov.updating_t'), t('ov.updating'));
   const before = Date.now();
@@ -987,6 +1002,10 @@ async function applyUpdate() {
     await new Promise(r => setTimeout(r, 1500));
   }
   showClosed(t('ov.restarting_t'), t('ov.restarting'));
+}
+async function setAutoUpdate(on) {
+  await api('/api/config', { method: 'POST', body: { auto_update: on } });
+  LIB.config.auto_update = on; toast(t('common.saved'));
 }
 async function quitApp() {
   let r = await fetch('/api/quit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
@@ -998,6 +1017,7 @@ async function quitApp() {
 }
 async function loadVersion() {
   const v = await api('/api/version');
+  if (v.updating) followUpdate(v.updating, true);
   $('quit-btn').classList.toggle('hidden', !v.can_quit);
   showUpdate(v.update);
 }
@@ -1116,6 +1136,8 @@ async function pollActivity() {
   try { const r = await fetch('/api/jobs/active'); if (r.ok) jobs = await r.json(); } catch (e) { return; }
   const a = $('f-activity');
   if (!jobs.length) { a.classList.add('hidden'); return; }
+  const upd = jobs.find(j => j.kind === 'update');
+  if (upd && !FOLLOWING_UPDATE) followUpdate(upd.id, true);   // started by itself at launch
   const j = jobs[0];
   const prog = j.progress ? ` ${j.progress[0]}/${j.progress[1]}` : '';
   a.querySelector('span').textContent = `${t('job.' + j.kind)}${prog}${j.current ? ' · ' + j.current : ''}`;

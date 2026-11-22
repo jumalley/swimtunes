@@ -41,6 +41,8 @@ DEFAULT_CONFIG = {
     "swim_minutes": 45,        # length of one swim session, for "plays for N swims"
     "synced": {},              # folder -> time it was last copied to / checked on the earphones
     "shokz": {},               # last battery / firmware reading of the earphones (Bluetooth)
+    "auto_update": True,       # install new versions by itself when SwimTunes starts
+    "auto_update_tried": {},   # {"latest": tag, "time": ...}: never retry the same update in a loop
 }
 
 FOLDER_COVER = ".swimtunes-cover.jpg"   # a folder's picture (hidden, never copied to the earphones)

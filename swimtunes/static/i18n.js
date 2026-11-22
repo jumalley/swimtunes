@@ -2040,3 +2040,47 @@ Object.assign(I18N.pt, {
   "bt.switched": "Os fones agora tocam em ordem",
   "bt.not_switched": "Os fones não confirmaram a mudança. Mude o modo de reprodução nos próprios fones.",
 });
+
+/* Automatic updates at launch */
+Object.assign(I18N.en, {
+  "upd.auto": "Update automatically when SwimTunes starts",
+  "tip.auto_update": "When SwimTunes starts and a new version exists, it installs it and restarts by itself (about a minute), like Discord or Spotify. Turn off to update only when you click Update now.",
+  "ov.auto_updating_t": "Updating SwimTunes…",
+  "ov.auto_updating": "A new version was found. It installs and restarts by itself; this page reloads when it’s ready.",
+  "upd.auto_failed": "The update didn’t work. SwimTunes keeps working with this version; try again from Settings.",
+});
+Object.assign(I18N.fr, {
+  "upd.auto": "Mettre à jour automatiquement au démarrage",
+  "tip.auto_update": "Au démarrage, si une nouvelle version existe, SwimTunes l’installe et redémarre tout seul (environ une minute), comme Discord ou Spotify. Désactivez pour ne mettre à jour qu’en cliquant sur Mettre à jour.",
+  "ov.auto_updating_t": "Mise à jour de SwimTunes…",
+  "ov.auto_updating": "Une nouvelle version a été trouvée. Elle s’installe et redémarre toute seule ; cette page se recharge quand c’est prêt.",
+  "upd.auto_failed": "La mise à jour a échoué. SwimTunes continue avec cette version ; réessayez depuis les Réglages.",
+});
+Object.assign(I18N.es, {
+  "upd.auto": "Actualizar automáticamente al iniciar",
+  "tip.auto_update": "Al iniciar, si hay una versión nueva, SwimTunes la instala y se reinicia solo (un minuto aprox.), como Discord o Spotify. Desactívalo para actualizar solo al pulsar Actualizar.",
+  "ov.auto_updating_t": "Actualizando SwimTunes…",
+  "ov.auto_updating": "Se encontró una versión nueva. Se instala y se reinicia sola; esta página se recarga cuando esté lista.",
+  "upd.auto_failed": "La actualización falló. SwimTunes sigue con esta versión; inténtalo de nuevo desde Ajustes.",
+});
+Object.assign(I18N.de, {
+  "upd.auto": "Beim Start automatisch aktualisieren",
+  "tip.auto_update": "Gibt es beim Start eine neue Version, installiert SwimTunes sie und startet von selbst neu (etwa eine Minute), wie Discord oder Spotify. Ausschalten, um nur per Klick auf Jetzt aktualisieren zu aktualisieren.",
+  "ov.auto_updating_t": "SwimTunes wird aktualisiert…",
+  "ov.auto_updating": "Eine neue Version wurde gefunden. Sie wird installiert und startet von selbst neu; diese Seite lädt neu, sobald sie bereit ist.",
+  "upd.auto_failed": "Das Update hat nicht geklappt. SwimTunes läuft mit dieser Version weiter; versuche es in den Einstellungen erneut.",
+});
+Object.assign(I18N.it, {
+  "upd.auto": "Aggiorna automaticamente all’avvio",
+  "tip.auto_update": "All’avvio, se esiste una nuova versione, SwimTunes la installa e si riavvia da solo (circa un minuto), come Discord o Spotify. Disattiva per aggiornare solo cliccando Aggiorna ora.",
+  "ov.auto_updating_t": "Aggiornamento di SwimTunes…",
+  "ov.auto_updating": "È stata trovata una nuova versione. Si installa e si riavvia da sola; questa pagina si ricarica quando è pronta.",
+  "upd.auto_failed": "L’aggiornamento non è riuscito. SwimTunes continua con questa versione; riprova dalle Impostazioni.",
+});
+Object.assign(I18N.pt, {
+  "upd.auto": "Atualizar automaticamente ao abrir",
+  "tip.auto_update": "Ao abrir, se houver uma versão nova, o SwimTunes a instala e reinicia sozinho (cerca de um minuto), como o Discord ou o Spotify. Desative para atualizar só ao clicar em Atualizar agora.",
+  "ov.auto_updating_t": "Atualizando o SwimTunes…",
+  "ov.auto_updating": "Uma versão nova foi encontrada. Ela instala e reinicia sozinha; esta página recarrega quando estiver pronta.",
+  "upd.auto_failed": "A atualização falhou. O SwimTunes continua com esta versão; tente de novo nas Configurações.",
+});

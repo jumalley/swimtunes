@@ -246,3 +246,28 @@ def test_sync_remembers_when_folders_were_copied(lib, tmp_path):
     assert st["path"] == str(dev) and st["folders"] == {"doomer": "same"}
     assert c.post("/api/config", json={"swim_minutes": "60"}).status_code == 200
     assert lib.config()["swim_minutes"] == 60
+
+
+# ---------- automatic update at launch ----------
+def test_auto_update_at_launch(lib, monkeypatch):
+    from swimtunes import updater
+    applied = []
+    monkeypatch.setattr(updater, "apply", lambda log: applied.append(1) or ["restart"])
+    app = create_app(lib)
+    c = app.test_client()
+    auto = app.config["MAYBE_AUTO_UPDATE"]
+    new = {"available": True, "kind": "app", "latest": "v0.9.1"}
+    assert auto({"available": False, "kind": "app"}, wait=0) is None
+    assert auto(new, wait=0) is None                     # not started as the app (no restart possible)
+    stopped = []
+    app.config["SHUTDOWN"] = lambda: stopped.append(1)
+    jid = auto(new, wait=0)
+    assert wait(c, jid)["status"] == "done" and applied == [1]
+    assert c.get("/api/version").get_json()["updating"] == jid
+    time.sleep(1.2)
+    assert stopped == [1] and app.config["RESTART"] == ["restart"]
+    assert auto(new, wait=0) is None                     # same version again right after: no update loop
+    assert auto({**new, "latest": "v0.9.2"}, wait=0)
+    lib.set_config(auto_update=False)
+    assert auto({**new, "latest": "v0.9.3"}, wait=0) is None
+    assert c.post("/api/config", json={"auto_update": "true"}).status_code == 200 and lib.config()["auto_update"] is True

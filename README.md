@@ -45,9 +45,10 @@ Nothing else to install. SwimTunes includes everything it needs.
 
 ### Updates
 
-When a new version is out, a banner appears at the top of the page and the status bar at the bottom says
-*Update available*. Click **Update now**: SwimTunes downloads the new version, restarts, and the page
-reloads by itself. You can also check in **Settings → Updates**.
+SwimTunes updates itself, like Discord: each time it starts, it checks for a new version, installs it,
+restarts and reloads the page (about a minute). You can turn this off in **Settings → Updates**; you'll then
+see a banner at the top of the page and click **Update now** when you want. If an update fails,
+SwimTunes keeps working with the version you have.
 
 ## How to use it
 
@@ -190,6 +191,10 @@ region-blocked videos can't be downloaded: try another upload of the same song.
 folder), so it isn't downloaded twice.
 
 **Some songs say "Unavailable on YouTube".** The video is private or was deleted. It's unticked and skipped.
+
+**A Spotify playlist finds 0 songs.** Update SwimTunes (0.8.2 or newer): Spotify changed its API in 2026. Some playlists
+(other people's, or Spotify's own charts) can't be read through a connected account; SwimTunes then reads the public page
+instead, which shows the first ~100 songs.
 
 **My Spotify playlist only shows about 100 songs.** Without a connected account, Spotify only shows the first ~100 songs.
 Connect your Spotify account (Settings → Accounts) to get them all.

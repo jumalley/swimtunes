@@ -267,12 +267,13 @@ def spotify_collection(kind: str, sid: str) -> dict:
                 break
             page = spotify_get(page["next"])
         return {"name": album.get("name") or "Spotify", "tracks": tracks, "cover": cover}
-    pl = spotify_get(f"/playlists/{sid}?fields=name,tracks.next,tracks.items(track(name,duration_ms,is_local,type,"
-                     "artists(name),album(images)))")
-    tracks, page = [], pl.get("tracks") or {}
+    pl = spotify_get(f"/playlists/{sid}")
+    # Spotify renamed "tracks" to "items" (and each entry's "track" to "item") in 2026: accept both.
+    page = pl.get("items") if isinstance(pl.get("items"), dict) else pl.get("tracks") or {}
+    tracks = []
     while True:
-        for item in page.get("items") or []:
-            if (x := _track(item.get("track"))):
+        for entry in page.get("items") or []:
+            if (x := _track((entry or {}).get("item") or (entry or {}).get("track"))):
                 tracks.append(x)
         if not page.get("next"):
             break
@@ -288,7 +289,7 @@ def spotify_my_playlists() -> list[dict]:
             if not p:
                 continue
             out.append({"name": p.get("name") or "", "url": (p.get("external_urls") or {}).get("spotify") or
-                        f"https://open.spotify.com/playlist/{p.get('id')}", "count": (p.get("tracks") or {}).get("total"),
+                        f"https://open.spotify.com/playlist/{p.get('id')}", "count": (p.get("items") if isinstance(p.get("items"), dict) else p.get("tracks") or {}).get("total"),
                         "image": _image(p.get("images")), "private": not p.get("public", True), "source": "spotify"})
         url = page.get("next")
     out.insert(0, {"name": "Liked Songs", "url": "spotify:collection:tracks", "count": None, "image": "",
@@ -301,7 +302,7 @@ def spotify_liked() -> dict:
     while url:
         page = spotify_get(url)
         for item in page.get("items") or []:
-            if (x := _track(item.get("track"))):
+            if (x := _track(item.get("item") or item.get("track"))):
                 tracks.append(x)
         url = page.get("next")
     return {"name": "Liked Songs", "tracks": tracks}

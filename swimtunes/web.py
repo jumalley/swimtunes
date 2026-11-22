@@ -29,7 +29,25 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         return meta_lookup or MetaLookup(lib.root / ".swimtunes-meta.json")
 
     def _bg_update_check():
-        app.config["UPDATE"] = updater.check()
+        app.config["UPDATE"] = u = updater.check()
+        maybe_auto_update(u)
+
+    def maybe_auto_update(u, wait=15.0):
+        """Like Discord: when SwimTunes starts and a new version exists, install it and restart."""
+        cfg = lib.config()
+        if not (u.get("available") and cfg.get("auto_update") and u.get("kind") in ("app", "git")):
+            return None
+        end = time.time() + wait            # the app sets SHUTDOWN just after creating the dashboard
+        while app.config["SHUTDOWN"] is None and time.time() < end:
+            time.sleep(0.1)
+        tried = cfg.get("auto_update_tried") or {}
+        if app.config["SHUTDOWN"] is None or busy() or (
+                tried.get("latest") == u.get("latest") and time.time() - tried.get("time", 0) < 6 * 3600):
+            return None                     # already tried this one recently: don't loop, the banner stays
+        lib.set_config(auto_update_tried={"latest": u.get("latest"), "time": time.time()})
+        app.config["AUTO_UPDATE"] = jid = run_update(auto=True)
+        return jid
+    app.config["MAYBE_AUTO_UPDATE"] = maybe_auto_update
     if not os.environ.get("SWIMTUNES_OFFLINE") and (TAG != "dev" or updater.install_kind() == "git"):
         threading.Thread(target=_bg_update_check, daemon=True).start()
 
@@ -58,6 +76,10 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     _no_lock = contextlib.nullcontext()
 
     def start_job(kind, fn, exclusive=True):
+        return jsonify({"id": new_job(kind, fn, exclusive)})
+
+    def new_job(kind, fn, exclusive=True):
+        """Run fn in the background; returns the job id (works outside a web request too)."""
         jid = uuid.uuid4().hex[:8]
         job = {"id": jid, "kind": kind, "status": "queued", "log": [], "result": None, "started": time.time(),
                "progress": None, "current": None, "recent": [], "cancel": False}
@@ -83,7 +105,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 job["current"] = None
 
         threading.Thread(target=run, daemon=True).start()
-        return jsonify({"id": jid})
+        return jid
 
     @app.get("/api/jobs/<jid>")
     def job(jid):
@@ -644,7 +666,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         u = app.config["UPDATE"] or {}
         return jsonify({"app": "swimtunes", "version": __version__, "tag": TAG,
                         "kind": updater.install_kind(), "update": u if u.get("available") else None,
-                        "can_quit": app.config["SHUTDOWN"] is not None})
+                        "can_quit": app.config["SHUTDOWN"] is not None, "updating": app.config.get("AUTO_UPDATE")})
 
     @app.get("/api/update")
     def update_check():
@@ -658,13 +680,18 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         if busy():
             return err(msg("err.busy_update", "Wait until the current download or copy has finished"))
 
+        return jsonify({"id": run_update()})
+
+    def run_update(auto=False):
         def fn(log, progress, job):
+            u = app.config["UPDATE"] or {}
+            job["current"] = u.get("latest")
             cmd = updater.apply(log)
             log(msg("log.upd_restart", "Restarting SwimTunes… this page reloads by itself."))
             app.config["RESTART"] = cmd
             threading.Timer(1.0, app.config["SHUTDOWN"]).start()
-            return {"restart": True}
-        return start_job("update", fn)
+            return {"restart": True, "auto": auto, "latest": u.get("latest")}
+        return new_job("update", fn)
 
     health_cache: dict = {}
 

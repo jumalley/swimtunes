@@ -270,6 +270,7 @@
         <h2><i class="fa-solid fa-circle-arrow-up"></i><span data-i18n="upd.title">Updates</span></h2>
         <div class="kv"><span class="muted" data-i18n="upd.version">Version</span><span id="ver-current">–</span><span class="muted" data-i18n="upd.installed_as">Installed as</span><span id="ver-kind">–</span></div>
         <div class="row" style="margin-top:12px"><button class="fit" onclick="checkUpdate()" id="check-btn" data-tip="tip.check_update"><i class="fa-solid fa-rotate"></i><span data-i18n="upd.check">Check for updates</span></button><span id="update-status" class="muted"></span></div>
+        <label class="check"><input type="checkbox" id="cfg-auto_update" onchange="setAutoUpdate(this.checked)"> <span data-i18n="upd.auto">Update automatically when SwimTunes starts</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.auto_update"></i></label>
         <ul id="update-list" class="small muted"></ul>
         <div class="log" id="upd-log"></div>
       </div>

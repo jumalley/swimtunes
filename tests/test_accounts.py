@@ -188,3 +188,37 @@ def test_accounts_endpoints(lib, monkeypatch):
     c.delete("/api/accounts/spotify")
     st = c.get("/api/accounts").get_json()["spotify"]
     assert st["connected"] is False and st["client_id"]          # the Client ID is kept for next time
+
+
+def test_spotify_2026_format_and_fallback(monkeypatch):
+    """Spotify renamed playlist "tracks" to "items" in 2026; some playlists come back empty
+    through the API: then the public page is used."""
+    connect_spotify(monkeypatch)
+    song = {"name": "Blinding Lights", "duration_ms": 200040, "type": "track", "artists": [{"name": "The Weeknd"}]}
+
+    def api(url, *, data=None, token=None, timeout=20):
+        if "/v1/playlists/NEW" in url:
+            return {"name": "Top", "items": {"items": [{"item": song}], "next": None}}
+        if "/v1/playlists/EMPTY" in url:
+            return {"name": "Top 500", "items": {"items": [], "next": None}}
+        if "/v1/playlists/GONE" in url:
+            raise accounts.SpotifyAuthError(404, {"error": {"message": "Not found"}})
+        raise AssertionError(url)
+    monkeypatch.setattr(accounts, "_http", api)
+    assert spotify.fetch("https://open.spotify.com/playlist/NEW")["tracks"][0]["title"] == "Blinding Lights"
+
+    html = ('<script id="__NEXT_DATA__" type="application/json">{"props":{"entity":{"name":"Top 500","trackList":'
+            '[{"title":"Shape of You","subtitle":"Ed Sheeran","duration":233712}]}}}</script>')
+
+    class Page:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self): return html.encode()
+    monkeypatch.setattr(spotify.urllib.request, "urlopen", Page)
+    data = spotify.fetch("https://open.spotify.com/playlist/EMPTY")
+    assert data["name"] == "Top 500" and data["tracks"][0]["artist"] == "Ed Sheeran"
+    assert spotify.fetch("https://open.spotify.com/playlist/GONE")["tracks"]      # public page still works
+    html = "<html>nothing</html>"
+    with pytest.raises(spotify.SpotifyError, match="can't find"):
+        spotify.fetch("https://open.spotify.com/playlist/GONE")
