@@ -271,3 +271,13 @@ def test_auto_update_at_launch(lib, monkeypatch):
     lib.set_config(auto_update=False)
     assert auto({**new, "latest": "v0.9.3"}, wait=0) is None
     assert c.post("/api/config", json={"auto_update": "true"}).status_code == 200 and lib.config()["auto_update"] is True
+
+
+def test_tray_icon_is_optional():
+    from swimtunes import tray
+    import sys as _sys
+    if _sys.platform != "win32":
+        assert tray.start("http://localhost:8765", lambda: None) is None   # only on Windows
+    from swimtunes import app as app_mod
+    app_mod._error_box("x")          # no-op outside Windows
+    app_mod._attach_terminal()

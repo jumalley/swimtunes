@@ -44,10 +44,13 @@ jobs:
         include:
           - os: windows-latest
             asset: SwimTunes-Windows.exe
+            extra: SwimTunes-Setup.exe
           - os: macos-latest
             asset: SwimTunes-Mac-AppleSilicon.zip
+            extra: SwimTunes-Mac-AppleSilicon.dmg
           - os: macos-15-intel
             asset: SwimTunes-Mac-Intel.zip
+            extra: SwimTunes-Mac-Intel.dmg
     runs-on: ${{ matrix.os }}
     env:
       SWIMTUNES_TAG: ${{ needs.version.outputs.tag }}
@@ -60,6 +63,7 @@ jobs:
         run: |
           pip install --upgrade "yt-dlp[default,deno]"
           pip install . pyinstaller pillow
+          pip install pystray
       - name: Stamp version
         shell: bash
         run: echo "TAG = \"$SWIMTUNES_TAG\"" > swimtunes/_build.py
@@ -71,6 +75,11 @@ jobs:
         shell: bash
         run: |
           ./dist/SwimTunes.exe doctor
+          # the installer (Start menu, desktop icon, uninstall in Settings > Apps)
+          ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          if [ ! -f "$ISCC" ]; then choco install innosetup -y --no-progress; fi
+          "$ISCC" //DAppVersion="${SWIMTUNES_TAG#v}" //DSourceExe="$(cygpath -w "$PWD/dist/SwimTunes.exe")" packaging/windows-installer.iss
+          mv dist/SwimTunes-Setup.exe "${{ matrix.extra }}"
           mv dist/SwimTunes.exe "${{ matrix.asset }}"
       - name: Check and package (Mac)
         if: runner.os == 'macOS'
@@ -78,11 +87,16 @@ jobs:
           codesign --force --deep --sign - dist/SwimTunes.app
           ./dist/SwimTunes.app/Contents/MacOS/SwimTunes doctor
           ditto -c -k --keepParent dist/SwimTunes.app "${{ matrix.asset }}"
+          # a disk image: open it and drag SwimTunes onto Applications
+          mkdir dmg && cp -R dist/SwimTunes.app dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname SwimTunes -srcfolder dmg -ov -format UDZO "${{ matrix.extra }}"
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}
+            ${{ matrix.extra }}
 
   release:
     needs: [build, version]
@@ -101,8 +115,10 @@ jobs:
           gh release create "$TAG" assets/* --repo "${{ github.repository }}" --target "${{ github.sha }}" \
             --title "SwimTunes $TAG" --latest --notes "Download the file for your computer below.
 
-          - **Windows:** SwimTunes-Windows.exe
-          - **Mac (2020 or newer, M1/M2/M3/M4):** SwimTunes-Mac-AppleSilicon.zip
-          - **Older Mac (Intel):** SwimTunes-Mac-Intel.zip
+          - **Windows:** SwimTunes-Setup.exe (installer: Start menu and desktop icon). No install: SwimTunes-Windows.exe
+          - **Mac (2020 or newer, M1/M2/M3/M4):** SwimTunes-Mac-AppleSilicon.dmg
+          - **Older Mac (Intel):** SwimTunes-Mac-Intel.dmg
+
+          The .zip files are used by SwimTunes' automatic updates.
 
           First time? See the instructions: https://github.com/${{ github.repository }}#readme"

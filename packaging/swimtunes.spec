@@ -26,9 +26,10 @@ a = Analysis(
     binaries=[(os.path.join(stage, "ffmpeg" + EXT), "bin"), (os.path.join(stage, "deno" + EXT), "bin")],
     datas=[(os.path.join(ROOT, "swimtunes", "templates"), os.path.join("swimtunes", "templates")),
            (os.path.join(ROOT, "swimtunes", "static"), os.path.join("swimtunes", "static"))],
-    hiddenimports=collect_submodules("swimtunes"),
+    hiddenimports=collect_submodules("swimtunes") + (collect_submodules("pystray") if sys.platform == "win32" else []),
     # the helper programs are bundled above; don't pull in their (large) Python packages too
-    excludes=["imageio_ffmpeg", "deno", "tkinter", "pytest", "PIL"],
+    # (Pillow is kept on Windows: the icon next to the clock needs it)
+    excludes=["imageio_ffmpeg", "deno", "tkinter", "pytest"] + ([] if sys.platform == "win32" else ["PIL"]),
     noarchive=False,
 )
 pyz = PYZ(a.pure)
@@ -53,7 +54,7 @@ else:
     exe = EXE(
         pyz, a.scripts, a.binaries, a.datas, [],
         name="SwimTunes",
-        console=True,  # the window shows the app is running; closing it stops SwimTunes
+        console=sys.platform != "win32",  # Windows: no black window; an icon next to the clock instead
         icon=icon if sys.platform == "win32" else None,
         upx=False,
     )

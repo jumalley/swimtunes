@@ -17,30 +17,35 @@ No commands to type.
 
 | Your computer | Download |
 |---|---|
-| **Windows** | [SwimTunes-Windows.exe](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Windows.exe) |
-| **Mac** with Apple chip (M1, M2, M3, M4…) | [SwimTunes-Mac-AppleSilicon.zip](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-AppleSilicon.zip) |
-| **Mac** with Intel processor (older Macs) | [SwimTunes-Mac-Intel.zip](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-Intel.zip) |
+| **Windows** | [**SwimTunes-Setup.exe**](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Setup.exe) |
+| **Mac** with Apple chip (M1, M2, M3, M4…) | [**SwimTunes-Mac-AppleSilicon.dmg**](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-AppleSilicon.dmg) |
+| **Mac** with Intel processor (older Macs) | [**SwimTunes-Mac-Intel.dmg**](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-Intel.dmg) |
 
 Not sure which Mac you have? Click the Apple menu  → **About This Mac**. It says **Chip: Apple M…** or **Processor: Intel**.
 
-Nothing else to install. SwimTunes includes everything it needs.
+Nothing else to install: no Python, no commands. SwimTunes includes everything it needs.
 
-### First start on Windows
+### Install on Windows
 
-1. Double-click **SwimTunes-Windows.exe**. (Tip: put it in a folder like *Documents\SwimTunes* first.)
+1. Double-click **SwimTunes-Setup.exe**.
 2. Windows may say **"Windows protected your PC"**. Click **More info**, then **Run anyway**.
-   This only happens the first time, because SwimTunes is a free app that isn't registered with Microsoft.
-3. A black window opens, and then SwimTunes opens in your web browser.
-   **Leave the black window open** while you use SwimTunes. Close it (or click **Quit**) when you're done.
-4. Optional: in **Settings**, click **Put a SwimTunes icon on my desktop**.
+   This only happens once, because SwimTunes is a free app that isn't registered with Microsoft.
+3. Click **Install**. No administrator password is needed. SwimTunes opens in your web browser.
 
-### First start on Mac
+From then on, open SwimTunes like any app: from the **Start menu** or the **desktop icon**. While it runs,
+a small SwimTunes icon sits next to the clock (in the **^** menu): click it to open SwimTunes, or right-click → **Quit**.
+To remove it: **Settings → Apps → SwimTunes → Uninstall** (your music stays in *Music\SwimTunes*).
 
-1. Double-click the downloaded **.zip** file. A **SwimTunes** app appears. Drag it into your **Applications** folder.
-2. Double-click **SwimTunes**. The first time, your Mac says it *can't check the app for malicious software*.
-   Click **Done** (or **OK**).
+Prefer no installation? Download [SwimTunes-Windows.exe](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Windows.exe)
+and double-click it wherever you keep it.
+
+### Install on Mac
+
+1. Double-click the downloaded **.dmg** file. In the window that opens, drag **SwimTunes** onto **Applications**.
+2. Open **SwimTunes** from Applications (or Launchpad). The first time, your Mac says it *can't check the app
+   for malicious software*. Click **Done** (or **OK**).
 3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to
-   *"SwimTunes was blocked"*. Enter your password if asked. This only happens the first time.
+   *"SwimTunes was blocked"*. Enter your password if asked. This only happens once.
 4. SwimTunes opens in your web browser. To stop it, click **Quit** at the top right of the page.
 
 ### Updates
