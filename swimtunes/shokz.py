@@ -121,27 +121,46 @@ def parse(answers: dict[tuple[int, int], bytes]) -> dict:
     return {k: v for k, v in info.items() if v is not None}
 
 
+def _ask(sock, buf: bytearray, answers: dict, group: int, code: int, args: bytes = b"", *,
+         expect: tuple[int, int] | None = None, timeout: float = 2.5) -> bool:
+    """Send one message and wait for its answer (by default: same group, code | 0x8000)."""
+    expect = expect or (group, code | 0x8000)
+    sock.sendall(encode(group, code, args))
+    end = time.monotonic() + timeout
+    while expect not in answers and time.monotonic() < end:
+        sock.settimeout(max(0.05, end - time.monotonic()))
+        try:
+            chunk = sock.recv(2048)
+        except socket.timeout:
+            break
+        if not chunk:
+            raise ConnectionError("closed")
+        buf += chunk
+        for g, c, a in decode(buf):
+            answers[(g, c)] = a
+    return expect in answers
+
+
 def query(sock, requests=(FIRMWARE, BATTERY, MEDIA_SOURCE, EQUALIZER, MP3_MODE, VOLUME, LANGUAGE),
           timeout: float = 2.5) -> dict:
     """Ask one question at a time (the earphones ignore questions sent together)."""
     buf, answers = bytearray(), {}
     for group, code in requests:
-        sock.sendall(encode(group, code))
-        end = time.monotonic() + timeout
-        while (group, code | 0x8000) not in answers and time.monotonic() < end:
-            sock.settimeout(max(0.05, end - time.monotonic()))
-            try:
-                chunk = sock.recv(2048)
-            except socket.timeout:
-                break
-            if not chunk:
-                raise ConnectionError("closed")
-            buf += chunk
-            for g, c, a in decode(buf):
-                answers[(g, c)] = a
-        if (group, code) == FIRMWARE and (group, code | 0x8000) not in answers:
+        if not _ask(sock, buf, answers, group, code, timeout=timeout) and (group, code) == FIRMWARE:
             break    # not a Shokz channel (or the earphones are busy)
     return parse(answers)
+
+
+MP3_MODE_SET = (0x01, 0x0026)   # answered with (0x01, 0x8026)
+
+
+def set_mp3_mode(sock, mode: str, timeout: float = 3.0) -> str | None:
+    """Switch MP3 playback to normal / shuffle / repeat. Returns the mode the earphones now report."""
+    code = {v: k for k, v in MP3_MODES.items()}[mode]
+    buf, answers = bytearray(), {}
+    _ask(sock, buf, answers, *MP3_MODE_SET, bytes([code, 0, 0, 0]), timeout=timeout)
+    _ask(sock, buf, answers, *MP3_MODE, timeout=timeout)
+    return parse(answers).get("mp3_mode")
 
 
 # ---------- SDP: which RFCOMM channel the 0xFEF0 service is on ----------
@@ -330,8 +349,9 @@ def _open(address: str, channel: int, timeout: float):
 
 def read_device(address: str, *, name: str = "", channel: int | None = None,
                 log: Callable[[str], None] = lambda _: None, opener=_open,
-                channels=range(1, 31)) -> dict:
-    """Connect to the earphones and read everything. Returns
+                channels=range(1, 31), mp3_mode: str | None = None) -> dict:
+    """Connect to the earphones and read everything (after switching the MP3 playback
+    mode first, if mp3_mode is given). Returns
     {name, address, channel, firmware, battery, media_source, equalizer, mp3_mode, volume, language}."""
     info = {"name": name, "address": address}
     tried_any = False
@@ -347,6 +367,8 @@ def read_device(address: str, *, name: str = "", channel: int | None = None,
         tried_any = True
         try:
             got = query(s, timeout=2.5 if ch == channel else 1.5)
+            if mp3_mode and got.get("firmware"):
+                got["mp3_mode"] = set_mp3_mode(s, mp3_mode) or got.get("mp3_mode")
         except OSError as e:
             last_error = e
             got = {}

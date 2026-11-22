@@ -552,9 +552,11 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 info["partial"] = True
             else:
                 cached = last.get("channel") if last.get("address") == dev["address"] else None
-                info = shokz.read_device(dev["address"], name=dev["name"], channel=dev.get("channel") or cached)
+                mode = b.get("mp3_mode") if b.get("mp3_mode") in shokz.MP3_MODES.values() else None
+                kw = {"mp3_mode": mode} if mode else {}
+                info = shokz.read_device(dev["address"], name=dev["name"], channel=dev.get("channel") or cached, **kw)
             info["time"] = time.time()
-            info["play_hours"] = shokz.play_hours(dev["name"], info.get("media_source"))
+            info["play_hours"] = shokz.play_hours(dev["name"], "mp3")    # swims are done in MP3 mode
             lib.set_config(shokz=info)
             log(msg("log.shokz_done", "Read {name}", name=dev["name"]))
             return info

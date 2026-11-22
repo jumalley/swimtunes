@@ -1960,3 +1960,83 @@ Object.assign(I18N.pt, {
   "log.shokz_connecting": "Conectando a {name} por Bluetooth…",
   "log.shokz_done": "{name} lido",
 });
+
+/* Bluetooth panel v2 */
+Object.assign(I18N.en, {
+  "bt.read_again": "Read again",
+  "bt.read_ago": "Read {when}",
+  "bt.charging": "On the charger",
+  "bt.charging_tip": "On the charger the earphones are only a USB drive (for copying songs) and send no battery or settings. Those come over Bluetooth only, like in the Shokz app. Take them off the charger to read them.",
+  "bt.help_plugged": "The earphones are plugged in by cable: showing the last Bluetooth reading. Take them off the charger and switch them on to read them again.",
+  "bt.help": "Switch the earphones on, off the charger and near the computer. Battery and settings come over Bluetooth; the charging cable only carries songs.",
+  "bt.play_in_order": "Play in order",
+  "bt.shuffle_short": "Shuffle is on: the earphones ignore the order of your playlists.",
+  "bt.switching": "Switching to in-order playback…",
+  "bt.switched": "The earphones now play in order",
+  "bt.not_switched": "The earphones didn’t confirm the change. Switch playback mode on the earphones themselves.",
+});
+Object.assign(I18N.fr, {
+  "bt.read_again": "Relire",
+  "bt.read_ago": "Lu {when}",
+  "bt.charging": "Sur le chargeur",
+  "bt.charging_tip": "Sur le chargeur, les écouteurs ne sont qu’une clé USB (pour copier les titres) et n’envoient ni batterie ni réglages. Ceux-ci passent uniquement par le Bluetooth, comme dans l’app Shokz. Retirez-les du chargeur pour les lire.",
+  "bt.help_plugged": "Les écouteurs sont branchés par câble : affichage de la dernière lecture Bluetooth. Retirez-les du chargeur et allumez-les pour relire.",
+  "bt.help": "Allumez les écouteurs, hors du chargeur et près de l’ordinateur. Batterie et réglages passent par le Bluetooth ; le câble de charge ne transporte que les titres.",
+  "bt.play_in_order": "Lire dans l’ordre",
+  "bt.shuffle_short": "Lecture aléatoire activée : les écouteurs ignorent l’ordre de vos playlists.",
+  "bt.switching": "Passage en lecture dans l’ordre…",
+  "bt.switched": "Les écouteurs lisent maintenant dans l’ordre",
+  "bt.not_switched": "Les écouteurs n’ont pas confirmé le changement. Changez le mode de lecture directement sur les écouteurs.",
+});
+Object.assign(I18N.es, {
+  "bt.read_again": "Volver a leer",
+  "bt.read_ago": "Leído {when}",
+  "bt.charging": "En el cargador",
+  "bt.charging_tip": "En el cargador los auriculares son solo una memoria USB (para copiar canciones) y no envían batería ni ajustes. Eso solo llega por Bluetooth, como en la app de Shokz. Sácalos del cargador para leerlos.",
+  "bt.help_plugged": "Los auriculares están conectados por cable: se muestra la última lectura por Bluetooth. Sácalos del cargador y enciéndelos para leerlos de nuevo.",
+  "bt.help": "Enciende los auriculares, fuera del cargador y cerca del ordenador. La batería y los ajustes llegan por Bluetooth; el cable de carga solo lleva las canciones.",
+  "bt.play_in_order": "Reproducir en orden",
+  "bt.shuffle_short": "Aleatorio activado: los auriculares ignoran el orden de tus playlists.",
+  "bt.switching": "Cambiando a reproducción en orden…",
+  "bt.switched": "Los auriculares ahora reproducen en orden",
+  "bt.not_switched": "Los auriculares no confirmaron el cambio. Cambia el modo de reproducción en los propios auriculares.",
+});
+Object.assign(I18N.de, {
+  "bt.read_again": "Erneut lesen",
+  "bt.read_ago": "Gelesen {when}",
+  "bt.charging": "Im Ladegerät",
+  "bt.charging_tip": "Im Ladegerät sind die Kopfhörer nur ein USB-Laufwerk (zum Kopieren der Titel) und senden weder Akku noch Einstellungen. Diese kommen nur per Bluetooth, wie in der Shokz-App. Nimm sie aus dem Ladegerät, um sie zu lesen.",
+  "bt.help_plugged": "Die Kopfhörer sind per Kabel angeschlossen: es wird die letzte Bluetooth-Messung gezeigt. Nimm sie aus dem Ladegerät und schalte sie ein, um sie erneut zu lesen.",
+  "bt.help": "Kopfhörer einschalten, aus dem Ladegerät nehmen und in die Nähe des Computers legen. Akku und Einstellungen kommen per Bluetooth; das Ladekabel überträgt nur Titel.",
+  "bt.play_in_order": "Der Reihe nach spielen",
+  "bt.shuffle_short": "Zufallswiedergabe ist an: die Kopfhörer ignorieren die Reihenfolge deiner Playlists.",
+  "bt.switching": "Stelle auf Wiedergabe der Reihe nach um…",
+  "bt.switched": "Die Kopfhörer spielen jetzt der Reihe nach",
+  "bt.not_switched": "Die Kopfhörer haben die Änderung nicht bestätigt. Stelle den Wiedergabemodus direkt an den Kopfhörern um.",
+});
+Object.assign(I18N.it, {
+  "bt.read_again": "Rileggi",
+  "bt.read_ago": "Letto {when}",
+  "bt.charging": "Sul caricatore",
+  "bt.charging_tip": "Sul caricatore gli auricolari sono solo una chiavetta USB (per copiare i brani) e non inviano batteria né impostazioni. Queste arrivano solo via Bluetooth, come nell’app Shokz. Toglili dal caricatore per leggerle.",
+  "bt.help_plugged": "Gli auricolari sono collegati via cavo: mostro l’ultima lettura Bluetooth. Toglili dal caricatore e accendili per rileggerli.",
+  "bt.help": "Accendi gli auricolari, fuori dal caricatore e vicino al computer. Batteria e impostazioni arrivano via Bluetooth; il cavo di ricarica porta solo i brani.",
+  "bt.play_in_order": "Riproduci in ordine",
+  "bt.shuffle_short": "Casuale attivo: gli auricolari ignorano l’ordine delle tue playlist.",
+  "bt.switching": "Passo alla riproduzione in ordine…",
+  "bt.switched": "Ora gli auricolari riproducono in ordine",
+  "bt.not_switched": "Gli auricolari non hanno confermato la modifica. Cambia la modalità di riproduzione direttamente sugli auricolari.",
+});
+Object.assign(I18N.pt, {
+  "bt.read_again": "Ler de novo",
+  "bt.read_ago": "Lido {when}",
+  "bt.charging": "No carregador",
+  "bt.charging_tip": "No carregador os fones são só um pen drive (para copiar músicas) e não enviam bateria nem ajustes. Isso só vem por Bluetooth, como no app da Shokz. Tire-os do carregador para lê-los.",
+  "bt.help_plugged": "Os fones estão ligados pelo cabo: mostrando a última leitura por Bluetooth. Tire-os do carregador e ligue-os para ler de novo.",
+  "bt.help": "Ligue os fones, fora do carregador e perto do computador. Bateria e ajustes vêm por Bluetooth; o cabo de carga só leva as músicas.",
+  "bt.play_in_order": "Tocar em ordem",
+  "bt.shuffle_short": "Aleatório ligado: os fones ignoram a ordem das suas playlists.",
+  "bt.switching": "Mudando para tocar em ordem…",
+  "bt.switched": "Os fones agora tocam em ordem",
+  "bt.not_switched": "Os fones não confirmaram a mudança. Mude o modo de reprodução nos próprios fones.",
+});

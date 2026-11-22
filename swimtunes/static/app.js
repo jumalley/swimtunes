@@ -844,45 +844,70 @@ async function startSync() {
 // ---------- earphones over Bluetooth ----------
 let SHOKZ = null;
 function batteryIcon(pct) { return pct >= 85 ? 'fa-battery-full' : pct >= 60 ? 'fa-battery-three-quarters' : pct >= 35 ? 'fa-battery-half' : pct >= 15 ? 'fa-battery-quarter' : 'fa-battery-empty'; }
-function swimsLeft(info) { return info.battery == null ? null : Math.floor(info.battery / 100 * (info.play_hours || 8) * 60 / swimMin()); }
+function swimsLeft(info) {   // swims are done in MP3 mode (OpenSwim Pro: 9 h of MP3 on a full charge)
+  const h = /openswim pro/i.test(info.name || '') ? 9 : (info.play_hours || 8);
+  return info.battery == null ? null : Math.floor(info.battery / 100 * h * 60 / swimMin());
+}
 async function loadShokz() {
   try { SHOKZ = await api('/api/shokz'); } catch (e) { return; }
   renderShokz();
 }
+function fwPretty(fw) {
+  const m = /R_(\d+)_(\d{4})(\d{2})(\d{2})/.exec(fw || '');
+  if (!m) return fw || '';
+  const d = new Date(+m[2], +m[3] - 1, +m[4]);
+  return `R${+m[1]} · ${d.toLocaleDateString(LANG, { year: 'numeric', month: 'short', day: 'numeric' })}`;
+}
+let BT_BUSY = false;
 function renderShokz() {
   const s = SHOKZ, last = s.last || {};
-  $('bt-dev').innerHTML = s.devices.map(d => `<option value="${esc(d.address)}">${esc(d.name)} (${esc(d.address)})</option>`).join('');
-  $('bt-dev').classList.toggle('hidden', s.devices.length < 2);
-  if (last.address && s.devices.some(d => d.address === last.address)) $('bt-dev').value = last.address;
-  $('bt-btn').disabled = !s.devices.length;
-  let html = '';
+  const plugged = !!STATUS?.device;
+  const devSel = s.devices.length > 1 ? `<select id="bt-dev">${s.devices.map(d => `<option value="${esc(d.address)}">${esc(d.name)}</option>`).join('')}</select>` : '';
+  const btn = `<button class="fit" id="bt-btn" onclick="readShokz()" ${!s.devices.length || BT_BUSY ? 'disabled' : ''}>${ICON('fa-solid fa-rotate')}<span>${t(last.time ? 'bt.read_again' : 'bt.read')}</span></button>`;
+  const charging = plugged ? `<span class="chip warn" data-tip="bt.charging_tip">${ICON('fa-solid fa-plug-circle-bolt')}${t('bt.charging')}</span>` : '';
+  let html;
   if (last.time) {
-    const left = swimsLeft(last), row = (k, v) => v == null || v === '' ? '' : `<div><small>${t(k)}</small><b>${v}</b></div>`;
-    html = `<div class="facts bt-facts">
-      ${last.battery != null ? `<div class="bat"><small>${t('bt.battery')}</small><b>${ICON('fa-solid ' + batteryIcon(last.battery), ` style="color:var(--${last.battery < 25 ? 'danger' : 'ok'})"`)} ${last.battery}%</b>${left != null ? `<small>${esc(t('bt.swims_left', { n: left, m: swimMin() }))}</small>` : ''}</div>` : ''}
-      ${row('bt.firmware', esc(last.firmware || ''))}
-      ${row('bt.source', last.media_source ? esc(t('bt.src_' + last.media_source)) : '')}
-      ${row('bt.mp3_mode', last.mp3_mode ? esc(t('bt.mode_' + last.mp3_mode)) : '')}
-      ${row('bt.eq', last.equalizer ? esc(t('bt.eq_' + last.equalizer)) : '')}
-      ${row('bt.volume', last.volume != null ? last.volume + '%' : '')}
-    </div>
-    <small class="muted">${esc(t('bt.read_when', { name: last.name || '', when: ago(last.time) }))}${last.partial ? ' · ' + esc(t('bt.partial')) : ''}</small>
-    ${last.mp3_mode === 'shuffle' ? `<div class="notice warn-n">${ICON('fa-solid fa-shuffle')}<span>${t('bt.shuffle_note')}</span></div>` : ''}`;
-  } else if (s.devices.length) {
-    html = `<div class="notice">${ICON('fa-brands fa-bluetooth-b')}<span>${esc(t('bt.found', { name: s.devices.map(d => d.name).join(', ') }))}</span></div>`;
+    const pct = last.battery, left = swimsLeft(last);
+    const color = pct == null ? 'var(--muted)' : pct < 25 ? 'var(--danger)' : pct < 50 ? 'var(--warn)' : 'var(--ok)';
+    const row = (icon, k, v, extra = '', tip = '') => v ? `<div class="bt-row"${tip ? ` data-tip-raw="${esc(tip)}"` : ''}>${ICON(icon)}<span class="k">${t(k)}</span><span class="v">${v}</span>${extra}</div>` : '';
+    const shuffle = last.mp3_mode === 'shuffle';
+    html = `<div class="bt-top">
+        <div class="ring" style="--p:${pct ?? 0};--c:${color}"><b>${pct != null ? pct + '%' : '?'}</b></div>
+        <div class="bt-who"><b>${esc(last.name || '')}</b>
+          ${left != null ? `<span class="bt-left">${ICON('fa-solid fa-person-swimming')} ${esc(t('bt.swims_left', { n: left, m: swimMin() }))}</span>` : ''}
+          <small class="muted">${esc(t('bt.read_ago', { when: ago(last.time) }))}${last.partial ? ' · ' + esc(t('bt.partial')) : ''}</small>
+          ${charging ? `<div>${charging}</div>` : ''}</div>
+        <div class="bt-act">${devSel}${btn}</div>
+      </div>
+      <div class="bt-rows">
+        ${row('fa-solid fa-shuffle', 'bt.mp3_mode', last.mp3_mode ? esc(t('bt.mode_' + last.mp3_mode)) : '',
+          shuffle ? `<button class="small" onclick="readShokz('normal')" data-tip="bt.shuffle_note" ${BT_BUSY ? 'disabled' : ''}>${ICON('fa-solid fa-arrow-down-1-9')}${t('bt.play_in_order')}</button>` : '')}
+        ${row('fa-solid fa-music', 'bt.source', last.media_source ? esc(t('bt.src_' + last.media_source)) : '')}
+        ${row('fa-solid fa-sliders', 'bt.eq', last.equalizer ? esc(t('bt.eq_' + last.equalizer)) : '')}
+        ${row('fa-solid fa-volume-high', 'bt.volume', last.volume != null ? last.volume + '%' : '')}
+        ${row('fa-solid fa-microchip', 'bt.firmware', esc(fwPretty(last.firmware)), '', last.firmware || '')}
+      </div>
+      ${shuffle ? `<p class="small bt-warn">${ICON('fa-solid fa-triangle-exclamation')} ${t('bt.shuffle_short')}</p>` : ''}`;
   } else {
-    html = `<div class="notice">${ICON('fa-solid fa-link-slash')}<span>${t('bt.none')}</span></div>`;
+    const msg = s.devices.length ? esc(t('bt.found', { name: s.devices.map(d => d.name).join(', ') })) : t('bt.none');
+    html = `<div class="bt-top"><div class="ring empty"><b>${ICON('fa-brands fa-bluetooth-b')}</b></div>
+      <div class="bt-who"><span class="muted">${msg}</span>${charging ? `<div>${charging}</div>` : ''}</div><div class="bt-act">${devSel}${btn}</div></div>`;
   }
   $('bt-body').innerHTML = html;
-  $('bt-help').textContent = s.platform === 'darwin' ? t('bt.help_mac') : t('bt.help');
+  if (last.address && $('bt-dev')) $('bt-dev').value = last.address;
+  if (BT_BUSY) $('bt-btn').innerHTML = SPIN + `<span>${t(BT_BUSY === 'switch' ? 'bt.switching' : 'bt.reading')}</span>`;
+  $('bt-help').textContent = s.platform === 'darwin' ? t('bt.help_mac') : t(plugged ? 'bt.help_plugged' : 'bt.help');
 }
-async function readShokz() {
-  const r = await api('/api/shokz/read', { method: 'POST', body: { address: $('bt-dev').value } });
-  $('bt-body').innerHTML = `<div class="notice">${SPIN}<span>${t('bt.reading')}</span></div>`;
-  const j = await followJob(r.id, { btn: $('bt-btn') });
+async function readShokz(mode) {
+  const body = { address: $('bt-dev')?.value || '' };
+  if (mode) body.mp3_mode = mode;
+  const r = await api('/api/shokz/read', { method: 'POST', body });
+  BT_BUSY = mode ? 'switch' : 'read'; renderShokz();
+  let j;
+  try { j = await followJob(r.id, {}); } finally { BT_BUSY = false; }
   await loadLibrary();
   await loadShokz();
-  if (j.status === 'done') toast(t('bt.done'));
+  if (j.status === 'done') toast(t(mode ? (j.result.mp3_mode === mode ? 'bt.switched' : 'bt.not_switched') : 'bt.done'));
 }
 function renderBatteryFooter() {
   const s = LIB?.config.shokz || {}, el = $('f-battery');

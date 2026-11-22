@@ -133,7 +133,7 @@ folder name). The picture stays in SwimTunes; the earphones have no screen. Clic
 
 In **Earphones → Battery and settings**, click **Read from the earphones** to see the battery level (and how
 many swims it has left), the firmware version, whether they play MP3 or Bluetooth, the shuffle/repeat setting and the
-sound mode. If they're on **shuffle**, SwimTunes warns you: your playlist order is then ignored.
+sound mode. If they're on **shuffle** (your playlist order is then ignored), click **Play in order** to switch it back.
 
 This uses the same Bluetooth protocol as the free [Gadgetbridge](https://gadgetbridge.org/gadgets/headphones/shokz/)
 app (OpenSwim Pro supported). Pair the earphones once with your computer in its Bluetooth settings, switch them on and
@@ -199,6 +199,13 @@ Connect your Spotify account (Settings → Accounts) to get them all.
 **"Couldn't connect to the earphones over Bluetooth".** Check they're paired with this computer (its Bluetooth
 settings), switched on, out of the charging cradle and close by. If your phone is connected to them at the same time,
 it can help to turn the phone's Bluetooth off for a moment.
+
+**Why Bluetooth? Can't SwimTunes read the battery through the charging cable?** No: on the charger the earphones
+only act as a USB drive for copying songs and send no battery or settings information. Those are only available over
+Bluetooth (the Shokz app reads them the same way). While they're plugged in, SwimTunes shows the last Bluetooth reading.
+
+**My playlist plays in the wrong order.** The earphones may be on shuffle. **Earphones → Battery and settings** shows it,
+and **Play in order** switches it back.
 
 **Does the playlist picture go on the earphones?** No, they have no screen. It's saved as a hidden
 `.swimtunes-cover.jpg` in the folder and is never copied to the earphones.

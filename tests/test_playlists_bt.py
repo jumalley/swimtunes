@@ -42,7 +42,10 @@ class FakeEarphones:
 
     def sendall(self, data):
         buf = bytearray(data)
-        for group, code, _ in shokz.decode(buf):
+        for group, code, args in shokz.decode(buf):
+            if not self.silent and (group, code) == shokz.MP3_MODE_SET:
+                ANSWERS[shokz.MP3_MODE] = b"\0" + args[:1]
+                self.out += shokz.encode(0x01, 0x8026, b"\0\0\0\0")
             if not self.silent and (group, code) in ANSWERS:
                 self.out += b"\x00\x01" + shokz.encode(group, code | 0x8000, ANSWERS[(group, code)])  # with noise first
 
@@ -60,6 +63,16 @@ def test_query_reads_everything():
     info = shokz.query(FakeEarphones(), timeout=0.2)
     assert info == {"firmware": "R_13_20241115", "battery": 80, "media_source": "mp3", "equalizer": "swimming",
                     "mp3_mode": "shuffle", "volume": 50, "language": "en"}
+
+
+def test_switch_shuffle_off():
+    old = ANSWERS[shokz.MP3_MODE]
+    try:
+        info = shokz.read_device("AA:BB:CC:DD:EE:FF", channel=1, opener=lambda *a: FakeEarphones(), mp3_mode="normal")
+        assert info["mp3_mode"] == "normal" and info["battery"] == 80
+        assert shokz.encode(*shokz.MP3_MODE_SET, bytes([0, 0, 0, 0]))[12:].hex().endswith("26000000" "04000000" "04000000" "00000000")
+    finally:
+        ANSWERS[shokz.MP3_MODE] = old
 
 
 def test_bad_crc_is_ignored():
@@ -131,15 +144,17 @@ def test_bluetooth_endpoints(lib, monkeypatch):
     monkeypatch.setattr("swimtunes.web.sys.platform", "linux")
     seen = {}
 
-    def fake_read(address, *, name, channel):
-        seen["channel"] = channel
+    def fake_read(address, *, name, channel, mp3_mode=None):
+        seen["channel"], seen["mode"] = channel, mp3_mode
         return {"name": name, "address": address, "channel": 4, "battery": 60, "firmware": "R_13", "media_source": "mp3"}
     monkeypatch.setattr(shokz, "read_device", fake_read)
     j = wait(c, c.post("/api/shokz/read", json={"address": dev["address"]}).get_json()["id"])
     assert j["status"] == "done" and j["result"]["battery"] == 60 and j["result"]["play_hours"] == 9
     assert lib.config()["shokz"]["firmware"] == "R_13"
-    wait(c, c.post("/api/shokz/read", json={}).get_json()["id"])
-    assert seen["channel"] == 4                      # remembered for next time
+    wait(c, c.post("/api/shokz/read", json={"mp3_mode": "normal"}).get_json()["id"])
+    assert seen["channel"] == 4 and seen["mode"] == "normal"    # channel remembered; shuffle switched off
+    wait(c, c.post("/api/shokz/read", json={"mp3_mode": "bogus"}).get_json()["id"])
+    assert seen["mode"] is None
 
 
 def wait(c, jid):

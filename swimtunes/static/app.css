@@ -240,3 +240,23 @@ button.chip { cursor: pointer; font-size: 12px; padding: 2px 9px; }
 .bt-facts { margin-bottom: 6px; }
 .bt-facts .bat b { font-size: 20px; }
 .notice.warn-n { background: var(--warn-soft); color: var(--warn); margin-top: 8px; }
+/* bluetooth panel, v2 */
+.bt { padding: 14px 16px; }
+.bt-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ring { --p: 0; --c: var(--ok); width: 76px; height: 76px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line) 0); }
+.ring b { width: 60px; height: 60px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font-size: 17px; font-variant-numeric: tabular-nums; }
+.ring.empty b { color: #1e6fd9; font-size: 22px; }
+.bt-who { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 3px; }
+.bt-who > b { font-size: 15px; }
+.bt-left { color: var(--accent); font-weight: 600; }
+.bt-act { display: flex; gap: 8px; align-items: center; }
+.bt-act select { width: auto; }
+.bt-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2px 24px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.bt-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); min-height: 38px; }
+.bt-row > i { width: 18px; text-align: center; color: var(--muted); }
+.bt-row .k { color: var(--muted); flex: 0 0 110px; }
+.bt-row .v { font-weight: 600; flex: 1; }
+.bt-row button { flex: 0 0 auto; }
+.bt-warn { color: var(--warn); margin: 10px 0 0; }
+.bt-help { margin: 10px 0 0; }
