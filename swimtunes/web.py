@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
 import threading
 import time
+import urllib.request
 import uuid
 
 from flask import Flask, jsonify, render_template, request
 
-from . import device
+from . import REPO, TAG, __version__, device
 from .downloader import Downloader
 from .library import Library, LibraryError
 
@@ -17,6 +22,13 @@ def create_app(lib: Library, downloader_cls=Downloader) -> Flask:
     app = Flask(__name__)
     jobs: dict[str, dict] = {}
     job_lock = threading.Lock()   # one download/sync at a time
+    app.config.update(JOBS=jobs, LAST_SEEN=time.time(), SHUTDOWN=None, LATEST=None)
+    if TAG != "dev":
+        threading.Thread(target=_check_latest, args=(app,), daemon=True).start()
+
+    @app.before_request
+    def _seen():
+        app.config["LAST_SEEN"] = time.time()
 
     def err(msg, code=400):
         return jsonify({"error": msg}), code
@@ -128,8 +140,72 @@ def create_app(lib: Library, downloader_cls=Downloader) -> Flask:
         j = jobs.get(jid)
         return jsonify(j) if j else err("No such job", 404)
 
+    @app.get("/api/version")
+    def version():
+        latest = app.config["LATEST"]
+        return jsonify({"app": "swimtunes", "version": __version__, "tag": TAG,
+                        "latest": latest if latest and _newer(latest, TAG) else None,
+                        "download": f"https://github.com/{REPO}/releases/latest",
+                        "can_quit": app.config["SHUTDOWN"] is not None})
+
+    @app.post("/api/ping")
+    def ping():
+        return jsonify({"ok": True})
+
+    @app.post("/api/quit")
+    def quit_app():
+        if app.config["SHUTDOWN"] is None:
+            return err("Stop SwimTunes from the terminal with Ctrl+C")
+        if any(j["status"] in ("queued", "running") for j in jobs.values()) and not body().get("force"):
+            return err("A download or sync is still running")
+        threading.Timer(0.3, app.config["SHUTDOWN"]).start()
+        return jsonify({"ok": True})
+
+    @app.get("/api/drives")
+    def drives():
+        return jsonify(device.find_drives())
+
+    @app.post("/api/open")
+    def open_folder():
+        name = body().get("folder")
+        path = lib.folder_path(name) if name else lib.root
+        _reveal(str(path))
+        return jsonify({"ok": True})
+
     @app.get("/api/jobs")
     def job_list():
         return jsonify(sorted(jobs.values(), key=lambda j: -j["started"])[:10])
 
     return app
+
+
+def _reveal(path: str) -> None:
+    """Open a folder in Explorer / Finder."""
+    if os.name == "nt":
+        os.startfile(path)  # noqa: S606
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
+
+def _tag_tuple(tag: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(x) for x in tag.lstrip("v").split("."))
+    except ValueError:
+        return ()
+
+
+def _newer(latest: str, current: str) -> bool:
+    a, b = _tag_tuple(latest), _tag_tuple(current)
+    return bool(a and b and a > b)
+
+
+def _check_latest(app: Flask) -> None:
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
+                                     headers={"Accept": "application/vnd.github+json", "User-Agent": "SwimTunes"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            app.config["LATEST"] = json.load(r).get("tag_name")
+    except Exception:
+        pass

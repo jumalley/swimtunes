@@ -1,57 +1,123 @@
 # 🏊 SwimTunes
 
-Download music as MP3 for swimming earphones (Shokz OpenSwim and similar), with
-**no duplicate songs**, and manage your folders from a simple dashboard.
+Put your music on swimming earphones (Shokz OpenSwim and similar) the easy way.
+Paste a **YouTube** or **Spotify** link, and SwimTunes downloads the songs as MP3s,
+**skips songs you already have**, and copies them onto your earphones.
 
-- **YouTube links**: a single video or a whole playlist → MP3 (same as notube, but local and in bulk)
-- **Spotify links**: playlist, album or track. Each song is found on YouTube automatically,
-  picking the studio version (it avoids live, cover, remix and sped-up uploads and matches the song length)
-- **No doubles**: before downloading, every song is checked against your whole library
-  (same video, or same artist + title, ignoring "Official Video", "Lyrics", "feat.", "Remastered" and so on)
-- **Folder dashboard**: song count, total length and size per folder, how full the earphones are,
-  move/delete songs, rename/delete folders, and a duplicates finder
-- **Sync to earphones**: copies folders in playlist order (OpenSwim plays files in the order they
-  were *copied*, not A–Z) and removes the Mac `._` junk files the earphones try to play
+![SwimTunes](docs/screenshots/1-library.png)
 
-## How it works
+## Download
 
-> These screenshots use a sample library: the songs are silent demo files and the
-> download is simulated. Your real library looks the same.
+| Your computer | Download |
+|---|---|
+| **Windows** | [SwimTunes-Windows.exe](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Windows.exe) |
+| **Mac** with Apple chip (M1, M2, M3, M4…) | [SwimTunes-Mac-AppleSilicon.zip](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-AppleSilicon.zip) |
+| **Mac** with Intel processor (older Macs) | [SwimTunes-Mac-Intel.zip](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Mac-Intel.zip) |
 
-**1. Your library at a glance:** every folder with song count and total length, and how full the earphones are.
+Not sure which Mac you have? Click the Apple menu  → **About This Mac**. It says **Chip: Apple M…** or **Processor: Intel**.
 
-![Library overview](docs/screenshots/1-library.png)
+Nothing else to install. SwimTunes includes everything it needs.
 
-**2. Paste a YouTube or Spotify link and download.** Songs you already have are skipped automatically
-(here, *One More Time* and *Eye of the Tiger* were already in other folders).
+### First start on Windows
 
-<img src="docs/screenshots/2-download-log.png" width="320" alt="Download log showing skipped duplicates">
+1. Double-click **SwimTunes-Windows.exe**. (Tip: move it to your Desktop first.)
+2. Windows may say **"Windows protected your PC"**. Click **More info**, then **Run anyway**.
+   This only happens the first time, because SwimTunes is a free app that isn't registered with Microsoft.
+3. A black window opens, and then SwimTunes opens in your web browser.
+   **Leave the black window open** while you use SwimTunes. Close it when you're done.
 
-**3. The new folder is ready:** titles, artists, length and size for every song.
+### First start on Mac
 
-![Downloaded folder](docs/screenshots/3-download-done.png)
+1. Double-click the downloaded **.zip** file. A **SwimTunes** app appears. Drag it into your **Applications** folder.
+2. Double-click **SwimTunes**. The first time, your Mac says it *can't check the app for malicious software*.
+   Click **Done** (or **OK**).
+3. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to
+   *"SwimTunes was blocked"*. Enter your password if asked.
+   This only happens the first time, because SwimTunes is a free app that isn't registered with Apple.
+4. SwimTunes opens in your web browser. To stop it, click **Quit** at the top right of the page.
 
-**4. Manage a folder:** search, rename, delete, or move songs to another folder.
+After the first time, just double-click SwimTunes like any other app.
 
-![Folder view](docs/screenshots/4-folder.png)
+## How to use it
 
-**5. Find duplicates** that are already in your folders. Pick which copy to keep and remove the rest.
+**1. Download music.** On YouTube or Spotify, click **Share → Copy link**, paste the link into **Download**,
+and click **Download MP3s**. Whole playlists work. Songs you already have are skipped automatically.
+
+<img src="docs/screenshots/2-download-log.png" width="320" alt="Downloading a playlist; songs already in the library are skipped">
+
+**2. Check your folders.** Each playlist gets its own folder. You see how many songs it has, how long it lasts,
+and how full your earphones will be. You can rename folders, move songs, or delete them.
+
+![A folder](docs/screenshots/3-download-done.png)
+
+**3. Copy to your earphones.** Connect the earphones with their charging cable, open the **Earphones** tab,
+pick them, and click **Copy to earphones**. When it says *Sync finished*, eject them before unplugging.
+
+![Copy to earphones](docs/screenshots/6-sync.png)
+
+### Duplicates
+
+SwimTunes won't download a song you already have, even if it's a different video of it
+("Official Video", "Lyrics", "Remastered", "feat." and so on are ignored). The **Duplicates** tab
+finds doubles that are already in your folders. Pick the copy to keep and remove the rest.
 
 ![Duplicates](docs/screenshots/5-duplicates.png)
 
-**6. Copy to the earphones:** only changed folders are copied, in playlist order.
+### Settings
 
-![Sync to earphones](docs/screenshots/6-sync.png)
-
-**7. Settings:** earphone size, MP3 quality, duplicate rule and volume levelling.
+Choose your earphones' size (4 GB OpenSwim or 32 GB OpenSwim Pro), the sound quality,
+and whether all songs should play at the same volume.
 
 ![Settings](docs/screenshots/7-settings.png)
 
-It follows your system's dark mode and works on a phone screen too:
+It also has a dark mode and works on small screens:
 
-<p><img src="docs/screenshots/8-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/9-phone.png" width="22%" alt="Phone"></p>
+<p><img src="docs/screenshots/8-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/9-phone.png" width="22%" alt="Phone-sized window"></p>
 
-### Command line output
+> The screenshots use a sample library: the songs are silent demo files and the download is simulated.
+
+## Questions
+
+**Where are my MP3s?** In the **Music** folder of your computer, inside **SwimTunes**. Click **📂 Music folder** at the top of the page to open it.
+
+**Downloads stopped working.** YouTube changes things now and then. When a new version of SwimTunes is out,
+a banner at the top of the page tells you. Download the new version and replace the old app with it.
+New versions are built automatically every month.
+
+**My Spotify playlist only downloaded about 100 songs.** Spotify only shows the first ~100 songs to apps like this.
+For longer playlists, convert the playlist to YouTube with [playlistbuddy.com](https://playlistbuddy.com) and paste the YouTube playlist link instead.
+
+**It says the earphones aren't found.** Make sure they're connected with the charging cable to the computer (not to a wall plug),
+wait 10 seconds and click **Look again**. On a Mac they also appear in Finder's sidebar; on Windows, in **This PC**.
+
+**Is this allowed?** Only download music you're allowed to: your own uploads, free music, or what the law where you live allows for personal use.
+
+---
+
+## For developers
+
+Everything in the app is also available from Python, as a command line tool.
+
+```bash
+pip install -e .
+swimtunes ui                      # the dashboard (same as the app)
+swimtunes download "https://www.youtube.com/playlist?list=..." -f "Morning Swim"
+swimtunes download "https://open.spotify.com/playlist/..."      # folder = playlist name
+swimtunes stats                   # folders with song count, length, size
+swimtunes stats "Morning Swim"    # songs in one folder
+swimtunes dupes [--fix]           # list duplicates / move extra copies to the trash
+swimtunes folder rename "Morning Swim" "Warm Up"
+swimtunes move "Warm Up/Coldplay - Yellow.mp3" "Cool Down"
+swimtunes sync /Volumes/SWIM      # or E:\ on Windows
+swimtunes config capacity_gb 32
+swimtunes doctor                  # check ffmpeg, deno and yt-dlp
+```
+
+If the `swimtunes` command isn't found, use `python -m swimtunes ...` instead.
+The music folder is `~/Music/SwimTunes`; change it with `--library` or the `SWIMTUNES_LIBRARY` environment variable.
+ffmpeg and Deno (which YouTube downloads need) are installed from PyPI, so no separate setup is required.
+
+Example output:
 
 ```text
 $ swimtunes stats
@@ -65,64 +131,9 @@ TOTAL             22  1:32:55  127.8 MB
 
 Earphones: 127.8 MB of 4 GB (3% full)
 ⚠ 2 duplicate song(s). Run `swimtunes dupes` to see them.
-
-$ swimtunes dupes
-The Weeknd - Blinding Lights
-   keep    Morning Swim/The Weeknd - Blinding Lights.mp3
-   extra   Interval Sets/Weeknd - Blinding Lights (Official Video).mp3
-Coldplay - Viva La Vida
-   keep    Morning Swim/Coldplay - Viva La Vida.mp3
-   extra   Cool Down/Coldplay - Viva La Vida (Lyrics).mp3
 ```
 
-## Install (once)
-
-You need **Python 3.10+** and **ffmpeg**.
-
-| | |
-|---|---|
-| macOS | `brew install python ffmpeg` |
-| Windows | `winget install Python.Python.3.12 Gyan.FFmpeg` (then open a new terminal) |
-| Linux | `sudo apt install python3-pip ffmpeg` |
-
-Then, in this folder:
-
-```bash
-pip install -e .
-```
-
-## Use it
-
-### The dashboard (easiest)
-
-```bash
-swimtunes ui
-```
-
-This opens http://localhost:8765. Paste links into **Download**, pick a folder (or leave it empty to
-use the playlist's name), and click **Download MP3s**. The **Earphones** tab copies everything onto the
-earphones. Your music goes in `~/Music/SwimTunes` (change it with `--library` or the
-`SWIMTUNES_LIBRARY` environment variable).
-
-### Command line
-
-```bash
-swimtunes download "https://www.youtube.com/playlist?list=..." -f "Morning Swim"
-swimtunes download "https://open.spotify.com/playlist/..."          # folder = playlist name
-swimtunes stats                     # every folder: songs, length, size, % of earphones used
-swimtunes stats "Morning Swim"      # songs in one folder
-swimtunes dupes                     # list duplicates
-swimtunes dupes --fix               # keep the oldest copy, move the rest to the trash
-swimtunes folder rename "Morning Swim" "Warm Up"
-swimtunes move "Warm Up/Coldplay - Yellow.mp3" "Cool Down"
-swimtunes sync /Volumes/SWIM        # Mac;  on Windows e.g.  swimtunes sync E:\
-swimtunes config capacity_gb 32     # OpenSwim Pro
-swimtunes config normalize true     # even out loudness between songs
-```
-
-Deleted songs and folders go to `.trash` inside the library until you run `swimtunes empty-trash`.
-
-## Settings
+### Settings
 
 | setting | default | |
 |---|---|---|
@@ -131,19 +142,15 @@ Deleted songs and folders go to `.trash` inside the library until you run `swimt
 | `normalize` | false | make all songs about equally loud |
 | `dupe_scope` | library | `library` = never the same song twice anywhere; `folder` = only within a folder |
 
-## Notes
+### How the apps are built
 
-- **Big Spotify playlists**: the Spotify reader uses the public embed page (no account
-  needed), which may stop at about 100 songs. For longer playlists, convert them with
-  [playlistbuddy](https://playlistbuddy.com) and paste the resulting **YouTube playlist** link. That works too,
-  and duplicates are still skipped.
-- The playlist must be **public**.
-- If YouTube downloads start failing, update yt-dlp: `pip install -U yt-dlp`.
-- Only download music you're allowed to: your own uploads, free/CC music, or what your local law
-  permits for personal use.
+[`.github/workflows/build-apps.yml`](.github/workflows/build-apps.yml) runs the tests, builds the
+Windows and Mac apps with PyInstaller ([`packaging/swimtunes.spec`](packaging/swimtunes.spec)), checks
+each one with `doctor`, and publishes them as a GitHub release. It runs on every code change and once a month,
+so the apps always include a recent yt-dlp. To build locally: `pip install . pyinstaller pillow && pyinstaller packaging/swimtunes.spec`.
 
-## Tests
+### Tests
 
 ```bash
-pip install pytest && pytest
+pip install -e ".[test]" && pytest
 ```

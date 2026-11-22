@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from swimtunes import device, spotify
+from swimtunes import device, spotify, tools
 from swimtunes.downloader import Downloader, score_search_result, youtube_meta
 from swimtunes.library import Library, LibraryError, write_tags
 from swimtunes.text import norm_title, safe_name, same_song, song_key
 
 
 def make_audio(path: Path, seconds: float = 2, freq: int = 440) -> Path:
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"sine=f={freq}:d={seconds}",
+    subprocess.run([tools.ffmpeg_path(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"sine=f={freq}:d={seconds}",
                     "-c:a", "libmp3lame", "-b:a", "64k", str(path)], check=True)
     return path
 
@@ -260,3 +260,37 @@ def test_web(lib):
     assert job["status"] == "done", job["log"]
     assert job["result"][0]["downloaded"] == ["Daft Punk - Get Lucky"]
     assert c.delete("/api/folders/Newer").status_code == 200
+
+
+# ---------- double-click app ----------
+def test_tools_found():
+    assert tools.ffmpeg_path() and tools.deno_path()
+
+
+def test_find_drives_runs():
+    assert isinstance(device.find_drives(), list)
+
+
+def test_version_and_quit(lib):
+    from swimtunes.web import _newer, create_app
+    app = create_app(lib)
+    c = app.test_client()
+    v = c.get("/api/version").get_json()
+    assert v["app"] == "swimtunes" and v["can_quit"] is False and v["latest"] is None
+    assert c.post("/api/quit", json={}).status_code == 400   # not started by the app launcher
+    stopped = []
+    app.config["SHUTDOWN"] = lambda: stopped.append(1)
+    assert c.post("/api/quit", json={}).status_code == 200
+    time.sleep(0.5)
+    assert stopped == [1]
+    assert _newer("v0.2.10", "v0.2.9") and not _newer("v0.2.9", "v0.2.9") and not _newer("v0.2.9", "dev")
+    assert c.get("/api/drives").status_code == 200
+
+
+def test_serve_reuses_running_instance(lib, monkeypatch):
+    from swimtunes import app as appmod
+    opened = []
+    monkeypatch.setattr(appmod, "_running_swimtunes", lambda port: True)
+    monkeypatch.setattr(appmod.webbrowser, "open", opened.append)
+    assert appmod.serve(lib, port=8765) == 0
+    assert opened == ["http://localhost:8765"]

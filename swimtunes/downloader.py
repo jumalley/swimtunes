@@ -3,14 +3,13 @@ skipping anything that is already in the library."""
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from . import spotify
+from . import spotify, tools
 from .library import Library, unique_path, write_tags
 from .text import channel_artist, clean_title, norm_title, safe_name, split_artist_title
 
@@ -79,13 +78,17 @@ class Downloader:
         self.allow_dupes = allow_dupes
         self.scope = scope or cfg["dupe_scope"]
         self.log = log
-        if not shutil.which("ffmpeg"):
-            raise RuntimeError("ffmpeg is not installed. See README for how to install it.")
+        self.ffmpeg = tools.ffmpeg_path()
+        if not self.ffmpeg:
+            raise RuntimeError("ffmpeg is missing. Reinstall SwimTunes (see README).")
 
     # ----- yt-dlp wrappers (overridden in tests) -----
     def _ydl(self, **opts):
         import yt_dlp
-        return yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "noprogress": True, **opts})
+        base = {"quiet": True, "no_warnings": True, "noprogress": True, "ffmpeg_location": self.ffmpeg}
+        if deno := tools.deno_path():  # YouTube needs a JavaScript runtime
+            base["js_runtimes"] = {"deno": {"path": deno}}
+        return yt_dlp.YoutubeDL({**base, **opts})
 
     def list_entries(self, url: str) -> tuple[str, list[dict]]:
         """(playlist title, [{'id','title','channel','duration'}]) for a video or playlist URL."""
@@ -115,11 +118,12 @@ class Downloader:
 
     # ----- conversion -----
     def to_mp3(self, src: Path, dst: Path) -> None:
-        cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(src), "-vn",
+        cmd = [self.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(src), "-vn",
                "-map_metadata", "-1", "-c:a", "libmp3lame", "-b:a", f"{self.bitrate}k", "-ar", "44100", "-f", "mp3"]
         if self.normalize:
             cmd += ["-af", "loudnorm=I=-14:TP=-1.5:LRA=11"]
-        subprocess.run(cmd + [str(dst)], check=True, capture_output=True)
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # no flashing console window on Windows
+        subprocess.run(cmd + [str(dst)], check=True, capture_output=True, creationflags=flags)
 
     # ----- main entry point -----
     def download(self, url: str, folder: str | None = None) -> Result:

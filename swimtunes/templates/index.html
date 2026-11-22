@@ -41,7 +41,7 @@ h2 { font-size: 16px; margin: 0 0 12px; }
 .tabs button { border: 0; background: none; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; }
 .tabs button.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
 .badge { background: var(--danger); color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
-button, .btn { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+button, .btn { white-space: nowrap; font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
 button:hover { border-color: var(--accent); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.danger { color: var(--danger); }
@@ -69,7 +69,22 @@ td select { width: auto; padding: 3px 6px; }
 .empty { color: var(--muted); padding: 24px; text-align: center; }
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .toast.show { opacity: 1; }
-.hidden { display: none; }
+.hidden { display: none !important; }
+.head-actions { display: flex; gap: 8px; margin-left: auto; }
+.banner { background: var(--accent-soft); color: var(--text); padding: 10px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.banner a { color: var(--accent); font-weight: 600; }
+.drives { display: grid; gap: 8px; margin: 8px 0 4px; }
+.drive { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.drive:hover { border-color: var(--accent); }
+.drive.sel { border-color: var(--accent); background: var(--accent-soft); }
+.drive input { width: auto; }
+.drive b { display: block; }
+.notice { padding: 14px; border-radius: 8px; background: var(--bg); color: var(--muted); }
+details summary { cursor: pointer; color: var(--muted); margin-top: 12px; }
+.overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; z-index: 10; }
+.overlay h2 { font-size: 22px; }
+.steps { margin: 0; padding-left: 20px; color: var(--muted); }
+.steps li { margin: 4px 0; }
 .folder-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .folder-head h2 { margin: 0; }
 </style>
@@ -83,7 +98,12 @@ td select { width: auto; padding: 3px 6px; }
     <div class="stat"><b id="s-folders">–</b><small>folders</small></div>
   </div>
   <div class="cap"><small class="muted" id="s-cap">–</small><div class="bar" id="s-bar"><i></i></div></div>
+  <div class="head-actions">
+    <button onclick="openFolder2()" title="Show the MP3 files on your computer">📂 Music folder</button>
+    <button id="quit-btn" class="hidden" onclick="quitApp()">Quit</button>
+  </div>
 </header>
+<div class="banner hidden" id="update"><span>🎉 A new version of SwimTunes is available.</span><a id="update-link" href="#" target="_blank" rel="noopener">Download it</a><span class="muted">(then replace the old app with it)</span></div>
 
 <div class="layout">
   <aside>
@@ -94,7 +114,8 @@ td select { width: auto; padding: 3px 6px; }
     </div>
     <div class="panel">
       <h2>Download</h2>
-      <label>YouTube or Spotify links (one per line)</label>
+      <p class="muted" style="margin:0 0 4px">On YouTube or Spotify, click <b>Share → Copy link</b>, then paste it here. Playlists work too.</p>
+      <label>Links (one per line)</label>
       <textarea id="urls" placeholder="https://www.youtube.com/playlist?list=...&#10;https://open.spotify.com/playlist/..."></textarea>
       <label>Into folder</label>
       <input id="dl-folder" list="folder-names" placeholder="Leave empty = playlist name">
@@ -141,17 +162,25 @@ td select { width: auto; padding: 3px 6px; }
 
     <section id="tab-device" class="panel hidden">
       <h2>Copy to earphones</h2>
-      <p class="muted">Plug in the earphones. They show up as a USB drive (e.g. <code>E:\</code> on Windows, <code>/Volumes/SWIM</code> on Mac). Folders that changed are copied in playlist order, because the earphones play songs in the order they were copied. Mac “._” junk files are cleaned up.</p>
-      <label>Earphones drive path</label>
-      <input id="device-path" placeholder="/Volumes/SWIM  or  E:\">
-      <label class="check"><input type="checkbox" id="mirror"> Also remove folders from the earphones that aren't in my library</label>
-      <div class="row" style="margin-top:12px"><button class="primary" id="sync-btn" onclick="startSync()">Sync now</button></div>
+      <ol class="steps">
+        <li>Connect the earphones to your computer with their charging cable.</li>
+        <li>Wait a few seconds, then pick them below and click <b>Copy to earphones</b>.</li>
+        <li>When it says <i>Sync finished</i>, eject the earphones before unplugging them.</li>
+      </ol>
+      <div class="row" style="margin-top:14px"><h2 style="margin:0">Your earphones</h2><button onclick="loadDrives()">↻ Look again</button></div>
+      <div class="drives" id="drives"></div>
+      <details id="manual"><summary>Not in the list? Type the location yourself</summary>
+        <input id="device-path" placeholder="E:\  on Windows,  /Volumes/SWIM  on Mac" style="margin-top:8px">
+      </details>
+      <label class="check"><input type="checkbox" id="mirror"> Also remove folders from the earphones that aren't in SwimTunes</label>
+      <p class="muted" style="font-size:12px">Only folders that changed are copied. Songs are copied in playlist order, because the earphones play them in the order they were copied.</p>
+      <div class="row" style="margin-top:12px"><button class="primary" id="sync-btn" onclick="startSync()">Copy to earphones</button></div>
       <div class="log" id="sync-log"></div>
     </section>
 
     <section id="tab-settings" class="panel hidden">
       <h2>Settings</h2>
-      <label>Library folder</label><input id="cfg-root" disabled>
+      <label>Your music is saved in</label><div class="row"><input id="cfg-root" disabled><button onclick="openFolder2()">Open</button></div>
       <div class="row">
         <div><label>Earphone capacity (GB)</label><select id="cfg-capacity_gb"><option value="4">4 GB (OpenSwim)</option><option value="32">32 GB (OpenSwim Pro)</option><option value="8">8 GB</option><option value="16">16 GB</option></select></div>
         <div><label>MP3 quality</label><select id="cfg-bitrate"><option value="128">128 kbps (more songs)</option><option value="192">192 kbps (recommended)</option><option value="256">256 kbps</option><option value="320">320 kbps (best)</option></select></div>
@@ -161,11 +190,13 @@ td select { width: auto; padding: 3px 6px; }
         <div><label>Volume</label><select id="cfg-normalize"><option value="false">Keep original loudness</option><option value="true">Even out loudness between songs</option></select></div>
       </div>
       <div class="row" style="margin-top:16px"><button class="primary" onclick="saveSettings()">Save</button><button class="danger" onclick="emptyTrash()">Empty trash</button></div>
-      <p class="muted">Deleted songs and folders go to <code>.trash</code> inside the library until you empty it.</p>
+      <p class="muted">Deleted songs and folders go to <code>.trash</code> inside the music folder until you empty it.</p>
+      <p class="muted" id="version-line"></p>
     </section>
   </main>
 </div>
 <div class="toast" id="toast"></div>
+<div class="overlay hidden" id="overlay"><div><h2 id="ov-title">SwimTunes is closed</h2><p class="muted" id="ov-text">To use it again, open the SwimTunes app. You can close this tab.</p></div></div>
 
 <script>
 let LIB = null, CURRENT = null, SONGS = [], SELECTED = new Set();
@@ -177,8 +208,15 @@ const longDur = s => { s = Math.round(s||0); const h = Math.floor(s/3600), m = M
 const size = b => b >= 1e9 ? (b/1e9).toFixed(2)+' GB' : (b/1e6).toFixed(1)+' MB';
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2500); }
+function showClosed(title, text) {
+  if (title) $('ov-title').textContent = title;
+  if (text) $('ov-text').textContent = text;
+  $('overlay').classList.remove('hidden');
+}
 async function api(path, opts = {}) {
-  const r = await fetch(path, { headers: {'Content-Type': 'application/json'}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  let r;
+  try { r = await fetch(path, { headers: {'Content-Type': 'application/json'}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined }); }
+  catch (e) { showClosed('SwimTunes has stopped', 'To use it again, open the SwimTunes app. You can close this tab.'); throw e; }
   const data = await r.json();
   if (!r.ok) { toast(data.error || 'Something went wrong'); throw new Error(data.error); }
   return data;
@@ -201,7 +239,6 @@ async function loadLibrary() {
   $('folders').querySelectorAll('li').forEach(li => li.onclick = () => openFolder(li.dataset.f || null));
   for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
   $('cfg-root').value = LIB.root;
-  if (!$('device-path').value) $('device-path').value = LIB.config.device_path || '';
   $('dupe-scope').value = $('dupe-scope').dataset.touched ? $('dupe-scope').value : LIB.config.dupe_scope;
 }
 
@@ -304,8 +341,21 @@ async function startDownload() {
   const r = await api('/api/download', { method: 'POST', body: { urls: $('urls').value, folder: $('dl-folder').value, allow_dupes: $('allow-dupes').checked } });
   followJob(r.id, $('dl-log'), $('dl-btn'));
 }
+let DRIVE = null;
+async function loadDrives() {
+  const drives = await api('/api/drives');
+  const saved = LIB?.config.device_path;
+  if (!drives.some(d => d.path === DRIVE)) DRIVE = (drives.find(d => d.path === saved) || drives.find(d => d.likely) || (drives.length === 1 ? drives[0] : null))?.path ?? null;
+  $('drives').innerHTML = drives.length ? drives.map(d => `<label class="drive ${d.path === DRIVE ? 'sel' : ''}">
+      <input type="radio" name="drive" value="${esc(d.path)}" ${d.path === DRIVE ? 'checked' : ''}>
+      <span><b>${esc(d.label)}</b><small class="muted">${esc(d.path)} · ${size(d.total - d.free)} used of ${size(d.total)}</small></span></label>`).join('')
+    : `<div class="notice">No earphones found. Connect them with the charging cable, wait a few seconds, then click <b>Look again</b>.</div>`;
+  $('drives').querySelectorAll('input[name=drive]').forEach(r => r.onchange = () => { DRIVE = r.value; $('device-path').value = ''; loadDrives(); });
+}
 async function startSync() {
-  const r = await api('/api/sync', { method: 'POST', body: { device: $('device-path').value, mirror: $('mirror').checked } });
+  const device = $('device-path').value.trim() || DRIVE;
+  if (!device) { toast('Pick your earphones first'); return; }
+  const r = await api('/api/sync', { method: 'POST', body: { device, mirror: $('mirror').checked } });
   followJob(r.id, $('sync-log'), $('sync-btn'));
 }
 async function saveSettings() {
@@ -319,10 +369,27 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + b.dataset.tab));
   if (b.dataset.tab === 'dupes') loadDupes();
+  if (b.dataset.tab === 'device') loadDrives();
 });
 $('dupe-scope').addEventListener('change', e => e.target.dataset.touched = 1);
 $('new-folder').onkeydown = e => { if (e.key === 'Enter') createFolder(); };
-refresh();
+async function openFolder2() { await api('/api/open', { method: 'POST', body: {} }); }
+async function quitApp() {
+  let r = await fetch('/api/quit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+  if (!r.ok) {
+    if (!confirm('A download or copy is still running. Quit anyway?')) return;
+    await fetch('/api/quit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{"force":true}' });
+  }
+  showClosed('SwimTunes is closed', 'To use it again, open the SwimTunes app. You can close this tab.');
+}
+async function loadVersion() {
+  const v = await api('/api/version');
+  $('quit-btn').classList.toggle('hidden', !v.can_quit);
+  $('version-line').textContent = 'SwimTunes ' + (v.tag !== 'dev' ? v.tag : v.version);
+  if (v.latest) { $('update').classList.remove('hidden'); $('update-link').href = v.download; $('update-link').textContent = 'Download ' + v.latest; }
+}
+setInterval(() => { if ($('overlay').classList.contains('hidden')) api('/api/ping', { method: 'POST' }).catch(() => {}); }, 30000);
+refresh().then(loadVersion);
 </script>
 </body>
 </html>

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-import webbrowser
 
 from . import __version__, device
 from .library import Library, LibraryError
@@ -128,14 +127,38 @@ def cmd_trash(lib, a):
     return 0
 
 
+def cmd_doctor(lib, a):
+    """Check that everything SwimTunes needs is there."""
+    import subprocess
+    import yt_dlp
+    from . import TAG, __version__, tools
+    ok = True
+    print(f"SwimTunes   {TAG if TAG != 'dev' else __version__}")
+    print(f"Music folder {lib.root}")
+    print(f"yt-dlp      {yt_dlp.version.__version__}")
+    for name, path, args in (("ffmpeg", tools.ffmpeg_path(), ["-version"]), ("deno", tools.deno_path(), ["--version"])):
+        version = ""
+        if path:
+            try:
+                out = subprocess.run([path, *args], capture_output=True, text=True, timeout=60).stdout
+                version = out.splitlines()[0] if out else ""
+            except Exception as e:
+                version = f"FAILED TO RUN: {e}"
+        print(f"{name:<11} {version or 'MISSING'}  ({path or '-'})")
+        ok = ok and bool(version) and not version.startswith("FAILED")
+    try:
+        import yt_dlp_ejs  # noqa: F401  (YouTube challenge solver scripts)
+        print("yt-dlp-ejs  ok")
+    except ImportError:
+        print("yt-dlp-ejs  MISSING")
+        ok = False
+    print("All good!" if ok else "Something is missing: YouTube downloads may fail.")
+    return 0 if ok else 1
+
+
 def cmd_ui(lib, a):
-    from .web import create_app
-    url = f"http://localhost:{a.port}"
-    print(f"SwimTunes dashboard: {url}   (library: {lib.root})\nPress Ctrl+C to stop.")
-    if not a.no_browser:
-        webbrowser.open(url)
-    create_app(lib).run(host="127.0.0.1", port=a.port, debug=False, threaded=True)
-    return 0
+    from .app import serve
+    return serve(lib, port=a.port, open_browser=not a.no_browser)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -189,6 +212,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(fn=cmd_config)
 
     sub.add_parser("empty-trash", help="permanently delete trashed songs").set_defaults(fn=cmd_trash)
+
+    sub.add_parser("doctor", help="check that ffmpeg, deno and yt-dlp are installed").set_defaults(fn=cmd_doctor)
 
     u = sub.add_parser("ui", help="open the web dashboard")
     u.add_argument("--port", type=int, default=8765)

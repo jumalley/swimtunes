@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -86,3 +87,90 @@ def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, 
         os.sync()
     log("Sync finished. Eject the earphones before unplugging.")
     return summary
+
+
+# ---------- finding the earphones ----------
+_SWIM_HINTS = ("swim", "shokz", "openswim", "aftershokz")
+
+
+def _usage(path: str) -> tuple[int, int]:
+    try:
+        u = shutil.disk_usage(path)
+        return u.total, u.free
+    except OSError:
+        return 0, 0
+
+
+def _windows_drives() -> list[dict]:
+    import ctypes
+    k32 = ctypes.windll.kernel32
+    mask = k32.GetLogicalDrives()
+    out = []
+    old_mode = k32.SetErrorMode(1)  # no "insert a disk" pop-ups for empty card readers
+    try:
+        out = _windows_scan(k32, mask)
+    finally:
+        k32.SetErrorMode(old_mode)
+    return out
+
+
+def _windows_scan(k32, mask) -> list[dict]:
+    import ctypes
+    import string
+    out = []
+    for i, letter in enumerate(string.ascii_uppercase):
+        if not (mask >> i) & 1:
+            continue
+        root = f"{letter}:\\"
+        if k32.GetDriveTypeW(ctypes.c_wchar_p(root)) != 2:  # 2 = removable (USB)
+            continue
+        buf = ctypes.create_unicode_buffer(261)
+        ok = k32.GetVolumeInformationW(ctypes.c_wchar_p(root), buf, 261, None, None, None, None, 0)
+        if not ok:  # e.g. empty card reader slot
+            continue
+        out.append({"path": root, "label": buf.value or "USB drive"})
+    return out
+
+
+def _mac_drives() -> list[dict]:
+    out = []
+    vol = Path("/Volumes")
+    if vol.is_dir():
+        for d in vol.iterdir():
+            try:
+                if os.path.realpath(d) == "/" or not os.path.ismount(d):
+                    continue
+            except OSError:
+                continue
+            out.append({"path": str(d), "label": d.name})
+    return out
+
+
+def _linux_drives() -> list[dict]:
+    user = os.environ.get("USER") or ""
+    out = []
+    for base in (Path("/media") / user, Path("/run/media") / user, Path("/media")):
+        if base.is_dir():
+            for d in base.iterdir():
+                if d.is_dir() and os.path.ismount(d) and not any(x["path"] == str(d) for x in out):
+                    out.append({"path": str(d), "label": d.name})
+    return out
+
+
+def find_drives() -> list[dict]:
+    """USB drives that could be the earphones, most likely first."""
+    try:
+        if os.name == "nt":
+            drives = _windows_drives()
+        elif sys.platform == "darwin":
+            drives = _mac_drives()
+        else:
+            drives = _linux_drives()
+    except Exception:
+        drives = []
+    for d in drives:
+        d["total"], d["free"] = _usage(d["path"])
+        d["likely"] = any(h in d["label"].lower() for h in _SWIM_HINTS)
+    drives = [d for d in drives if d["total"]]
+    drives.sort(key=lambda d: (not d["likely"], d["total"] > 64e9, d["label"].lower()))
+    return drives
