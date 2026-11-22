@@ -218,8 +218,27 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 job["current"] = f"{it['artist']} - {it['title']}" if it["artist"] else it["title"]
                 job["current_id"] = it["id"]
                 it["state"] = "looking"
+                if it.get("needs_details") and it.get("video_id"):
+                    it["state"] = "reading"          # the playlist said too little: read the video's page
+                    d.add_details(it)
+                    job["current"] = f"{it['artist']} - {it['title']}" if it["artist"] else it["title"]
+                    if it.get("unavailable"):
+                        it["state"] = "unavailable"
+                        job["recent"].append(it["id"])
+                        progress(i, len(new))
+                        continue
+                    it["state"] = "looking"
+                if it.get("unknown"):               # still only a video code: nothing to look up
+                    it["meta"], it["state"] = None, "unknown"
+                    job["recent"].append(it["id"])
+                    progress(i, len(new))
+                    continue
                 try:
-                    it["meta"] = look.lookup(it["artist"], it["title"])
+                    it["meta"] = look.lookup(it["artist"], it["title"],
+                                             {"reliable": it.get("reliable", True), "alt": it.get("alt"), "text": it.get("text", "")})
+                    if it["meta"].pop("swapped", False):   # it was "Song - Artist"
+                        it["artist"], it["title"] = it["title"], it["artist"]
+                        it["reliable"] = True
                     it["meta"]["country_name"] = country_name(it["meta"].get("country", ""))
                     it["state"] = "found" if (it["meta"].get("genre") or it["meta"].get("tags")) else "unknown"
                 except Exception as e:
@@ -233,6 +252,20 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             log(msg("log.pv_ready", "Ready. Check the list, choose how to sort, then download."))
             return {"name": job["name"] or "Downloads", "items": items}
         return start_job("preview", fn)
+
+    @app.post("/api/lookup")
+    def lookup_one():
+        """Look up one song again, after the user corrected its artist or title."""
+        b = body()
+        title = (b.get("title") or "").strip()
+        if not title:
+            return err(msg("err.no_title", "Type the song's title"))
+        look = lookup()
+        info = look.lookup((b.get("artist") or "").strip(), title, {"reliable": True, "text": b.get("text", "")})
+        info.pop("swapped", None)
+        info["country_name"] = country_name(info.get("country", ""))
+        look.save()
+        return jsonify({"meta": info, "state": "found" if (info.get("genre") or info.get("tags")) else "unknown"})
 
     @app.post("/api/sort")
     def sort():

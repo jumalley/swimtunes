@@ -132,6 +132,12 @@ Settings → Updates). New versions are built automatically every month.
 [MusicBrainz](https://musicbrainz.org) (styles, country). Both are free and need no account. Lookups are saved,
 so each song is looked up only once.
 
+**A song has wrong or missing genre info.** Music databases don't know every song (soundtracks, fan uploads…).
+SwimTunes then guesses from the title, channel and YouTube tags (soundtrack, anime, nightcore, lo-fi…), marked with a
+small wand. Click the **pencil** next to a song to correct its artist or title and look it up again.
+
+**Some songs say "Unavailable on YouTube".** The video is private or was deleted. It's unticked and skipped.
+
 **My Spotify playlist only shows about 100 songs.** Spotify only shows the first ~100 songs to apps like this.
 For longer playlists, convert the playlist to YouTube with [playlistbuddy.com](https://playlistbuddy.com) and paste the YouTube playlist link instead.
 

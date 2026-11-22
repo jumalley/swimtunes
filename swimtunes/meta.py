@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 from . import REPO, __version__
-from .text import has_cyrillic, norm_artist, similar, song_key
+from .text import has_cyrillic, has_japanese, norm_artist, similar, song_key
 
 UA = f"SwimTunes/{__version__} (https://github.com/{REPO})"
 _BRACKETS = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]")
@@ -90,34 +90,66 @@ class MetaLookup:
                 tmp.replace(self.cache_path)
 
     # ----- public -----
-    def lookup(self, artist: str, title: str) -> dict:
-        key = " | ".join(song_key(artist, title))
-        if key in self.cache["songs"]:
-            return dict(self.cache["songs"][key])
+    def lookup(self, artist: str, title: str, hints: dict | None = None) -> dict:
+        """Genre, tempo, year, styles and country of a song.
+
+        hints (all optional):
+          reliable - False when `artist` is only a guess (e.g. the YouTube channel's name)
+          alt      - [artist, title] to try if nothing is found (the two halves swapped)
+          text     - other words about the song (channel, YouTube tags) used to guess the style
+        """
+        hints = hints or {}
+        reliable = hints.get("reliable", True) and bool(artist)
+        alt = hints.get("alt")
+        key = " | ".join(song_key(artist if reliable else "", title)) + ("" if reliable else " | ?")
+        if alt:
+            key += " | alt"
+        with self.lock:
+            cached = self.cache["songs"].get(key)
+        info = dict(cached) if cached is not None else self._db_lookup(artist if reliable else "", title, alt, key)
+        return finish(info, artist, title, hints.get("text", ""))
+
+    def _db_lookup(self, artist: str, title: str, alt, key: str) -> dict:
         info = dict(EMPTY, tags=[])
         failed = []  # a source that is down shouldn't lose what the other one found
+        attempts = [(artist, title)]
+        if alt and alt[0] and alt[1]:
+            attempts.append((alt[0], alt[1]))
+        dz, used = {}, None
         try:
-            dz = self._deezer(artist, title)
+            for a, t in attempts:
+                dz = self._deezer(a, t)
+                if dz:
+                    used = (a, t)
+                    break
         except Exception as e:
             dz, failed = {}, failed + [f"Deezer: {e}"]
-        info.update({k: dz[k] for k in ("genre", "bpm", "year") if dz.get(k)})
-        dz_artist = dz.get("artist") or artist
+        # Found with the title alone: maybe a cover by someone else, so only trust the genre
+        maybe_cover = bool(dz) and not used[0]
+        info.update({k: dz[k] for k in (("genre",) if maybe_cover else ("genre", "bpm", "year")) if dz.get(k)})
+        if maybe_cover:
+            info["maybe_cover"] = True
+        if used and used != attempts[0]:
+            info["swapped"] = True   # "Song - Artist": the halves were the other way round
+        main_artist = used[0] if used and used[0] else artist
+        dz_artist = "" if maybe_cover else (dz.get("artist") or "")
         mb = {}
         try:
-            mb = self.artist_info(artist) if artist else {}
-            if not mb.get("found") and dz_artist and dz_artist != artist:
+            if main_artist:
+                mb = self.artist_info(main_artist)
+            if not mb.get("found") and dz_artist and dz_artist != main_artist:
                 mb = self.artist_info(dz_artist)
         except Exception as e:
             failed.append(f"MusicBrainz: {e}")
         info["tags"] = mb.get("tags", [])
         info["country"] = mb.get("country", "")
-        info["cyrillic"] = any(has_cyrillic(s) for s in (artist, title, dz.get("title"), dz_artist, mb.get("name")))
+        info["cyrillic"] = any(has_cyrillic(x) for x in (dz.get("title") if not maybe_cover else "", dz_artist, mb.get("name")))
         if not info["genre"] and info["tags"]:
             info["genre"] = info["tags"][0].title()
         if failed:
             if not dz and not mb:
                 raise RuntimeError("; ".join(failed))
-            return dict(info)  # partial: not cached, so it is looked up again next time
+            return info  # partial: not cached, so it is looked up again next time
         with self.lock:
             self.cache["songs"][key] = info
         return dict(info)
@@ -165,7 +197,8 @@ class MetaLookup:
             if artist and a_sim < 0.6:
                 a_sim = max(a_sim, similar(norm_artist(artist), norm_artist(ra)))
             score = t_sim + a_sim - i * 0.02
-            if t_sim >= 0.7 and a_sim >= 0.6 and score > best_score:
+            need = 0.7 if artist else 0.85   # without an artist, the title must match closely
+            if t_sim >= need and a_sim >= 0.6 and score > best_score:
                 best, best_score = r, score
         if not best:
             return {}
@@ -207,6 +240,61 @@ def decade_label(year, labels: dict | None = None) -> str:
     return f"{year // 10 * 10}s" if year else (labels or default_labels())["unknown_year"]
 
 
+# ---------- guessing from the words around a song ----------
+_ANIME = (r"dragon ?ball|\bdbz\b|\bnaruto|boruto|one piece|\bbleach\b|my hero academia|boku no hero|attack on titan|"
+          r"shingeki|demon slayer|kimetsu|jujutsu|tokyo ghoul|death note|hunter ?x ?hunter|fullmetal|evangelion|"
+          r"cowboy bebop|sword art online|fairy tail|\bjojo|chainsaw man|spy ?x ?family|haikyu|mob psycho|one punch|"
+          r"berserk|vinland|gintama|ghibli|spirited away|totoro|kimi no na wa|your name|pok[eé]mon|digimon|"
+          r"sailor moon|code geass|steins|re: ?zero|black clover|solo leveling|frieren|blue lock|\banime\b|\bamv\b|"
+          r"\bopening \d|\bending \d|\bop ?\d+\b|\bed ?\d+\b")
+GUESSES = [  # (pattern, genre or None, style)
+    (r"\bnightcore\b", None, "nightcore"),
+    (r"\bsped ?up\b|\bspeed ?up\b", None, "sped up"),
+    (r"\bslowed\b", None, "slowed"),
+    (_ANIME, "Soundtrack", "anime"),
+    (r"\bo\.?s\.?t\b|soundtrack|\bbgm\b|original score|main theme|\btheme\b", "Soundtrack", "soundtrack"),
+    (r"video ?game|game music|\bgaming\b|\b8[- ]?bit\b|chiptune", "Soundtrack", "video game music"),
+    (r"\blo-?fi\b", "Electronic", "lo-fi"),
+    (r"\bphonk\b", "Electronic", "phonk"),
+    (r"synthwave|retrowave|outrun", "Electronic", "synthwave"),
+    (r"vaporwave", "Electronic", "vaporwave"),
+    (r"epic music|orchestral|trailer music|cinematic", "Soundtrack", "epic orchestral"),
+    (r"\bk-?pop\b", "Pop", "k-pop"),
+    (r"\bj-?pop\b", "Pop", "j-pop"),
+    (r"\bj-?rock\b", "Rock", "j-rock"),
+]
+_GUESSES = [(re.compile(p, re.I), g, t) for p, g, t in GUESSES]
+
+
+def guess_from_text(text: str) -> dict:
+    """Genre and styles that the title, channel or YouTube tags give away
+    (soundtracks, anime, nightcore, lo-fi…) for songs the music databases don't know."""
+    genre, tags = None, []
+    for rx, g, tag in _GUESSES:
+        if rx.search(text or ""):
+            genre = genre or g
+            if tag not in tags:
+                tags.append(tag)
+    return {"genre": genre, "tags": tags, "japanese": has_japanese(text)}
+
+
+def finish(info: dict, artist: str, title: str, text: str = "") -> dict:
+    """Add what the words around the song give away to what the databases found."""
+    out = dict(info, tags=list(info.get("tags", [])))
+    g = guess_from_text(" ".join((artist or "", title or "", text or "")))
+    if g["tags"]:
+        out["tags"] = g["tags"] + [t for t in out["tags"] if t not in g["tags"]]
+    if g["genre"] and (not out.get("genre") or out.get("maybe_cover")):
+        out["genre"], out["guessed"] = g["genre"], True
+    elif not out.get("genre") and g["tags"]:
+        out["guessed"] = True
+    out["cyrillic"] = bool(out.get("cyrillic")) or has_cyrillic(f"{artist} {title}")
+    out["japanese"] = bool(out.get("japanese")) or g["japanese"]
+    if not out["tags"] and not out.get("genre"):
+        out.pop("guessed", None)
+    return out
+
+
 def facts(info: dict, artist: str = "") -> list[str]:
     """Everything a sorting rule can match on, lower case."""
     out = [info.get("genre", ""), *info.get("tags", [])]
@@ -214,6 +302,8 @@ def facts(info: dict, artist: str = "") -> list[str]:
         out += [info["country"], country_name(info["country"])]
     if info.get("cyrillic"):
         out.append("cyrillic")
+    if info.get("japanese"):
+        out.append("japanese")
     if artist:
         out.append(artist)
     return [f.lower() for f in out if f]

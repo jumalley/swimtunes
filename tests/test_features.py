@@ -107,7 +107,7 @@ def test_meta_lookup(tmp_path):
     m = MetaLookup(tmp_path / "cache.json", fetch=fake_fetch)
     info = m.lookup("Molchat Doma", "Sudno")
     assert info == {"genre": "Rock", "bpm": None, "year": 2018, "tags": ["post-punk", "coldwave"],
-                    "country": "BY", "cyrillic": True}
+                    "country": "BY", "cyrillic": True, "japanese": False}
     m.save()
     again = MetaLookup(tmp_path / "cache.json", fetch=lambda *a: pytest.fail("should use cache"))
     assert again.lookup("Molchat Doma", "Sudno (Official Video)")["genre"] == "Rock"
@@ -192,7 +192,7 @@ def test_preview_sort_download(lib):
     meta = {"Daft Punk": POP, "Get Lucky": POP}
 
     class FakeLookup:
-        def lookup(self, artist, title):
+        def lookup(self, artist, title, hints=None):
             return dict(RUSKI if "Lucky" in title else POP)
 
         def save(self):

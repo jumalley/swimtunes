@@ -65,7 +65,7 @@ function folderLabels(metas = []) {
   const codes = [...new Set(metas.filter(m => m && m.country).map(m => m.country))];
   return { other: t('fl.other'), unknown_tempo: t('fl.unknown_tempo'), easy: t('fl.easy'), steady: t('fl.steady'),
     fast: t('fl.fast'), sprint: t('fl.sprint'), unknown_year: t('fl.unknown_year'), unknown_artist: t('fl.unknown_artist'),
-    russian_language: t('fl.russian_language'), downloads: t('fl.downloads'),
+    russian_language: t('fl.russian_language'), japanese_language: t('fl.japanese_language'), downloads: t('fl.downloads'),
     countries: Object.fromEntries(codes.map(c => [c, countryName(c)])) };
 }
 
@@ -110,6 +110,7 @@ const SPIN = ICON('fa-solid fa-circle-notch fa-spin');
 function metaCells(m, withYear = true, state = null) {
   if (state === 'waiting') return `<td colspan="${withYear ? 5 : 4}"><span class="state">${ICON('fa-regular fa-clock')}${t('st.lookup_waiting')}</span></td>`;
   if (state === 'looking') return `<td colspan="${withYear ? 5 : 4}"><span class="state busy">${SPIN}${t('st.looking')}</span></td>`;
+  if (state === 'reading') return `<td colspan="${withYear ? 5 : 4}"><span class="state busy">${ICON('fa-brands fa-youtube fa-fade')}${t('st.reading')}</span></td>`;
   if (!m && state === 'have') return `<td colspan="${withYear ? 5 : 4}" class="muted">–</td>`;
   if (!m) {
     const why = state === 'error' ? t('st.lookup_failed') : state === 'skipped' ? t('st.lookup_skipped') : t('st.no_info');
@@ -117,8 +118,10 @@ function metaCells(m, withYear = true, state = null) {
   }
   const tags = (m.tags || []).slice(0, 2).map(x => `<span class="chip">${esc(x)}</span>`).join('');
   const bpm = m.bpm ? `${m.bpm_measured ? '~' : ''}${m.bpm}` : `<span class="muted" data-tip="tip.tempo_unknown">?</span>`;
-  const country = countryName(m.country) || (m.cyrillic ? t('fl.russian_language') : '');
-  return `<td>${esc(m.genre || '–')}</td><td>${tags}</td><td class="num">${bpm}</td>${withYear ? `<td class="num">${m.year || ''}</td>` : ''}<td>${esc(country)}</td>`;
+  const country = countryName(m.country) || (m.cyrillic ? t('fl.russian_language') : m.japanese ? t('fl.japanese_language') : '');
+  const mark = m.guessed ? ` <i class="fa-solid fa-wand-magic-sparkles muted small" data-tip="tip.guessed"></i>`
+    : m.maybe_cover ? ` <i class="fa-regular fa-circle-question muted small" data-tip="tip.maybe_cover"></i>` : '';
+  return `<td>${esc(m.genre || '–')}${mark}</td><td>${tags}</td><td class="num">${bpm}</td>${withYear ? `<td class="num">${m.year || ''}</td>` : ''}<td>${esc(country)}</td>`;
 }
 function metaChips(m) {
   if (!m) return `<span class="muted">${t('st.no_info')}</span>`;
@@ -163,6 +166,7 @@ function markNew(ctx, html, key) {
   return Date.now() - (FEED_TOP[ctx + ':t'] || 0) < 450 ? html.replace('<li>', '<li class="new">') : html;
 }
 function feedLine(song, meta, state) {
+  if (state === 'unavailable') return `<li>${ICON('fa-solid fa-ban', ' style="color:var(--danger)"')}<span class="song">${esc(song)}</span><i class="fa-solid fa-arrow-right arrow"></i><span class="chip bad">${t('st.unavailable')}</span></li>`;
   const icon = state === 'error' ? ICON('fa-solid fa-triangle-exclamation', ' style="color:var(--warn)"')
     : meta && (meta.genre || (meta.tags || []).length) ? ICON('fa-solid fa-circle-check', ' style="color:var(--ok)"')
     : ICON('fa-regular fa-circle-question', ' style="color:var(--muted)"');
@@ -308,7 +312,8 @@ async function startPreview() {
   const top = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([g, n]) => `<span class="chip info">${esc(g)} · ${n}</span>`).join('');
   $('pv-live').innerHTML = `<div class="live done-card"><div class="live-head">${ICON('fa-solid fa-circle-check', ' style="font-size:20px;color:var(--ok)"')}
     <div class="what"><b>${t('live.pv_done', { n: PV.items.length, have: PV.items.length - looked.length })}</b>
-    <small>${t('live.pv_found', { found, n: looked.length })}</small></div></div>${top ? `<div style="margin-top:8px">${top}</div>` : ''}</div>`;
+    <small>${t('live.pv_found', { found, n: looked.length })}${PV.items.some(i => i.unavailable) ? ' · ' + t('live.pv_unavailable', { n: PV.items.filter(i => i.unavailable).length }) : ''}</small>
+    <small>${t('live.pv_fix_hint')}</small></div></div>${top ? `<div style="margin-top:8px">${top}</div>` : ''}</div>`;
   $('pv-controls').classList.remove('hidden');
   fillModes($('pv-mode'), LIB.config.sort_mode);
   await applySort();
@@ -317,9 +322,14 @@ function previewUpdate(j) {
   if (!j.items) return;
   if (!PV) {
     PV = { name: j.name, items: j.items, loading: true };
-    PV.items.forEach(it => { it.checked = !it.existing; it.manual = false; });
+    PV.items.forEach(it => { it.checked = !it.existing && !it.unavailable; it.manual = false; });
   } else {
-    for (const s of j.items) Object.assign(PV.items[s.id], { state: s.state, meta: s.meta });
+    for (const s of j.items) {
+      const it = PV.items[s.id];
+      if (it.edited) continue;   // the user corrected this one by hand
+      Object.assign(it, { state: s.state, meta: s.meta, artist: s.artist, title: s.title, duration: s.duration, unavailable: s.unavailable });
+      if (s.unavailable) it.checked = false;
+    }
   }
   if (j.status === 'running' && PV.loading) {
     const [done, total] = j.progress || [0, PV.items.filter(i => !i.existing).length];
@@ -371,17 +381,44 @@ function renderPreview(nowId) {
   const have = it => it.existing === 'listed twice' ? t('pv.listed_twice') : it.existing === 'just' ? t('pv.just') : t('pv.have', { where: it.existing });
   $('pv-rows').innerHTML = rows.length ? rows.map(it => `<tr class="${it.checked || it.dl ? '' : 'dim'} ${it.id === nowId || ['downloading', 'converting', 'measuring', 'searching'].includes(it.dl?.status) ? 'now' : ''}">
     <td><input type="checkbox" data-id="${it.id}" ${it.checked ? 'checked' : ''} ${anyDl && DL_JOB ? 'disabled' : ''}></td>
-    <td class="t">${esc(it.title)}<small>${esc(it.artist)}${it.existing && !it.dl ? ` · <span class="chip warn">${esc(have(it))}</span>` : ''}</small></td>
-    ${metaCells(it.meta, true, it.existing ? 'have' : it.state)}
+    ${songCell(it, have)}
+    ${it.unavailable ? `<td colspan="5"><span class="chip bad" data-tip-raw="${esc(it.unavailable)}">${ICON('fa-solid fa-ban')}${t('st.unavailable')}</span></td>` : metaCells(it.meta, true, it.existing ? 'have' : it.state)}
     <td class="num">${dur(it.duration)}</td>
     <td>${it.dl ? dlState(it.dl)
-      : PV.loading ? '<span class="muted">–</span>'
+      : PV.loading || it.unavailable ? '<span class="muted">–</span>'
       : it.tempo_folder && !it.manual ? `<span class="chip info" data-tip="tip.by_tempo">${ICON('fa-solid fa-gauge-high')}${t('add.by_tempo')}</span>`
       : `<input class="dest" data-dest="${it.id}" value="${esc(it.folder)}" list="folder-names">`}</td></tr>`).join('')
     : `<tr><td colspan="9" class="empty">${PV.items.length ? t('add.all_have') : t('add.none_found')}</td></tr>`;
   $('pv-rows').querySelectorAll('input[data-id]').forEach(cb => cb.onchange = () => { PV.items[cb.dataset.id].checked = cb.checked; renderPreview(); });
+  $('pv-rows').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { EDITING = +b.dataset.edit; renderPreview(); $('ed-artist')?.focus(); });
+  $('pv-rows').querySelectorAll('[data-ed-cancel]').forEach(b => b.onclick = () => { EDITING = null; renderPreview(); });
+  $('pv-rows').querySelectorAll('[data-ed-save]').forEach(b => b.onclick = () => saveEdit(+b.dataset.edSave));
+  $('pv-rows').querySelectorAll('.edit-song input').forEach(inp => inp.onkeydown = e => { if (e.key === 'Enter') saveEdit(EDITING); if (e.key === 'Escape') { EDITING = null; renderPreview(); } });
   $('pv-rows').querySelectorAll('input[data-dest]').forEach(inp => inp.onchange = () => { const it = PV.items[inp.dataset.dest]; it.folder = inp.value.trim(); it.manual = true; renderSummary(); });
   renderSummary();
+}
+let EDITING = null;
+function songCell(it, have) {
+  if (EDITING === it.id) return `<td class="t edit-song"><div class="row" style="gap:6px;flex-wrap:nowrap">
+      <input id="ed-artist" value="${esc(it.artist)}" placeholder="${esc(t('pv.artist_ph'))}" style="min-width:110px">
+      <input id="ed-title" value="${esc(it.title)}" placeholder="${esc(t('pv.title_ph'))}" style="min-width:140px">
+      <button class="small primary" data-ed-save="${it.id}" data-tip="tip.save_lookup">${ICON('fa-solid fa-check')}</button>
+      <button class="small" data-ed-cancel="1">${ICON('fa-solid fa-xmark')}</button></div></td>`;
+  const canEdit = !it.existing && !it.dl && !PV.loading && !it.unavailable;
+  return `<td class="t">${esc(it.title)}${canEdit ? ` <button class="small" style="padding:1px 6px;border:0" data-edit="${it.id}" data-tip="tip.edit_song">${ICON('fa-solid fa-pen muted')}</button>` : ''}
+    <small>${esc(it.artist)}${it.existing && !it.dl ? ` · <span class="chip warn">${esc(have(it))}</span>` : ''}</small></td>`;
+}
+async function saveEdit(id) {
+  const it = PV.items[id];
+  const artist = $('ed-artist').value.trim(), title = $('ed-title').value.trim();
+  if (!title) { toast(t('err.no_title')); return; }
+  it.state = 'looking'; EDITING = null; renderPreview();
+  try {
+    const r = await api('/api/lookup', { method: 'POST', body: { artist, title, text: it.text || '' } });
+    Object.assign(it, { artist, title, meta: r.meta, state: r.state, edited: true, reliable: true });
+    toast(t('pv.updated', { song: `${artist ? artist + ' – ' : ''}${title}` }));
+  } catch (e) { it.state = 'error'; }
+  if (!it.manual) await applySort(); else renderPreview();
 }
 function summarize(items, key) {
   const groups = {};
@@ -407,7 +444,7 @@ function renderSummary() {
 }
 function checkAll(on) { if (!PV) return; PV.items.forEach(it => { if (!it.existing || $('pv-show-have').checked) it.checked = on; }); renderPreview(); }
 async function startDownload() {
-  const chosen = PV.items.filter(it => it.checked);
+  const chosen = PV.items.filter(it => it.checked && !it.unavailable);
   const items = chosen.map(it => ({ id: it.id, kind: it.kind, video_id: it.video_id, artist: it.artist, title: it.title,
     duration: it.duration, meta: it.meta, folder: it.folder, tempo_folder: it.tempo_folder && !it.manual }));
   const missing = items.find(it => !it.folder && !it.tempo_folder);

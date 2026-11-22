@@ -973,3 +973,59 @@ I18N.pt = {
   'tip.dst_only_on_earphones': 'Esta pasta existe só nos seus fones. Importe-a para gerenciá-la no SwimTunes.',
   'tip.dst_only_in_swimtunes': 'Esta pasta ainda não está nos seus fones. Copie para os fones para adicioná-la.',
 };
+
+/* Song discovery (v0.5) */
+Object.assign(I18N.en, {
+  'st.reading': 'Reading the YouTube page…', 'st.unavailable': 'Unavailable on YouTube (private or deleted)',
+  'tip.guessed': 'Guessed from the title, channel and YouTube tags: the music databases don’t know this song.',
+  'tip.maybe_cover': 'Only the genre is used: the match was found by title alone and could be a cover by someone else.',
+  'live.pv_unavailable': '{n} unavailable on YouTube|{n} unavailable on YouTube', 'live.pv_fix_hint': 'Wrong or missing info? Click the pencil next to a song to correct its artist or title.',
+  'pv.artist_ph': 'Artist', 'pv.title_ph': 'Title', 'pv.updated': 'Looked up again: {song}',
+  'tip.save_lookup': 'Save and look this song up again', 'tip.edit_song': 'Correct the artist or title and look the song up again',
+  'fl.japanese_language': 'Japanese-language', 'err.no_title': "Type the song's title",
+});
+Object.assign(I18N.fr, {
+  'st.reading': 'Lecture de la page YouTube…', 'st.unavailable': 'Indisponible sur YouTube (privée ou supprimée)',
+  'tip.guessed': 'Deviné d’après le titre, la chaîne et les tags YouTube : les bases de données musicales ne connaissent pas ce titre.',
+  'tip.maybe_cover': 'Seul le genre est utilisé : la correspondance a été trouvée par le titre seul et pourrait être une reprise par quelqu’un d’autre.',
+  'live.pv_unavailable': '{n} indisponible sur YouTube|{n} indisponibles sur YouTube', 'live.pv_fix_hint': 'Infos fausses ou manquantes ? Cliquez sur le crayon à côté d’un titre pour corriger l’artiste ou le titre.',
+  'pv.artist_ph': 'Artiste', 'pv.title_ph': 'Titre', 'pv.updated': 'Nouvelle recherche : {song}',
+  'tip.save_lookup': 'Enregistrer et rechercher à nouveau ce titre', 'tip.edit_song': 'Corriger l’artiste ou le titre et relancer la recherche',
+  'fl.japanese_language': 'En japonais', 'err.no_title': 'Tapez le titre du morceau',
+});
+Object.assign(I18N.es, {
+  'st.reading': 'Leyendo la página de YouTube…', 'st.unavailable': 'No disponible en YouTube (privado o eliminado)',
+  'tip.guessed': 'Deducido del título, el canal y las etiquetas de YouTube: las bases de datos musicales no conocen esta canción.',
+  'tip.maybe_cover': 'Solo se usa el género: la coincidencia se encontró solo por el título y podría ser una versión de otra persona.',
+  'live.pv_unavailable': '{n} no disponible en YouTube|{n} no disponibles en YouTube', 'live.pv_fix_hint': '¿Información errónea o incompleta? Pulsa el lápiz junto a una canción para corregir el artista o el título.',
+  'pv.artist_ph': 'Artista', 'pv.title_ph': 'Título', 'pv.updated': 'Buscada de nuevo: {song}',
+  'tip.save_lookup': 'Guardar y volver a buscar esta canción', 'tip.edit_song': 'Corregir el artista o el título y volver a buscar la canción',
+  'fl.japanese_language': 'En japonés', 'err.no_title': 'Escribe el título de la canción',
+});
+Object.assign(I18N.de, {
+  'st.reading': 'YouTube-Seite wird gelesen…', 'st.unavailable': 'Auf YouTube nicht verfügbar (privat oder gelöscht)',
+  'tip.guessed': 'Aus Titel, Kanal und YouTube-Tags erraten: Die Musikdatenbanken kennen diesen Titel nicht.',
+  'tip.maybe_cover': 'Nur das Genre wird verwendet: Der Treffer wurde nur über den Titel gefunden und könnte eine Coverversion sein.',
+  'live.pv_unavailable': '{n} auf YouTube nicht verfügbar|{n} auf YouTube nicht verfügbar', 'live.pv_fix_hint': 'Falsche oder fehlende Infos? Klicke auf den Stift neben einem Titel, um Künstler oder Titel zu korrigieren.',
+  'pv.artist_ph': 'Künstler', 'pv.title_ph': 'Titel', 'pv.updated': 'Erneut gesucht: {song}',
+  'tip.save_lookup': 'Speichern und diesen Titel erneut suchen', 'tip.edit_song': 'Künstler oder Titel korrigieren und den Titel erneut suchen',
+  'fl.japanese_language': 'Auf Japanisch', 'err.no_title': 'Gib den Titel des Songs ein',
+});
+Object.assign(I18N.it, {
+  'st.reading': 'Lettura della pagina YouTube…', 'st.unavailable': 'Non disponibile su YouTube (privato o eliminato)',
+  'tip.guessed': 'Dedotto da titolo, canale e tag di YouTube: i database musicali non conoscono questo brano.',
+  'tip.maybe_cover': 'Viene usato solo il genere: la corrispondenza è stata trovata solo dal titolo e potrebbe essere una cover di qualcun altro.',
+  'live.pv_unavailable': '{n} non disponibile su YouTube|{n} non disponibili su YouTube', 'live.pv_fix_hint': 'Informazioni sbagliate o mancanti? Fai clic sulla matita accanto a un brano per correggere artista o titolo.',
+  'pv.artist_ph': 'Artista', 'pv.title_ph': 'Titolo', 'pv.updated': 'Cercato di nuovo: {song}',
+  'tip.save_lookup': 'Salva e cerca di nuovo questo brano', 'tip.edit_song': 'Correggi artista o titolo e cerca di nuovo il brano',
+  'fl.japanese_language': 'In giapponese', 'err.no_title': 'Scrivi il titolo del brano',
+});
+Object.assign(I18N.pt, {
+  'st.reading': 'Lendo a página do YouTube…', 'st.unavailable': 'Indisponível no YouTube (privado ou excluído)',
+  'tip.guessed': 'Deduzido do título, do canal e das tags do YouTube: os bancos de dados musicais não conhecem esta música.',
+  'tip.maybe_cover': 'Só o gênero é usado: a correspondência foi encontrada só pelo título e pode ser um cover de outra pessoa.',
+  'live.pv_unavailable': '{n} indisponível no YouTube|{n} indisponíveis no YouTube', 'live.pv_fix_hint': 'Informação errada ou faltando? Clique no lápis ao lado de uma música para corrigir o artista ou o título.',
+  'pv.artist_ph': 'Artista', 'pv.title_ph': 'Título', 'pv.updated': 'Buscada de novo: {song}',
+  'tip.save_lookup': 'Salvar e buscar esta música de novo', 'tip.edit_song': 'Corrigir o artista ou o título e buscar a música de novo',
+  'fl.japanese_language': 'Em japonês', 'err.no_title': 'Digite o título da música',
+});

@@ -77,14 +77,32 @@ def same_song(a: tuple[str, str], b: tuple[str, str]) -> bool:
     return aa == ba or aa.replace(" ", "") == ba.replace(" ", "")
 
 
+_SPLIT = re.compile(r"\s+[-–—]+\s*|\s*[-–—]+\s+")   # "A - B", "A -B", "A- B" (not "Jay-Z")
+
+
 def split_artist_title(raw: str) -> tuple[str, str]:
-    """'Artist - Title' -> ('Artist', 'Title'); returns ('', raw) if no separator."""
-    for d in _DASHES:
-        if d in raw:
-            artist, title = raw.split(d, 1)
-            if artist.strip() and title.strip():
-                return artist.strip(), title.strip()
-    return "", raw.strip()
+    """'Artist - Title' -> ('Artist', 'Title'); returns ('', raw) if no separator.
+    A dash inside a word ("Tenka-Wakeme", "Jay-Z") is not a separator."""
+    raw = (raw or "").strip()
+    m = _SPLIT.search(raw)
+    if m:
+        artist, title = raw[:m.start()].strip(), raw[m.end():].strip()
+        if artist and title:
+            return artist, title
+    return "", raw
+
+
+_ID_LIKE = re.compile(r"[A-Za-z0-9_-]{11}")
+
+
+def looks_like_id(title: str, video_id: str | None = None) -> bool:
+    """A YouTube video code instead of a real title (what YouTube gives for some entries)."""
+    t = (title or "").strip()
+    return not t or t == video_id or (bool(_ID_LIKE.fullmatch(t)) and any(c.isdigit() for c in t) and " " not in t)
+
+
+def has_japanese(s: str) -> bool:
+    return any("\u3040" <= c <= "\u30ff" or "\u4e00" <= c <= "\u9fff" for c in s or "")
 
 
 def channel_artist(channel: str) -> str:

@@ -64,7 +64,7 @@ def destination(mode: str, artist: str, meta: dict | None, *, folder: str = "", 
     elif mode == "country":
         code = m.get("country", "")
         dest = (lb.get("countries") or {}).get(code) or country_name(code) or (
-            lb["russian_language"] if m.get("cyrillic") else other)
+            lb["russian_language"] if m.get("cyrillic") else lb["japanese_language"] if m.get("japanese") else other)
     elif mode == "artist":
         dest = main_artist(artist) or lb["unknown_artist"]
     else:

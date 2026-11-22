@@ -14,7 +14,8 @@ from . import i18n, spotify, tools
 from .i18n import msg
 from .library import Library, unique_path, write_tags
 from .meta import estimate_bpm, tempo_label
-from .text import channel_artist, clean_title, norm_title, safe_name, same_song, song_key, split_artist_title
+from .text import (channel_artist, clean_title, looks_like_id, norm_title, safe_name, same_song, song_key,
+                   split_artist_title)
 
 # Words that mean "a different version" — avoided when matching Spotify songs on YouTube
 _VERSION_WORDS = ("live", "cover", "karaoke", "remix", "sped up", "slowed", "nightcore", "8d",
@@ -46,6 +47,31 @@ def youtube_meta(info: dict) -> tuple[str, str]:
     if a:
         return a, clean_title(t)
     return channel_artist(info.get("channel") or info.get("uploader") or ""), clean_title(raw)
+
+
+def youtube_song(info: dict) -> dict:
+    """What we know about a YouTube video: artist, title, whether the artist can be trusted,
+    the swapped reading to try ("Song - Artist"), and other words that describe it."""
+    vid = info.get("id") or ""
+    raw = info.get("title") or ""
+    channel = info.get("channel") or info.get("uploader") or ""
+    extra = " ".join([channel, *(info.get("tags") or [])[:25], *(info.get("categories") or []), info.get("album") or ""])
+    out = {"title": "", "artist": "", "reliable": False, "alt": None, "text": extra.strip(),
+           "duration": info.get("duration") or 0, "unknown": looks_like_id(raw, vid)}
+    track = info.get("track")
+    artist = info.get("artist") or info.get("creator") or (", ".join(info["artists"]) if info.get("artists") else "")
+    if track and artist:  # YouTube Music knows the song
+        out.update(title=clean_title(track), artist=artist, reliable=True)
+    elif out["unknown"]:
+        out.update(title=raw or vid, artist=channel_artist(channel))
+    else:
+        a, t = split_artist_title(clean_title(raw) or raw)
+        if a:
+            out.update(artist=a, title=clean_title(t), reliable=True, alt=[clean_title(t), a])
+        else:
+            topic = channel.lower().endswith(" - topic")   # YouTube's official artist channels
+            out.update(artist=channel_artist(channel), title=clean_title(raw), reliable=topic)
+    return out
 
 
 def score_search_result(entry: dict, artist: str, title: str, duration: float) -> float:
@@ -149,13 +175,31 @@ class Downloader:
             name, entries = self.list_entries(url)
             items = []
             for e in entries:
-                artist, title = youtube_meta(e)
-                items.append({"kind": "youtube", "video_id": e["id"], "artist": artist, "title": title,
-                              "duration": e.get("duration") or 0})
+                song = youtube_song(e)
+                items.append({"kind": "youtube", "video_id": e["id"], "artist": song["artist"], "title": song["title"],
+                              "duration": song["duration"], "reliable": song["reliable"], "alt": song["alt"],
+                              "text": song["text"], "unknown": song["unknown"],
+                              # read the video's own page when the playlist says too little about it
+                              "needs_details": song["unknown"] or not song["duration"] or not song["reliable"]})
         for it in items:
             it["url"] = url
         self.mark_existing(items)
         return {"name": name or "Downloads", "items": items}
+
+    def add_details(self, it: dict) -> None:
+        """Read the video's own page for a better title, length, artist and tags.
+        Marks the song 'unavailable' when YouTube won't show it (private or deleted)."""
+        try:
+            info = self.video_info(it["video_id"])
+        except Exception as e:
+            msg_ = str(e).splitlines()[0] if str(e) else type(e).__name__
+            it["unavailable"] = msg_.replace("ERROR: ", "")[:160]
+            return
+        song = youtube_song(info)
+        if song["unknown"]:
+            return
+        it.update(title=song["title"], artist=song["artist"], reliable=song["reliable"], alt=song["alt"],
+                  text=song["text"], unknown=False, duration=song["duration"] or it.get("duration") or 0)
 
     def mark_existing(self, items: list[dict], folder: str | None = None) -> None:
         """Flag songs already in the library, or listed twice in this batch."""

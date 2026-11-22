@@ -47,7 +47,7 @@ class SlowLookup:
     def __init__(self):
         self.calls = 0
 
-    def lookup(self, artist, title):
+    def lookup(self, artist, title, hints=None):
         self.calls += 1
         time.sleep(0.15)
         return dict(RUSKI if "Lucky" in title else POP)
@@ -109,7 +109,7 @@ def test_status_bar(lib, tmp_path):
 
 
 class QuickLookup:
-    def lookup(self, artist, title):
+    def lookup(self, artist, title, hints=None):
         return dict(POP)
 
     def save(self):

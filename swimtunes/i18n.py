@@ -47,6 +47,7 @@ DEFAULT_LABELS = {
     "unknown_year": "Unknown year",
     "unknown_artist": "Unknown artist",
     "russian_language": "Russian-language",
+    "japanese_language": "Japanese-language",
     "downloads": "Downloads",
     "countries": {},
 }
