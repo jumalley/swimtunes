@@ -30,8 +30,9 @@ def test_youtube_browser_login_is_given_to_ytdlp(lib):
     assert accounts.ytdlp_options() == {}
     accounts.set_youtube_browser("firefox")
     assert accounts.ytdlp_options() == {"cookiesfrombrowser": ("firefox", None, None, None)}
-    ydl = Downloader(lib, log=lambda _: None)._ydl()
-    assert ydl.params["cookiesfrombrowser"] == ("firefox", None, None, None)
+    d = Downloader(lib, log=lambda _: None)
+    d._login_ok = True                                   # pretend Firefox's login could be read
+    assert d._ydl().params["cookiesfrombrowser"] == ("firefox", None, None, None)
     with pytest.raises(ValueError):
         accounts.set_youtube_browser("netscape")
 
@@ -238,3 +239,23 @@ def test_stray_characters_before_a_link_are_ignored(lib):
             break
         time.sleep(0.02)
     assert seen == ["https://open.spotify.com/playlist/0JiVp7Z0pYKI8diUV6HJyQ", "https://youtu.be/abc"]
+
+
+def test_unreadable_browser_login_does_not_block_downloads(lib, monkeypatch):
+    """Chrome open / Chrome on Windows: warn once, then download without the login."""
+    import yt_dlp
+    accounts.set_youtube_browser("chrome")
+    calls = []
+
+    class Locked(yt_dlp.YoutubeDL):
+        @property
+        def cookiejar(self):
+            calls.append(1)
+            raise yt_dlp.utils.DownloadError("ERROR: Could not copy Chrome cookie database. See https://github.com/yt-dlp/yt-dlp/issues/7271")
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", Locked)
+    logs = []
+    d = Downloader(lib, log=logs.append)
+    for _ in range(3):
+        assert "cookiesfrombrowser" not in d._ydl().params
+    assert len(calls) == 1 and len(logs) == 1 and logs[0].key == "log.yt_login_skipped_browser_open"
+    assert "Chrome is open" in str(logs[0])

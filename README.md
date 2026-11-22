@@ -187,6 +187,11 @@ small wand. Click the **pencil** next to a song to correct its artist or title a
 tries other ways automatically; click **Retry failed songs** a bit later, it usually works. Age-restricted or
 region-blocked videos can't be downloaded: try another upload of the same song.
 
+**"Could not copy Chrome cookie database" / a warning about your YouTube login.** Your YouTube account is connected
+through Chrome (or Edge), which locks its login while open and, on Windows, doesn't share it with other apps at all.
+SwimTunes then downloads without the login (public songs work). To use your login, choose **Firefox** or a
+**cookies.txt** file in Settings → Accounts, or disconnect YouTube if you only download public songs.
+
 **"Already there" when downloading.** SwimTunes found that you already have this song (the tooltip says in which
 folder), so it isn't downloaded twice.
 

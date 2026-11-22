@@ -2092,3 +2092,59 @@ Object.assign(I18N.es, { "err.no_songs_found": "No se encontraron canciones en e
 Object.assign(I18N.de, { "err.no_songs_found": "In diesem Link wurden keine Titel gefunden. Prüfe, ob es der vollständige Link zu einer Playlist, einem Album oder Titel ist und die Playlist nicht leer oder privat ist." });
 Object.assign(I18N.it, { "err.no_songs_found": "Nessun brano trovato in questo link. Controlla che sia il link completo di una playlist, un album o un brano, e che la playlist non sia vuota o privata." });
 Object.assign(I18N.pt, { "err.no_songs_found": "Nenhuma música encontrada neste link. Verifique se é o link completo de uma playlist, álbum ou música, e se a playlist não está vazia ou privada." });
+
+/* YouTube login fallback */
+Object.assign(I18N.en, {
+  "log.yt_login_skipped_browser_open": "{browser} is open, so SwimTunes can't read your YouTube login. Downloading without it: public songs work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+  "log.yt_login_skipped_browser_locked": "{browser} doesn't share your YouTube login with other apps on this computer. Downloading without it: public songs work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+  "log.yt_login_skipped_browser_missing": "{browser} isn't installed here, so there's no YouTube login to use. Downloading without it: public songs work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+  "log.yt_login_skipped_other": "Couldn't read your YouTube login from {browser}. Downloading without it: public songs work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+  "acc.fix_login": "Fix in Settings",
+  "acc.blocked_windows": "(blocked on Windows)",
+  "acc.recommended": "(recommended)",
+});
+Object.assign(I18N.fr, {
+  "log.yt_login_skipped_browser_open": "{browser} est ouvert, SwimTunes ne peut donc pas lire votre connexion YouTube. Téléchargement sans connexion : les titres publics fonctionnent, pas les privés. Pour corriger, utilisez Firefox ou un fichier cookies.txt dans Réglages → Comptes.",
+  "log.yt_login_skipped_browser_locked": "{browser} ne partage pas votre connexion YouTube avec les autres applis de cet ordinateur. Téléchargement sans connexion : les titres publics fonctionnent, pas les privés. Pour corriger, utilisez Firefox ou un fichier cookies.txt dans Réglages → Comptes.",
+  "log.yt_login_skipped_browser_missing": "{browser} n’est pas installé ici, il n’y a donc pas de connexion YouTube à utiliser. Téléchargement sans connexion : les titres publics fonctionnent, pas les privés. Pour corriger, utilisez Firefox ou un fichier cookies.txt dans Réglages → Comptes.",
+  "log.yt_login_skipped_other": "Impossible de lire votre connexion YouTube depuis {browser}. Téléchargement sans connexion : les titres publics fonctionnent, pas les privés. Pour corriger, utilisez Firefox ou un fichier cookies.txt dans Réglages → Comptes.",
+  "acc.fix_login": "Corriger dans les Réglages",
+  "acc.blocked_windows": "(bloqué sous Windows)",
+  "acc.recommended": "(recommandé)",
+});
+Object.assign(I18N.es, {
+  "log.yt_login_skipped_browser_open": "{browser} está abierto, así que SwimTunes no puede leer tu sesión de YouTube. Se descarga sin él: las canciones públicas funcionan, las privadas no. Para arreglarlo, usa Firefox o un archivo cookies.txt en Ajustes → Cuentas.",
+  "log.yt_login_skipped_browser_locked": "{browser} no comparte tu sesión de YouTube con otras apps en este ordenador. Se descarga sin él: las canciones públicas funcionan, las privadas no. Para arreglarlo, usa Firefox o un archivo cookies.txt en Ajustes → Cuentas.",
+  "log.yt_login_skipped_browser_missing": "{browser} no está instalado aquí, así que no hay sesión de YouTube que usar. Se descarga sin él: las canciones públicas funcionan, las privadas no. Para arreglarlo, usa Firefox o un archivo cookies.txt en Ajustes → Cuentas.",
+  "log.yt_login_skipped_other": "No se pudo leer tu sesión de YouTube desde {browser}. Se descarga sin él: las canciones públicas funcionan, las privadas no. Para arreglarlo, usa Firefox o un archivo cookies.txt en Ajustes → Cuentas.",
+  "acc.fix_login": "Arreglar en Ajustes",
+  "acc.blocked_windows": "(bloqueado en Windows)",
+  "acc.recommended": "(recomendado)",
+});
+Object.assign(I18N.de, {
+  "log.yt_login_skipped_browser_open": "{browser} ist geöffnet, daher kann SwimTunes deine YouTube-Anmeldung nicht lesen. Es wird ohne Anmeldung geladen: öffentliche Titel klappen, private nicht. Zum Beheben Firefox oder eine cookies.txt-Datei unter Einstellungen → Konten verwenden.",
+  "log.yt_login_skipped_browser_locked": "{browser} teilt deine YouTube-Anmeldung auf diesem Computer nicht mit anderen Apps. Es wird ohne Anmeldung geladen: öffentliche Titel klappen, private nicht. Zum Beheben Firefox oder eine cookies.txt-Datei unter Einstellungen → Konten verwenden.",
+  "log.yt_login_skipped_browser_missing": "{browser} ist hier nicht installiert, es gibt also keine YouTube-Anmeldung. Es wird ohne Anmeldung geladen: öffentliche Titel klappen, private nicht. Zum Beheben Firefox oder eine cookies.txt-Datei unter Einstellungen → Konten verwenden.",
+  "log.yt_login_skipped_other": "Deine YouTube-Anmeldung aus {browser} konnte nicht gelesen werden. Es wird ohne Anmeldung geladen: öffentliche Titel klappen, private nicht. Zum Beheben Firefox oder eine cookies.txt-Datei unter Einstellungen → Konten verwenden.",
+  "acc.fix_login": "In den Einstellungen beheben",
+  "acc.blocked_windows": "(unter Windows gesperrt)",
+  "acc.recommended": "(empfohlen)",
+});
+Object.assign(I18N.it, {
+  "log.yt_login_skipped_browser_open": "{browser} è aperto, quindi SwimTunes non può leggere il tuo accesso a YouTube. Scarico senza: i brani pubblici funzionano, quelli privati no. Per risolvere, usa Firefox o un file cookies.txt in Impostazioni → Account.",
+  "log.yt_login_skipped_browser_locked": "{browser} non condivide il tuo accesso a YouTube con le altre app di questo computer. Scarico senza: i brani pubblici funzionano, quelli privati no. Per risolvere, usa Firefox o un file cookies.txt in Impostazioni → Account.",
+  "log.yt_login_skipped_browser_missing": "{browser} non è installato qui, quindi non c’è un accesso a YouTube da usare. Scarico senza: i brani pubblici funzionano, quelli privati no. Per risolvere, usa Firefox o un file cookies.txt in Impostazioni → Account.",
+  "log.yt_login_skipped_other": "Impossibile leggere il tuo accesso a YouTube da {browser}. Scarico senza: i brani pubblici funzionano, quelli privati no. Per risolvere, usa Firefox o un file cookies.txt in Impostazioni → Account.",
+  "acc.fix_login": "Risolvi nelle Impostazioni",
+  "acc.blocked_windows": "(bloccato su Windows)",
+  "acc.recommended": "(consigliato)",
+});
+Object.assign(I18N.pt, {
+  "log.yt_login_skipped_browser_open": "O {browser} está aberto, então o SwimTunes não consegue ler seu login do YouTube. Baixando sem ele: músicas públicas funcionam, privadas não. Para corrigir, use o Firefox ou um arquivo cookies.txt em Configurações → Contas.",
+  "log.yt_login_skipped_browser_locked": "O {browser} não compartilha seu login do YouTube com outros apps neste computador. Baixando sem ele: músicas públicas funcionam, privadas não. Para corrigir, use o Firefox ou um arquivo cookies.txt em Configurações → Contas.",
+  "log.yt_login_skipped_browser_missing": "O {browser} não está instalado aqui, então não há login do YouTube para usar. Baixando sem ele: músicas públicas funcionam, privadas não. Para corrigir, use o Firefox ou um arquivo cookies.txt em Configurações → Contas.",
+  "log.yt_login_skipped_other": "Não foi possível ler seu login do YouTube do {browser}. Baixando sem ele: músicas públicas funcionam, privadas não. Para corrigir, use o Firefox ou um arquivo cookies.txt em Configurações → Contas.",
+  "acc.fix_login": "Corrigir nas Configurações",
+  "acc.blocked_windows": "(bloqueado no Windows)",
+  "acc.recommended": "(recomendado)",
+});

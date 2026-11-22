@@ -669,6 +669,7 @@ async function startDownload(only) {
       current: cur ? `${cur.artist ? cur.artist + ' – ' : ''}${cur.title}` : '', done, total: n, stop: `cancelJob('${j.id}')`, stopTip: 'tip.stop_download',
       sub: (j.items || []).filter(s => ['searching', 'downloading', 'converting', 'measuring', 'saving'].includes(s.status)).length > 1 ? t('live.parallel', { n: (j.items || []).filter(s => ['searching', 'downloading', 'converting', 'measuring', 'saving'].includes(s.status)).length }) : '' });
     renderPreview();
+    loginNotice(j);
     if (j.progress) loadLibrary();
   } });
   DL_JOB = null;
@@ -681,8 +682,17 @@ async function startDownload(only) {
       <button class="small" onclick="showTab('songs')">${ICON('fa-solid fa-music')}${t('live.see_songs')}</button>
       <button class="small primary" onclick="showTab('device')">${ICON('fa-solid fa-headphones')}${t('dev.sync')}</button></div></div>`;
   }
+  loginNotice(j);
   renderPreview();
   await refresh();
+}
+
+// The YouTube login couldn't be read: say so above the download, with a way to fix it.
+function loginNotice(j) {
+  const e = (j.log || []).find(e => (e.k || '').startsWith('log.yt_login_skipped'));
+  if (!e || $('pv-live').querySelector('.login-notice')) return;
+  $('pv-live').insertAdjacentHTML('beforeend', `<div class="notice warn-n login-notice">${ICON('fa-solid fa-user-lock')}<span>${esc(tEntry(e))}</span>
+    <button class="small fit" onclick="showTab('settings')">${ICON('fa-solid fa-gear')}${t('acc.fix_login')}</button></div>`);
 }
 
 // ---------- organize ----------
@@ -1026,10 +1036,11 @@ async function loadVersion() {
 let ACC = null;
 const BROWSER_NAMES = { firefox: 'Firefox', chrome: 'Google Chrome', edge: 'Microsoft Edge', brave: 'Brave', opera: 'Opera',
   vivaldi: 'Vivaldi', chromium: 'Chromium', safari: 'Safari', whale: 'Naver Whale' };
+const CHROMIUM = ['chrome', 'edge', 'brave', 'opera', 'vivaldi', 'chromium', 'whale'];   // lock their login on Windows
 async function loadAccounts() {
   ACC = await api('/api/accounts');
   const yt = ACC.youtube, sp = ACC.spotify;
-  $('yt-browser').innerHTML = `<option value="">${esc(t('acc.choose_browser'))}</option>` + ACC.browsers.map(b => `<option value="${b}">${esc(BROWSER_NAMES[b] || b)}</option>`).join('');
+  $('yt-browser').innerHTML = `<option value="">${esc(t('acc.choose_browser'))}</option>` + ACC.browsers.map(b => `<option value="${b}">${esc(BROWSER_NAMES[b] || b)}${ACC.platform === 'win32' && CHROMIUM.includes(b) ? ' ' + esc(t('acc.blocked_windows')) : b === 'firefox' ? ' ' + esc(t('acc.recommended')) : ''}</option>`).join('');
   $('yt-browser').value = yt.browser || '';
   $('yt-status').className = 'chip ' + (yt.connected ? 'ok' : '');
   $('yt-status').textContent = yt.connected ? (yt.browser ? t('acc.yt_via', { browser: BROWSER_NAMES[yt.browser] || yt.browser }) : t('acc.yt_via_file')) : t('acc.not_connected');

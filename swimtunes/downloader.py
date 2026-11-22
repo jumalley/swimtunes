@@ -99,6 +99,10 @@ def score_search_result(entry: dict, artist: str, title: str, duration: float) -
     return score
 
 
+BROWSER_NAMES = {"chrome": "Chrome", "edge": "Edge", "firefox": "Firefox", "brave": "Brave", "opera": "Opera",
+                 "vivaldi": "Vivaldi", "chromium": "Chromium", "safari": "Safari", "whale": "Whale"}
+
+
 class Downloader:
     def __init__(self, library: Library, *, bitrate: int | None = None, normalize: bool | None = None,
                  allow_dupes: bool = False, scope: str | None = None,
@@ -113,6 +117,8 @@ class Downloader:
         self.labels = i18n.labels(labels)   # names of folders SwimTunes creates, in the user's language
         self._local = threading.local()     # per download thread: the song it works on (gets status and %)
         self.workers = 3                    # songs downloaded at the same time
+        self._login_ok = None               # None = not checked yet; False = browser login unreadable
+        self._login_lock = threading.Lock()
         self.ffmpeg = tools.ffmpeg_path()
         if not self.ffmpeg:
             raise RuntimeError("ffmpeg is missing. Reinstall SwimTunes (see README).")
@@ -133,9 +139,37 @@ class Downloader:
                 "http_chunk_size": 10 * 1024 * 1024}
         if deno := tools.deno_path():  # YouTube needs a JavaScript runtime
             base["js_runtimes"] = {"deno": {"path": deno}}
-        from . import accounts
-        base.update(accounts.ytdlp_options())   # the user's YouTube login, if connected
+        base.update(self._login_options())   # the user's YouTube login, if connected and readable
         return yt_dlp.YoutubeDL({**base, **opts})
+
+    def _login_options(self) -> dict:
+        """The YouTube login, checked once. If the browser's login can't be read (Chrome open, or
+        Chrome/Edge on Windows refusing), carry on without it instead of failing every song."""
+        from . import accounts
+        opts = accounts.ytdlp_options()
+        if "cookiesfrombrowser" not in opts:
+            return opts
+        with self._login_lock:
+            if self._login_ok is None:
+                import yt_dlp
+                try:
+                    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "no_color": True, **opts}) as y:
+                        y.cookiejar                     # reads the browser's login now
+                    self._login_ok = True
+                except Exception as e:
+                    self._login_ok = False
+                    kind = accounts.explain_youtube_error(str(e))
+                    kind = kind if kind in ("browser_open", "browser_locked", "browser_missing") else "other"
+                    texts = {
+                        "browser_open": "{browser} is open, so SwimTunes can't read your YouTube login.",
+                        "browser_locked": "{browser} doesn't share your YouTube login with other apps on this computer.",
+                        "browser_missing": "{browser} isn't installed here, so there's no YouTube login to use.",
+                        "other": "Couldn't read your YouTube login from {browser}.",
+                    }
+                    self.log(msg("log.yt_login_skipped_" + kind, texts[kind] + " Downloading without it: public songs "
+                                 "work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+                                 browser=BROWSER_NAMES.get(opts["cookiesfrombrowser"][0], opts["cookiesfrombrowser"][0])))
+        return opts if self._login_ok else {}
 
     def my_playlists(self) -> list[dict]:
         """The connected YouTube account's playlists, private ones included."""

@@ -16,6 +16,7 @@ import base64
 import hashlib
 import json
 import os
+import sys
 import secrets
 import threading
 import time
@@ -70,6 +71,7 @@ def status() -> dict:
         "spotify": {"client_id": sp.get("client_id") or "", "connected": bool(sp.get("refresh_token")),
                     "user": sp.get("user") or ""},
         "browsers": BROWSERS,
+        "platform": sys.platform,
     }
 
 
