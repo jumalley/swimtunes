@@ -125,7 +125,7 @@ jobs:
           - **Mac (2020 or newer, M1/M2/M3/M4):** SwimTunes-Mac-AppleSilicon.dmg
           - **Older Mac (Intel):** SwimTunes-Mac-Intel.dmg
 
-          - **Windows blocks the app ("Smart App Control")?** Install Python from python.org, then download SwimTunes.pyw and double-click it.
+          - **Windows blocks the app (Smart App Control)?** Install Python from python.org, then download SwimTunes.pyw and double-click it.
 
           The .zip files are used by SwimTunes' automatic updates.
 
