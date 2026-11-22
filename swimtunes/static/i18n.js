@@ -2148,3 +2148,11 @@ Object.assign(I18N.pt, {
   "acc.blocked_windows": "(bloqueado no Windows)",
   "acc.recommended": "(recomendado)",
 });
+
+/* launcher */
+Object.assign(I18N.en, { "kind.launcher": "SwimTunes.pyw (runs with Python, updates itself)", "log.upd_launcher": "The new version is installed while SwimTunes restarts." });
+Object.assign(I18N.fr, { "kind.launcher": "SwimTunes.pyw (fonctionne avec Python, se met à jour seul)", "log.upd_launcher": "La nouvelle version s’installe pendant le redémarrage de SwimTunes." });
+Object.assign(I18N.es, { "kind.launcher": "SwimTunes.pyw (funciona con Python, se actualiza solo)", "log.upd_launcher": "La nueva versión se instala mientras SwimTunes se reinicia." });
+Object.assign(I18N.de, { "kind.launcher": "SwimTunes.pyw (läuft mit Python, aktualisiert sich selbst)", "log.upd_launcher": "Die neue Version wird beim Neustart von SwimTunes installiert." });
+Object.assign(I18N.it, { "kind.launcher": "SwimTunes.pyw (funziona con Python, si aggiorna da solo)", "log.upd_launcher": "La nuova versione si installa mentre SwimTunes si riavvia." });
+Object.assign(I18N.pt, { "kind.launcher": "SwimTunes.pyw (roda com Python, atualiza sozinho)", "log.upd_launcher": "A nova versão é instalada enquanto o SwimTunes reinicia." });

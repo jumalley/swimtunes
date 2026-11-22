@@ -281,3 +281,27 @@ def test_tray_icon_is_optional():
     from swimtunes import app as app_mod
     app_mod._error_box("x")          # no-op outside Windows
     app_mod._attach_terminal()
+
+
+def test_launcher_install_kind_and_update(monkeypatch):
+    from swimtunes import updater
+    monkeypatch.setenv("SWIMTUNES_LAUNCHER", "/x/SwimTunes.pyw")
+    monkeypatch.setenv("SWIMTUNES_LAUNCHER_PYTHON", "/usr/bin/pythonw")
+    assert updater.install_kind() == "launcher"
+    logs = []
+    assert updater.apply(logs.append) == ["/usr/bin/pythonw", "/x/SwimTunes.pyw"]   # the launcher installs it
+    assert logs[0].key == "log.upd_launcher"
+
+
+def test_launcher_file_is_standalone():
+    """SwimTunes.pyw must run with a bare Python: standard library only."""
+    import ast
+    src = (Path(__file__).parents[1] / "SwimTunes.pyw").read_text(encoding="utf-8")
+    mods = set()
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Import):
+            mods |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom):
+            mods.add((node.module or "").split(".")[0])
+    import sys as _sys
+    assert mods <= set(_sys.stdlib_module_names), mods - set(_sys.stdlib_module_names)

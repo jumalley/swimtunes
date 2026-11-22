@@ -30,6 +30,8 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 def install_kind() -> str:
     if tools.is_frozen():
         return "app"
+    if os.environ.get("SWIMTUNES_LAUNCHER") and os.environ.get("SWIMTUNES_LAUNCHER_PYTHON"):
+        return "launcher"           # started by SwimTunes.pyw, which installs updates when it starts
     if (REPO_ROOT / ".git").exists() and shutil.which("git"):
         return "git"
     return "pip"
@@ -83,7 +85,7 @@ def check() -> dict:
         else:
             rel = _latest_release()
             out["latest"] = rel.get("tag_name")
-            out["available"] = (kind == "app" and _tag_tuple(out["latest"] or "") > _tag_tuple(TAG))
+            out["available"] = (kind in ("app", "launcher") and _tag_tuple(out["latest"] or "") > _tag_tuple(TAG))
             out["changes"] = [l.strip("-* ").strip() for l in (rel.get("body") or "").splitlines() if l.strip()][:10]
             out["download"] = rel.get("html_url")
             if kind == "pip":
@@ -100,6 +102,9 @@ def apply(log: Callable[[str], None] = print) -> list[str]:
         return _apply_git(log)
     if kind == "app":
         return _apply_app(log)
+    if kind == "launcher":   # the launcher installs the new version as it starts again
+        log(msg("log.upd_launcher", "The new version is installed while SwimTunes restarts."))
+        return [os.environ["SWIMTUNES_LAUNCHER_PYTHON"], os.environ["SWIMTUNES_LAUNCHER"]]
     raise RuntimeError("This copy of SwimTunes can't update itself. Download the newest app from GitHub.")
 
 
@@ -197,6 +202,8 @@ def restart(cmd: list[str]) -> None:
         env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"  # new copy must unpack itself, not reuse ours
     if os.name == "nt":
         flags = subprocess.CREATE_NEW_CONSOLE
+        if install_kind() == "launcher":
+            flags = NO_WINDOW            # the launcher shows its own small window
         subprocess.Popen(cmd, cwd=str(REPO_ROOT if not tools.is_frozen() else Path(cmd[0]).parent),
                          env=env, creationflags=flags, close_fds=True)
     else:

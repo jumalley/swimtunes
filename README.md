@@ -36,6 +36,21 @@ From then on, open SwimTunes like any app: from the **Start menu** or the **desk
 a small SwimTunes icon sits next to the clock (in the **^** menu): click it to open SwimTunes, or right-click → **Quit**.
 To remove it: **Settings → Apps → SwimTunes → Uninstall** (your music stays in *Music\SwimTunes*).
 
+### Windows blocks SwimTunes ("Smart App Control")?
+
+Some Windows 11 PCs block apps that aren't signed by a known company, with no "Run anyway" button
+(*"Smart App Control blocked a potentially dangerous app"*). Use the Python version instead: just as simple to start.
+
+1. Install **Python** from [python.org/downloads](https://www.python.org/downloads/) (the big yellow button, then
+   **Install Now**). Python is signed by its publisher, so Windows allows it.
+2. Download [**SwimTunes.pyw**](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes.pyw)
+   and put it on your **desktop** (if your browser asks, choose **Keep**).
+3. Double-click **SwimTunes.pyw**. The first time, a small window says *Setting up SwimTunes* (about a minute).
+   Then SwimTunes opens in your browser.
+
+From then on, double-click **SwimTunes.pyw** to start SwimTunes. It checks for a new version each time and
+installs it by itself. Your music stays in *Music\SwimTunes*.
+
 Prefer no installation? Download [SwimTunes-Windows.exe](https://github.com/jumalley/swimtunes/releases/latest/download/SwimTunes-Windows.exe)
 and double-click it wherever you keep it.
 
