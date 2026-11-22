@@ -219,7 +219,10 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     @app.post("/api/preview")
     def preview():
         b = body()
-        urls = [u.strip() for u in (b.get("urls") or "").split() if u.strip()]
+        import re as _re
+        # ignore stray characters typed or copied around a link ("µhttps://…", "<https://…>")
+        urls = [(m.group(0).rstrip(">)].,;'\"") if (m := _re.search(r"(?:https?://|spotify:)\S+", u)) else u.strip())
+                for u in (b.get("urls") or "").split() if u.strip()]
         if not urls:
             return err(msg("err.no_links", "Paste at least one link"))
 
@@ -236,6 +239,9 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 names.append(data["name"])
                 items += data["items"]
                 log(msg("log.pv_found", "Found {n} song(s) in '{name}'", n=len(data["items"]), name=data["name"]))
+            if not items:
+                raise RuntimeError(msg("err.no_songs_found", "No songs found in this link. Check that it's the whole "
+                                       "link to a playlist, album or song, and that the playlist isn't empty or private."))
             d.mark_existing(items)  # also catches songs listed in two of the links
             new = [it for it in items if not it["existing"]]
             for i, it in enumerate(items):

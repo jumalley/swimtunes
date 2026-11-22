@@ -2084,3 +2084,11 @@ Object.assign(I18N.pt, {
   "ov.auto_updating": "Uma versão nova foi encontrada. Ela instala e reinicia sozinha; esta página recarrega quando estiver pronta.",
   "upd.auto_failed": "A atualização falhou. O SwimTunes continua com esta versão; tente de novo nas Configurações.",
 });
+
+/* empty links */
+Object.assign(I18N.en, { "err.no_songs_found": "No songs found in this link. Check that it's the whole link to a playlist, album or song, and that the playlist isn't empty or private." });
+Object.assign(I18N.fr, { "err.no_songs_found": "Aucun titre trouvé dans ce lien. Vérifiez que c’est le lien complet d’une playlist, d’un album ou d’un titre, et que la playlist n’est ni vide ni privée." });
+Object.assign(I18N.es, { "err.no_songs_found": "No se encontraron canciones en este enlace. Comprueba que sea el enlace completo de una playlist, álbum o canción, y que la playlist no esté vacía ni sea privada." });
+Object.assign(I18N.de, { "err.no_songs_found": "In diesem Link wurden keine Titel gefunden. Prüfe, ob es der vollständige Link zu einer Playlist, einem Album oder Titel ist und die Playlist nicht leer oder privat ist." });
+Object.assign(I18N.it, { "err.no_songs_found": "Nessun brano trovato in questo link. Controlla che sia il link completo di una playlist, un album o un brano, e che la playlist non sia vuota o privata." });
+Object.assign(I18N.pt, { "err.no_songs_found": "Nenhuma música encontrada neste link. Verifique se é o link completo de uma playlist, álbum ou música, e se a playlist não está vazia ou privada." });

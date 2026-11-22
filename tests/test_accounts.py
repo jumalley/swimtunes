@@ -222,3 +222,19 @@ def test_spotify_2026_format_and_fallback(monkeypatch):
     html = "<html>nothing</html>"
     with pytest.raises(spotify.SpotifyError, match="can't find"):
         spotify.fetch("https://open.spotify.com/playlist/GONE")
+
+
+def test_stray_characters_before_a_link_are_ignored(lib):
+    seen = []
+
+    class Rec(FakeDownloader):
+        def resolve(self, url):
+            seen.append(url)
+            return {"name": "x", "items": []}
+    c = create_app(lib, downloader_cls=Rec).test_client()
+    jid = c.post("/api/preview", json={"urls": "µhttps://open.spotify.com/playlist/0JiVp7Z0pYKI8diUV6HJyQ <https://youtu.be/abc>"}).get_json()["id"]
+    for _ in range(200):
+        if c.get(f"/api/jobs/{jid}").get_json()["status"] in ("done", "error"):
+            break
+        time.sleep(0.02)
+    assert seen == ["https://open.spotify.com/playlist/0JiVp7Z0pYKI8diUV6HJyQ", "https://youtu.be/abc"]
