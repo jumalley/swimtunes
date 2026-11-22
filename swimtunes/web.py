@@ -11,7 +11,7 @@ import uuid
 
 from flask import Flask, jsonify, render_template, request
 
-from . import TAG, __version__, device, i18n, sorter, tools, updater
+from . import TAG, __version__, accounts, device, i18n, sorter, tools, updater
 from .i18n import as_entry, msg
 from .downloader import Downloader
 from .library import Library, LibraryError
@@ -204,7 +204,10 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             for u in urls:
                 job["current"] = u
                 log(msg("log.pv_reading", "Reading {url}", url=u))
-                data = d.resolve(u)
+                try:
+                    data = d.resolve(u)
+                except Exception as e:
+                    raise _friendly_link_error(e, u) from None
                 names.append(data["name"])
                 items += data["items"]
                 log(msg("log.pv_found", "Found {n} song(s) in '{name}'", n=len(data["items"]), name=data["name"]))
@@ -249,6 +252,8 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 try:
                     it["meta"] = look.lookup(it["artist"], it["title"],
                                              {"reliable": it.get("reliable", True), "alt": it.get("alt"), "text": it.get("text", "")})
+                    if it.get("cover") and not it["meta"].get("cover"):
+                        it["meta"]["cover"] = it["cover"]   # Spotify's album picture
                     if it["meta"].pop("swapped", False):   # it was "Song - Artist"
                         it["artist"], it["title"] = it["title"], it["artist"]
                         it["reliable"] = True
@@ -444,6 +449,82 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             lib, path, mirror=bool(b.get("mirror")), replace=bool(b.get("replace")),
             folders=b.get("folders") or None, log=log, progress=progress))
 
+    # ---------- connected accounts ----------
+    @app.get("/api/accounts")
+    def accounts_status():
+        return jsonify(accounts.status())
+
+    @app.post("/api/accounts/youtube")
+    def youtube_connect():
+        b = body()
+        try:
+            accounts.set_youtube_browser(b.get("browser", ""), b.get("profile", ""))
+        except ValueError as e:
+            return err(str(e))
+        return jsonify(accounts.status())
+
+    @app.post("/api/accounts/youtube/cookies")
+    def youtube_cookies():
+        f = request.files.get("file")
+        text = f.read().decode("utf-8", "replace") if f else (body().get("text") or "")
+        try:
+            accounts.set_youtube_cookies(text)
+        except ValueError:
+            return err(msg("err.bad_cookies", "This doesn't look like a cookies.txt file with YouTube cookies"))
+        return jsonify(accounts.status())
+
+    @app.delete("/api/accounts/youtube")
+    def youtube_disconnect():
+        accounts.disconnect_youtube()
+        return jsonify(accounts.status())
+
+    @app.post("/api/accounts/spotify/start")
+    def spotify_start():
+        port = request.environ.get("SERVER_PORT") or "8765"
+        redirect = f"http://127.0.0.1:{port}/spotify/callback"
+        try:
+            url = accounts.spotify_start(body().get("client_id", ""), redirect)
+        except ValueError:
+            return err(msg("err.bad_client_id", "Paste the Client ID from your Spotify app"))
+        return jsonify({"url": url, "redirect": redirect})
+
+    @app.get("/spotify/callback")
+    def spotify_callback():
+        if request.args.get("error"):
+            return render_template("spotify_done.html", ok=False, detail=request.args.get("error"))
+        try:
+            user = accounts.spotify_finish(request.args.get("code", ""), request.args.get("state", ""))
+            return render_template("spotify_done.html", ok=True, detail=user)
+        except Exception as e:
+            return render_template("spotify_done.html", ok=False, detail=str(e))
+
+    @app.delete("/api/accounts/spotify")
+    def spotify_disconnect():
+        accounts.disconnect_spotify()
+        return jsonify(accounts.status())
+
+    @app.post("/api/accounts/playlists")
+    def my_playlists():
+        """The playlists of every connected account (YouTube can take a few seconds)."""
+        def fn(log, progress, job):
+            st = accounts.status()
+            out, errors = [], {}
+            if st["spotify"]["connected"]:
+                job["current"] = "Spotify"
+                try:
+                    out += accounts.spotify_my_playlists()
+                except Exception as e:
+                    errors["spotify"] = str(e)[:200]
+            if st["youtube"]["connected"]:
+                job["current"] = "YouTube"
+                try:
+                    out += downloader_cls(lib, log=log).my_playlists()
+                except Exception as e:
+                    text = str(e)
+                    errors["youtube"] = {"kind": accounts.explain_youtube_error(text), "text": text[:300]}
+            return {"playlists": out, "errors": errors}
+        return start_job("playlists", fn)
+
     # ---------- app: version, updates, health, quit ----------
     @app.get("/api/version")
     def version():
@@ -543,3 +624,20 @@ def _newer(latest: str, current: str) -> bool:
 
 
 __all__ = ["create_app", "country_name", "tempo_label"]
+
+
+def _friendly_link_error(e: Exception, url: str) -> Exception:
+    """Turn 'playlist does not exist / is private' into advice to connect an account."""
+    text = str(e)
+    low = text.lower()
+    if "spotify" in url and ("private" in low or "connect your spotify" in low):
+        return RuntimeError(msg("err.sp_private", "This Spotify playlist is private. Connect your Spotify account in Settings, then try again."))
+    if "youtube" in url or "youtu.be" in url:
+        if "private" in low or "does not exist" in low or "sign in" in low or "unavailable" in low and "playlist" in low:
+            from . import accounts as acc
+            if not acc.status()["youtube"]["connected"]:
+                return RuntimeError(msg("err.yt_private", "YouTube won't show this playlist: it is private or doesn't exist. "
+                                        "If it's yours, connect your YouTube account in Settings, then try again."))
+            return RuntimeError(msg("err.yt_private_connected", "YouTube won't show this playlist, even with your account. "
+                                    "Check the link, and that you're signed in to the right account in your browser."))
+    return e

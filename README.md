@@ -100,6 +100,21 @@ finding it on YouTube, downloading (with %), converting to MP3, measuring the te
 
 Tempo comes from Deezer when it knows it. Otherwise SwimTunes measures it from the audio after downloading.
 
+### Private playlists: connect your accounts
+
+In **Settings → Accounts** you can connect your accounts. Then **My playlists** (next to *Find songs*) lists your own
+playlists, private ones included, plus your Liked songs/videos. Your logins stay on your computer
+(in a private file in your home folder, never in the music folder).
+
+- **YouTube**: YouTube doesn't let apps log in directly, so SwimTunes uses the YouTube login of a web browser on your
+  computer. Sign in to YouTube in that browser, pick it in SwimTunes, click **Test**. **Firefox works best**: on Windows,
+  Chrome and Edge lock their logins so other apps can't use them; with those, export a `cookies.txt` file instead
+  (the panel explains how). Being connected also helps with age-restricted videos and your own private videos.
+- **Spotify**: Spotify needs a free *Client ID* for each app, created once in 2 minutes on the
+  [Spotify developer dashboard](https://developer.spotify.com/dashboard): create an app, tick *Web API*, use the
+  *Redirect URI* shown in SwimTunes, paste the Client ID and click **Connect Spotify**. Connected, Spotify playlists have
+  no 100-song limit, private playlists work, and album covers come from Spotify.
+
 ### 4. Sort the songs you already have
 
 **Sort my songs** uses the same sorting options on songs that are already in SwimTunes. It shows where
@@ -149,8 +164,10 @@ folder), so it isn't downloaded twice.
 
 **Some songs say "Unavailable on YouTube".** The video is private or was deleted. It's unticked and skipped.
 
-**My Spotify playlist only shows about 100 songs.** Spotify only shows the first ~100 songs to apps like this.
-For longer playlists, convert the playlist to YouTube with [playlistbuddy.com](https://playlistbuddy.com) and paste the YouTube playlist link instead.
+**My Spotify playlist only shows about 100 songs.** Without a connected account, Spotify only shows the first ~100 songs.
+Connect your Spotify account (Settings → Accounts) to get them all.
+
+**"YouTube won't show this playlist".** It's private (or the link is incomplete). If it's yours, connect your YouTube account.
 
 **It says the earphones aren't found.** Connect them to the computer with the charging cable (not to a wall plug),
 wait 10 seconds and click **Look again**. On Windows they appear in **This PC** (e.g. *SWIM PRO (H:)*).

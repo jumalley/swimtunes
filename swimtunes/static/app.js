@@ -397,7 +397,7 @@ function renderPreview(nowId) {
     <td><input type="checkbox" data-id="${it.id}" ${it.checked ? 'checked' : ''} ${anyDl && DL_JOB ? 'disabled' : ''}></td>
     <td class="cv">${coverImg(it.meta, it.video_id)}</td>
     ${songCell(it, have)}
-    ${it.unavailable ? `<td colspan="5"><span class="chip bad" data-tip-raw="${esc(it.unavailable)}">${ICON('fa-solid fa-ban')}${t('st.unavailable')}</span></td>` : metaCells(it.meta, true, it.existing ? 'have' : it.state)}
+    ${it.unavailable ? unavailableCell(it) : metaCells(it.meta, true, it.existing ? 'have' : it.state)}
     <td class="num">${dur(it.duration)}</td>
     <td>${it.dl ? dlState(it.dl)
       : PV.loading || it.unavailable ? '<span class="muted">–</span>'
@@ -411,6 +411,13 @@ function renderPreview(nowId) {
   $('pv-rows').querySelectorAll('.edit-song input').forEach(inp => inp.onkeydown = e => { if (e.key === 'Enter') saveEdit(EDITING); if (e.key === 'Escape') { EDITING = null; renderPreview(); } });
   $('pv-rows').querySelectorAll('input[data-dest]').forEach(inp => inp.onchange = () => { const it = PV.items[inp.dataset.dest]; it.folder = inp.value.trim(); it.manual = true; renderSummary(); });
   renderSummary();
+}
+function unavailableCell(it) {
+  const kind = it.unavailable_kind || 'unavailable';
+  const label = ['private', 'unavailable'].includes(kind) ? t('st.unavailable_' + kind) : t('dlerr.' + kind);
+  let help = t('dlerr_help.' + kind);
+  if (['private', 'age', 'bot'].includes(kind) && !ACC?.youtube.connected) help += '\n\n' + t('acc.hint_connect_yt');
+  return `<td colspan="5"><span class="chip ${kind === 'blocked' || kind === 'network' ? 'warn' : 'bad'}" data-tip-raw="${esc(help + '\n\n' + it.unavailable)}">${ICON('fa-solid fa-ban')}${esc(label)}</span></td>`;
 }
 let EDITING = null;
 function songCell(it, have) {
@@ -735,6 +742,97 @@ async function loadVersion() {
   showUpdate(v.update);
 }
 
+// ---------- accounts ----------
+let ACC = null;
+const BROWSER_NAMES = { firefox: 'Firefox', chrome: 'Google Chrome', edge: 'Microsoft Edge', brave: 'Brave', opera: 'Opera',
+  vivaldi: 'Vivaldi', chromium: 'Chromium', safari: 'Safari', whale: 'Naver Whale' };
+async function loadAccounts() {
+  ACC = await api('/api/accounts');
+  const yt = ACC.youtube, sp = ACC.spotify;
+  $('yt-browser').innerHTML = `<option value="">${esc(t('acc.choose_browser'))}</option>` + ACC.browsers.map(b => `<option value="${b}">${esc(BROWSER_NAMES[b] || b)}</option>`).join('');
+  $('yt-browser').value = yt.browser || '';
+  $('yt-status').className = 'chip ' + (yt.connected ? 'ok' : '');
+  $('yt-status').textContent = yt.connected ? (yt.browser ? t('acc.yt_via', { browser: BROWSER_NAMES[yt.browser] || yt.browser }) : t('acc.yt_via_file')) : t('acc.not_connected');
+  $('sp-status').className = 'chip ' + (sp.connected ? 'ok' : '');
+  $('sp-status').textContent = sp.connected ? t('acc.connected') : t('acc.not_connected');
+  $('sp-setup').classList.toggle('hidden', sp.connected);
+  $('sp-connected').classList.toggle('hidden', !sp.connected);
+  $('sp-user').textContent = sp.connected ? t('acc.sp_as', { user: sp.user || '?' }) : '';
+  if (!$('sp-client').value) $('sp-client').value = sp.client_id || '';
+  $('sp-redirect').textContent = `http://127.0.0.1:${location.port || 80}/spotify/callback`;
+}
+async function connectYouTube() {
+  const browser = $('yt-browser').value;
+  if (!browser) { toast(t('acc.choose_browser')); return; }
+  await api('/api/accounts/youtube', { method: 'POST', body: { browser } });
+  await loadAccounts();
+  testYouTube();
+}
+async function uploadCookies() {
+  const f = $('yt-file').files[0];
+  if (!f) { toast(t('acc.pick_file')); return; }
+  const text = await f.text();
+  await api('/api/accounts/youtube/cookies', { method: 'POST', body: { text } });
+  $('yt-file').value = '';
+  await loadAccounts();
+  testYouTube();
+}
+async function testYouTube() {
+  $('yt-result').innerHTML = `<span class="state busy">${SPIN}${t('acc.testing')}</span>`;
+  const r = await api('/api/accounts/playlists', { method: 'POST' });
+  const j = await followJob(r.id, { btn: $('yt-test') });
+  const e = j.result?.errors?.youtube;
+  if (e) $('yt-result').innerHTML = `<span class="bad-text">${ICON('fa-solid fa-triangle-exclamation')} ${esc(t('acc.yt_err_' + e.kind))}</span><br><span class="muted">${esc(e.text)}</span>`;
+  else if (j.status === 'done') {
+    const n = (j.result.playlists || []).filter(p => p.source === 'youtube' && !p.liked && p.name !== 'Watch later').length;
+    $('yt-result').innerHTML = `<span class="ok-text">${ICON('fa-solid fa-circle-check')} ${esc(t('acc.yt_ok', { n }))}</span>`;
+  }
+}
+async function connectSpotify() {
+  const client_id = $('sp-client').value.trim();
+  const r = await api('/api/accounts/spotify/start', { method: 'POST', body: { client_id } });
+  window.open(r.url, '_blank', 'noopener');
+  toast(t('acc.sp_waiting'));
+  const until = Date.now() + 5 * 60000;
+  while (Date.now() < until) {
+    await new Promise(res => setTimeout(res, 2000));
+    const a = await api('/api/accounts');
+    if (a.spotify.connected) { await loadAccounts(); toast(t('acc.sp_done_t')); return; }
+  }
+}
+function copyRedirect() { navigator.clipboard?.writeText($('sp-redirect').textContent); toast(t('acc.copied')); }
+async function disconnect(which) {
+  if (!confirm(t('acc.confirm_disconnect'))) return;
+  await api('/api/accounts/' + which, { method: 'DELETE' });
+  $('yt-result').innerHTML = '';
+  await loadAccounts();
+}
+async function openMyPlaylists() {
+  if (!ACC) await loadAccounts();
+  $('pl-dlg').showModal();
+  if (!ACC.youtube.connected && !ACC.spotify.connected) {
+    $('pl-body').innerHTML = `<div class="notice">${ICON('fa-solid fa-user-plus')}<span>${t('acc.none_connected')}</span></div>
+      <div class="row" style="margin-top:12px"><button class="fit primary" onclick="$('pl-dlg').close();showTab('settings');$('accounts-panel').scrollIntoView()">${ICON('fa-solid fa-gear')}${t('acc.go_settings')}</button></div>`;
+    return;
+  }
+  $('pl-body').innerHTML = `<span class="state busy">${SPIN}${t('acc.loading_playlists')}</span>`;
+  const r = await api('/api/accounts/playlists', { method: 'POST' });
+  const j = await followJob(r.id, {});
+  if (j.status !== 'done') { $('pl-body').innerHTML = ''; return; }
+  const { playlists, errors } = j.result;
+  const errHtml = Object.entries(errors).map(([src, e]) => `<div class="notice" style="margin-bottom:8px">${ICON('fa-solid fa-triangle-exclamation')}<span>${src === 'youtube' ? esc(t('acc.yt_err_' + e.kind)) : esc(t('acc.sp_err', { error: e }))}</span></div>`).join('');
+  const row = p => `<tr><td class="cv">${p.image ? `<img class="cover" src="${esc(p.image)}" width="36" height="36" loading="lazy" alt="">` : `<span class="cover none">${ICON(p.liked ? 'fa-solid fa-heart' : 'fa-solid fa-list')}</span>`}</td>
+    <td class="t">${ICON(p.source === 'spotify' ? 'fa-brands fa-spotify' : 'fa-brands fa-youtube', ` style="color:${p.source === 'spotify' ? '#1db954' : '#ff0033'}"`)} ${esc(p.liked ? (p.source === 'spotify' ? t('acc.liked_songs') : t('acc.liked_videos')) : p.name === 'Watch later' ? t('acc.watch_later') : p.name)}
+      <small>${p.count != null ? t('common.n_songs', { n: p.count }) : ''} ${p.private ? `<span class="chip">${ICON('fa-solid fa-lock')}${t('acc.private')}</span>` : ''}</small></td>
+    <td><button class="small" data-pl="${esc(p.url)}">${ICON('fa-solid fa-plus')}${t('acc.add_link')}</button></td></tr>`;
+  $('pl-body').innerHTML = errHtml + (playlists.length ? `<div class="table-wrap" style="max-height:60vh;overflow:auto"><table>${playlists.map(row).join('')}</table></div>` : `<p class="muted">${t('acc.no_playlists')}</p>`);
+  $('pl-body').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => {
+    const ta = $('urls'), lines = ta.value.split(/\s+/).filter(Boolean);
+    if (!lines.includes(b.dataset.pl)) ta.value = [...lines, b.dataset.pl].join('\n');
+    b.disabled = true; b.innerHTML = ICON('fa-solid fa-check') + t('acc.added');
+  });
+}
+
 // ---------- status bar ----------
 async function loadStatus() {
   try { STATUS = await api('/api/status'); } catch (e) { return; }
@@ -752,7 +850,7 @@ async function loadStatus() {
   fd.className = 'item' + (s.device ? ' ok' : '');
   $('f-folder').querySelector('span').textContent = s.library;
 }
-const JOB_TAB = { preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', update: 'settings' };
+const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', update: 'settings' };
 async function pollActivity() {
   let jobs = [];
   try { const r = await fetch('/api/jobs/active'); if (r.ok) jobs = await r.json(); } catch (e) { return; }
@@ -773,7 +871,7 @@ function showTab(name) {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + name));
   if (name === 'dupes') loadDupes();
   if (name === 'device') loadDrives();
-  if (name === 'settings') loadHealth();
+  if (name === 'settings') { loadHealth(); loadAccounts(); }
   try { localStorage.setItem('swimtunes-tab', name); } catch (e) {}
 }
 async function renderAll() {
@@ -799,5 +897,5 @@ setInterval(() => { if ($('overlay').classList.contains('hidden')) loadStatus();
   await refresh();
   let tab = null; try { tab = localStorage.getItem('swimtunes-tab'); } catch (e) {}
   showTab(tab && $('tab-' + tab) ? tab : (LIB.count ? 'songs' : 'add'));
-  loadVersion(); loadStatus(); pollActivity();
+  loadVersion(); loadStatus(); pollActivity(); loadAccounts().catch(() => {});
 })();

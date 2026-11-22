@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SwimTunes</title>
+<link rel="icon" type="image/png" href="/static/icon.png"><link rel="stylesheet" href="/static/fa/css/all.min.css"><link rel="stylesheet" href="/static/app.css"></head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:90vh;padding:24px">
+<div class="panel" style="max-width:460px;text-align:center">
+  <p style="font-size:40px;margin:0;color:var({{ '--ok' if ok else '--danger' }})"><i class="fa-brands fa-spotify"></i></p>
+  <h2 style="justify-content:center" id="title"></h2>
+  <p class="muted" id="text"></p>
+  <p class="muted small">{{ detail }}</p>
+</div>
+<script src="/static/i18n.js"></script>
+<script>
+  const pref = (navigator.languages || [navigator.language || 'en']).map(l => String(l).slice(0, 2)).find(l => I18N[l]) || 'en';
+  const t = k => (I18N[pref] && I18N[pref][k]) || I18N.en[k];
+  document.getElementById('title').textContent = t({{ 'acc.sp_done_t' if ok else 'acc.sp_fail_t' }}|tojson);
+  document.getElementById('text').textContent = t({{ 'acc.sp_done' if ok else 'acc.sp_fail' }}|tojson);
+  {% if ok %}setTimeout(() => { try { window.close(); } catch (e) {} }, 2500);{% endif %}
+</script>
+</body></html>

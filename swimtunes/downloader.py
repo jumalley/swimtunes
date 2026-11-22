@@ -133,7 +133,26 @@ class Downloader:
                 "http_chunk_size": 10 * 1024 * 1024}
         if deno := tools.deno_path():  # YouTube needs a JavaScript runtime
             base["js_runtimes"] = {"deno": {"path": deno}}
+        from . import accounts
+        base.update(accounts.ytdlp_options())   # the user's YouTube login, if connected
         return yt_dlp.YoutubeDL({**base, **opts})
+
+    def my_playlists(self) -> list[dict]:
+        """The connected YouTube account's playlists, private ones included."""
+        with self._ydl(extract_flat="in_playlist", playlistend=200) as ydl:
+            info = ydl.extract_info("https://www.youtube.com/feed/playlists", download=False)
+        out = [{"name": "Liked videos", "url": "https://www.youtube.com/playlist?list=LL", "source": "youtube", "liked": True},
+               {"name": "Watch later", "url": "https://www.youtube.com/playlist?list=WL", "source": "youtube"}]
+        for e in info.get("entries") or []:
+            if not e:
+                continue
+            url = e.get("url") or ""
+            if not url.startswith("http"):
+                url = f"https://www.youtube.com/playlist?list={e.get('id')}"
+            thumbs = e.get("thumbnails") or []
+            out.append({"name": e.get("title") or e.get("id"), "url": url, "count": e.get("playlist_count"),
+                        "image": thumbs[-1]["url"] if thumbs else "", "source": "youtube"})
+        return out
 
     def list_entries(self, url: str) -> tuple[str, list[dict]]:
         """(playlist title, [{'id','title','channel','duration'}]) for a video or playlist URL."""
@@ -211,8 +230,8 @@ class Downloader:
         url = url.strip()
         if spotify.is_spotify(url):
             data = spotify.fetch(url)
-            items = [{"kind": "spotify", "artist": t["artist"], "title": t["title"], "duration": t["duration"]}
-                     for t in data["tracks"]]
+            items = [{"kind": "spotify", "artist": t["artist"], "title": t["title"], "duration": t["duration"],
+                      "cover": t.get("cover") or data.get("cover") or ""} for t in data["tracks"]]
             name = data["name"]
         else:
             name, entries = self.list_entries(url)
@@ -235,8 +254,9 @@ class Downloader:
         try:
             info = self.video_info(it["video_id"])
         except Exception as e:
-            msg_ = str(e).splitlines()[0] if str(e) else type(e).__name__
-            it["unavailable"] = msg_.replace("ERROR: ", "")[:160]
+            msg_ = _ANSI.sub("", str(e).splitlines()[0] if str(e) else type(e).__name__).replace("ERROR: ", "")
+            it["unavailable"] = msg_[:200]
+            it["unavailable_kind"] = error_kind(msg_)   # private, removed, refused, sign-in…
             return
         song = youtube_song(info)
         if song["unknown"]:

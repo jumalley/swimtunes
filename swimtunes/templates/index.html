@@ -54,7 +54,8 @@
         <p class="muted" style="margin-top:0" data-i18n-html="add.step1_help">On YouTube or Spotify, click <b>Share → Copy link</b> and paste it here. Playlists work too. You'll see the songs before anything is downloaded.</p>
         <textarea id="urls" data-tip="tip.urls" placeholder="https://www.youtube.com/playlist?list=...&#10;https://open.spotify.com/playlist/..."></textarea>
         <label class="check"><input type="checkbox" id="allow-dupes"> <span data-i18n="add.allow_dupes">Let me download songs I already have again</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.allow_dupes"></i></label>
-        <div class="row" style="margin-top:12px"><button class="primary big" id="find-btn" onclick="startPreview()" data-tip="tip.find"><i class="fa-solid fa-magnifying-glass"></i><span data-i18n="add.find">Find songs</span></button></div>
+        <div class="row" style="margin-top:12px"><button class="primary big" id="find-btn" onclick="startPreview()" data-tip="tip.find"><i class="fa-solid fa-magnifying-glass"></i><span data-i18n="add.find">Find songs</span></button>
+          <button class="big" onclick="openMyPlaylists()" data-tip="tip.my_playlists"><i class="fa-solid fa-list-ul"></i><span data-i18n="acc.my_playlists">My playlists</span></button></div>
         <div class="progress hidden" id="pv-progress"><div class="bar"><i></i></div><small></small></div>
       </div>
 
@@ -189,6 +190,39 @@
 
     <!-- SETTINGS -->
     <section id="tab-settings" class="hidden">
+      <div class="panel" id="accounts-panel">
+        <h2><i class="fa-solid fa-user-plus"></i><span data-i18n="acc.title">Accounts</span></h2>
+        <p class="muted" style="margin-top:0" data-i18n="acc.help">Connect your accounts to use your private playlists. Your logins stay on this computer.</p>
+
+        <h3><i class="fa-brands fa-youtube" style="color:#ff0033"></i> YouTube <span id="yt-status" class="chip"></span></h3>
+        <p class="muted small" data-i18n-html="acc.yt_help">YouTube doesn't let apps log in directly, so SwimTunes uses the YouTube login of a web browser on this computer. Sign in to YouTube in that browser first. <b>Firefox works best</b>: on Windows, Chrome and Edge lock their logins so other apps can't use them.</p>
+        <div class="row">
+          <div><label data-i18n="acc.yt_browser">Browser where you're signed in to YouTube</label><select id="yt-browser"></select></div>
+          <button class="fit primary" style="align-self:flex-end" onclick="connectYouTube()"><i class="fa-solid fa-link"></i><span data-i18n="acc.connect">Connect</span></button>
+          <button class="fit" style="align-self:flex-end" id="yt-test" onclick="testYouTube()" data-tip="tip.yt_test"><i class="fa-solid fa-vial"></i><span data-i18n="acc.test">Test</span></button>
+          <button class="fit danger" style="align-self:flex-end" onclick="disconnect('youtube')"><i class="fa-solid fa-link-slash"></i><span data-i18n="acc.disconnect">Disconnect</span></button>
+        </div>
+        <details><summary data-i18n="acc.yt_cookies_summary">Chrome or Edge on Windows? Use a cookies.txt file instead</summary>
+          <p class="muted small" data-i18n-html="acc.yt_cookies_help">In your browser, install a "cookies.txt" export extension (for example <i>Get cookies.txt LOCALLY</i>), open youtube.com while signed in, export the cookies, then pick the file here. Treat that file like a password.</p>
+          <div class="row"><input type="file" id="yt-file" accept=".txt,text/plain"><button class="fit" onclick="uploadCookies()"><i class="fa-solid fa-upload"></i><span data-i18n="acc.use_file">Use this file</span></button></div>
+        </details>
+        <div id="yt-result" class="small" style="margin-top:8px"></div>
+
+        <h3 style="margin-top:22px"><i class="fa-brands fa-spotify" style="color:#1db954"></i> Spotify <span id="sp-status" class="chip"></span></h3>
+        <div id="sp-setup">
+          <p class="muted small" data-i18n="acc.sp_help">Spotify needs a free "Client ID" for each app. Create it once (about 2 minutes):</p>
+          <ol class="steps small">
+            <li data-i18n-html="acc.sp_s1">Open the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify developer dashboard</a> and log in with your Spotify account.</li>
+            <li data-i18n-html="acc.sp_s2">Click <b>Create app</b>. Any name and description. Tick <b>Web API</b>.</li>
+            <li><span data-i18n-html="acc.sp_s3">As <b>Redirect URI</b>, paste exactly:</span> <code id="sp-redirect"></code> <button class="small" onclick="copyRedirect()" data-tip="tip.copy"><i class="fa-regular fa-copy"></i></button></li>
+            <li data-i18n-html="acc.sp_s4">Save, then copy the <b>Client ID</b> and paste it below.</li>
+          </ol>
+          <div class="row"><div><label>Client ID</label><input id="sp-client" placeholder="e.g. 1a2b3c4d5e6f…" autocomplete="off"></div>
+            <button class="fit primary" style="align-self:flex-end" id="sp-connect" onclick="connectSpotify()"><i class="fa-brands fa-spotify"></i><span data-i18n="acc.sp_connect">Connect Spotify</span></button></div>
+        </div>
+        <div class="row hidden" id="sp-connected"><span id="sp-user" class="muted"></span><button class="fit danger" onclick="disconnect('spotify')"><i class="fa-solid fa-link-slash"></i><span data-i18n="acc.disconnect">Disconnect</span></button></div>
+      </div>
+
       <div class="panel">
         <h2><i class="fa-solid fa-sliders"></i><span data-i18n="set.prefs">Preferences</span></h2>
         <div class="row">
@@ -263,6 +297,12 @@
   <span class="sep"></span>
   <span class="item" data-tip="tip.lang"><i class="fa-solid fa-language"></i><select id="f-lang" class="lang-select" onchange="setLanguage(this.value)"></select></span>
 </footer>
+
+<dialog id="pl-dlg">
+  <h2><i class="fa-solid fa-list-ul"></i><span data-i18n="acc.my_playlists">My playlists</span></h2>
+  <div id="pl-body"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="fit" onclick="$('pl-dlg').close()" data-i18n="common.close">Close</button></div>
+</dialog>
 
 <datalist id="folder-names"></datalist>
 <div id="tip" role="tooltip"></div>

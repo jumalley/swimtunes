@@ -23,8 +23,11 @@ class SpotifyError(Exception):
     pass
 
 
+LIKED = "spotify:collection:tracks"   # the user's Liked Songs (needs a connected account)
+
+
 def is_spotify(url: str) -> bool:
-    return bool(SPOTIFY_RE.search(url))
+    return bool(SPOTIFY_RE.search(url)) or url.strip() == LIKED
 
 
 def parse_url(url: str) -> tuple[str, str]:
@@ -78,12 +81,32 @@ def parse_embed_html(html: str) -> dict:
 
 
 def fetch(url: str, timeout: float = 20) -> dict:
-    """Returns {'name': playlist name, 'tracks': [{'title', 'artist', 'duration'}]}."""
+    """Returns {'name': playlist name, 'tracks': [{'title', 'artist', 'duration'}]}.
+    With a connected Spotify account the official API is used (private playlists, no
+    100-song limit, album covers); otherwise the public embed page."""
+    from . import accounts
+    if url.strip() == LIKED:
+        if not accounts.spotify_token():
+            raise SpotifyError("Connect your Spotify account (Settings) to get your Liked Songs.")
+        return accounts.spotify_liked()
     kind, sid = parse_url(url)
+    if accounts.spotify_token():
+        try:
+            return accounts.spotify_collection(kind, sid)
+        except accounts.SpotifyAuthError as e:
+            if e.code == 404:
+                raise SpotifyError("Spotify can't find this playlist for your account. Check the link.") from None
+            # fall back to the public page below
     req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             html = r.read().decode("utf-8", "replace")
     except OSError as e:
         raise SpotifyError(f"Couldn't reach Spotify: {e}") from e
-    return parse_embed_html(html)
+    try:
+        return parse_embed_html(html)
+    except SpotifyError:
+        if kind == "playlist":
+            raise SpotifyError("Couldn't read this Spotify playlist. If it is private, connect your Spotify "
+                               "account in Settings.") from None
+        raise
