@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwimTunes</title>
+<style>
+:root { color-scheme: light dark;
+  --bg: #f4f7f9; --panel: #ffffff; --text: #14212b; --muted: #5d6f7c; --line: #dde5ea;
+  --accent: #0a7ea4; --accent-soft: #e2f3f9; --danger: #c0392b; --warn: #b7791f; --ok: #2f855a;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0e1418; --panel: #162027; --text: #e4edf2; --muted: #8fa3b0; --line: #26343d;
+    --accent: #38b2d8; --accent-soft: #15303b; --danger: #e5675a; --warn: #e0a84a; --ok: #5cc28b; }
+}
+* { box-sizing: border-box; }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+h1 { font-size: 18px; margin: 0; }
+h1 span { color: var(--accent); }
+h2 { font-size: 16px; margin: 0 0 12px; }
+.stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); }
+.cap { min-width: 220px; flex: 1; max-width: 360px; }
+.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.bar.full i { background: var(--danger); }
+.layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; padding: 16px; } header { padding: 16px; } }
+.layout > * { min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+.folders { list-style: none; margin: 0 0 12px; padding: 0; }
+.folders li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.folders li:hover { background: var(--bg); }
+.folders li.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.folders small { color: var(--muted); font-weight: 400; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+.tabs button { border: 0; background: none; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; }
+.tabs button.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.badge { background: var(--danger); color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
+button, .btn { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { color: var(--danger); }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); width: 100%; }
+textarea { min-height: 80px; resize: vertical; }
+label { display: block; color: var(--muted); font-size: 12px; margin: 10px 0 4px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 140px; }
+.row > button { flex: 0 0 auto; min-width: 0; }
+.check { display: flex; gap: 6px; align-items: center; color: var(--muted); margin-top: 10px; }
+.check input { width: auto; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.t { white-space: normal; min-width: 180px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td select { width: auto; padding: 3px 6px; }
+.muted { color: var(--muted); }
+.log { background: var(--bg); border-radius: 8px; padding: 10px; max-height: 260px; overflow: auto; font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; margin-top: 12px; }
+.log:empty { display: none; }
+.group { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+.group-title { font-weight: 600; margin-bottom: 6px; }
+.empty { color: var(--muted); padding: 24px; text-align: center; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.hidden { display: none; }
+.folder-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.folder-head h2 { margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏊 Swim<span>Tunes</span></h1>
+  <div class="stats">
+    <div class="stat"><b id="s-count">–</b><small>songs</small></div>
+    <div class="stat"><b id="s-dur">–</b><small>total time</small></div>
+    <div class="stat"><b id="s-folders">–</b><small>folders</small></div>
+  </div>
+  <div class="cap"><small class="muted" id="s-cap">–</small><div class="bar" id="s-bar"><i></i></div></div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="panel">
+      <h2>Folders</h2>
+      <ul class="folders" id="folders"></ul>
+      <div class="row"><input id="new-folder" placeholder="New folder name"><button onclick="createFolder()">Add</button></div>
+    </div>
+    <div class="panel">
+      <h2>Download</h2>
+      <label>YouTube or Spotify links (one per line)</label>
+      <textarea id="urls" placeholder="https://www.youtube.com/playlist?list=...&#10;https://open.spotify.com/playlist/..."></textarea>
+      <label>Into folder</label>
+      <input id="dl-folder" list="folder-names" placeholder="Leave empty = playlist name">
+      <datalist id="folder-names"></datalist>
+      <label class="check"><input type="checkbox" id="allow-dupes"> Download even if I already have the song</label>
+      <div class="row" style="margin-top:12px"><button class="primary" id="dl-btn" onclick="startDownload()">Download MP3s</button></div>
+      <div class="log" id="dl-log"></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="tabs">
+      <button data-tab="songs" class="on">Songs</button>
+      <button data-tab="dupes">Duplicates <span class="badge hidden" id="dupe-badge"></span></button>
+      <button data-tab="device">Earphones</button>
+      <button data-tab="settings">Settings</button>
+    </div>
+
+    <section id="tab-songs" class="panel">
+      <div class="folder-head">
+        <div><h2 id="folder-title">All songs</h2><small class="muted" id="folder-sub"></small></div>
+        <div class="row" id="folder-actions">
+          <input id="filter" placeholder="Search…" oninput="renderSongs()">
+          <button id="btn-rename" onclick="renameFolder()">Rename</button>
+          <button id="btn-delfolder" class="danger" onclick="deleteFolder()">Delete folder</button>
+          <button id="btn-delsel" class="danger" onclick="deleteSelected()" disabled>Delete selected</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th>Title</th><th>Artist</th><th id="th-folder">Folder</th><th class="num">Length</th><th class="num">Size</th><th>Move to</th></tr></thead>
+        <tbody id="songs"></tbody>
+      </table></div>
+    </section>
+
+    <section id="tab-dupes" class="panel hidden">
+      <h2>Duplicate songs</h2>
+      <p class="muted">Same YouTube video, or same artist and title (ignoring “Official Video”, “Lyrics”, “feat.”, “Remastered” and so on). The oldest copy is ticked as the one to keep.</p>
+      <div class="row" style="margin-bottom:12px">
+        <select id="dupe-scope" onchange="loadDupes()"><option value="library">Across all folders</option><option value="folder">Within each folder only</option></select>
+        <button class="danger" onclick="removeAllDupes()">Remove all extra copies</button>
+      </div>
+      <div id="dupes"></div>
+    </section>
+
+    <section id="tab-device" class="panel hidden">
+      <h2>Copy to earphones</h2>
+      <p class="muted">Plug in the earphones. They show up as a USB drive (e.g. <code>E:\</code> on Windows, <code>/Volumes/SWIM</code> on Mac). Folders that changed are copied in playlist order, because the earphones play songs in the order they were copied. Mac “._” junk files are cleaned up.</p>
+      <label>Earphones drive path</label>
+      <input id="device-path" placeholder="/Volumes/SWIM  or  E:\">
+      <label class="check"><input type="checkbox" id="mirror"> Also remove folders from the earphones that aren't in my library</label>
+      <div class="row" style="margin-top:12px"><button class="primary" id="sync-btn" onclick="startSync()">Sync now</button></div>
+      <div class="log" id="sync-log"></div>
+    </section>
+
+    <section id="tab-settings" class="panel hidden">
+      <h2>Settings</h2>
+      <label>Library folder</label><input id="cfg-root" disabled>
+      <div class="row">
+        <div><label>Earphone capacity (GB)</label><select id="cfg-capacity_gb"><option value="4">4 GB (OpenSwim)</option><option value="32">32 GB (OpenSwim Pro)</option><option value="8">8 GB</option><option value="16">16 GB</option></select></div>
+        <div><label>MP3 quality</label><select id="cfg-bitrate"><option value="128">128 kbps (more songs)</option><option value="192">192 kbps (recommended)</option><option value="256">256 kbps</option><option value="320">320 kbps (best)</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>No duplicates…</label><select id="cfg-dupe_scope"><option value="library">anywhere in the library</option><option value="folder">within the same folder</option></select></div>
+        <div><label>Volume</label><select id="cfg-normalize"><option value="false">Keep original loudness</option><option value="true">Even out loudness between songs</option></select></div>
+      </div>
+      <div class="row" style="margin-top:16px"><button class="primary" onclick="saveSettings()">Save</button><button class="danger" onclick="emptyTrash()">Empty trash</button></div>
+      <p class="muted">Deleted songs and folders go to <code>.trash</code> inside the library until you empty it.</p>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let LIB = null, CURRENT = null, SONGS = [], SELECTED = new Set();
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dur = s => { s = Math.round(s || 0); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${m}:${String(x).padStart(2,'0')}`; };
+const longDur = s => { s = Math.round(s||0); const h = Math.floor(s/3600), m = Math.round(s%3600/60); return h ? `${h} h ${m} min` : `${m} min`; };
+const size = b => b >= 1e9 ? (b/1e9).toFixed(2)+' GB' : (b/1e6).toFixed(1)+' MB';
+
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2500); }
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: {'Content-Type': 'application/json'}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  const data = await r.json();
+  if (!r.ok) { toast(data.error || 'Something went wrong'); throw new Error(data.error); }
+  return data;
+}
+
+async function loadLibrary() {
+  LIB = await api('/api/library');
+  $('s-count').textContent = LIB.count;
+  $('s-dur').textContent = longDur(LIB.duration);
+  $('s-folders').textContent = LIB.folders.length;
+  const pct = Math.min(100, LIB.size / LIB.capacity * 100);
+  $('s-cap').textContent = `${size(LIB.size)} of ${LIB.config.capacity_gb} GB used on earphones (${pct.toFixed(0)}%)`;
+  $('s-bar').firstElementChild.style.width = pct + '%';
+  $('s-bar').classList.toggle('full', LIB.size > LIB.capacity * 0.95);
+  const b = $('dupe-badge'); b.textContent = LIB.duplicates; b.classList.toggle('hidden', !LIB.duplicates);
+  $('folder-names').innerHTML = LIB.folders.map(f => `<option value="${esc(f.name)}">`).join('');
+  const all = `<li data-f="" class="${CURRENT === null ? 'active' : ''}"><span>All songs</span><small>${LIB.count} · ${dur(LIB.duration)}</small></li>`;
+  $('folders').innerHTML = all + LIB.folders.map(f =>
+    `<li data-f="${esc(f.name)}" class="${CURRENT === f.name ? 'active' : ''}"><span>${esc(f.name)}</span><small>${f.count} · ${dur(f.duration)}</small></li>`).join('');
+  $('folders').querySelectorAll('li').forEach(li => li.onclick = () => openFolder(li.dataset.f || null));
+  for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
+  $('cfg-root').value = LIB.root;
+  if (!$('device-path').value) $('device-path').value = LIB.config.device_path || '';
+  $('dupe-scope').value = $('dupe-scope').dataset.touched ? $('dupe-scope').value : LIB.config.dupe_scope;
+}
+
+async function openFolder(name) {
+  if (CURRENT !== name) { SELECTED.clear(); $('filter').value = ''; $('dl-folder').value = name ?? ''; }
+  CURRENT = name;
+  if (name === null) {
+    const lists = await Promise.all(LIB.folders.map(f => api('/api/folders/' + encodeURIComponent(f.name))));
+    SONGS = lists.flat();
+  } else {
+    SONGS = await api('/api/folders/' + encodeURIComponent(name));
+  }
+  const f = LIB.folders.find(f => f.name === name);
+  $('folder-title').textContent = name ?? 'All songs';
+  $('folder-sub').textContent = f ? `${f.count} songs · ${longDur(f.duration)} · ${size(f.size)}` : `${LIB.count} songs · ${longDur(LIB.duration)} · ${size(LIB.size)}`;
+  $('btn-rename').classList.toggle('hidden', name === null);
+  $('btn-delfolder').classList.toggle('hidden', name === null);
+  $('th-folder').classList.toggle('hidden', name !== null);
+  document.querySelectorAll('#folders li').forEach(li => li.classList.toggle('active', (li.dataset.f || null) === name));
+  renderSongs();
+}
+
+function renderSongs() {
+  const q = $('filter').value.toLowerCase();
+  const rows = SONGS.filter(s => !q || (s.title + ' ' + s.artist).toLowerCase().includes(q));
+  const opts = LIB.folders.map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
+  $('songs').innerHTML = rows.length ? rows.map((s, i) => `<tr>
+    <td><input type="checkbox" data-p="${esc(s.path)}" ${SELECTED.has(s.path) ? 'checked' : ''}></td>
+    <td class="muted">${s.track_no ?? i + 1}</td>
+    <td class="t">${esc(s.title)}</td><td>${esc(s.artist)}</td>
+    <td class="${CURRENT === null ? '' : 'hidden'}">${esc(s.folder)}</td>
+    <td class="num">${dur(s.duration)}</td><td class="num muted">${size(s.size)}</td>
+    <td><select data-move="${esc(s.path)}"><option value="">—</option>${opts}</select></td></tr>`).join('')
+    : `<tr><td colspan="8" class="empty">${SONGS.length ? 'No matches' : 'No songs yet. Paste a link in Download.'}</td></tr>`;
+  $('songs').querySelectorAll('input[data-p]').forEach(cb => cb.onchange = () => {
+    cb.checked ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); updateSel(); });
+  $('songs').querySelectorAll('select[data-move]').forEach(sel => sel.onchange = async () => {
+    if (!sel.value) return;
+    await api('/api/tracks/move', { method: 'POST', body: { path: sel.dataset.move, folder: sel.value } });
+    toast('Moved to ' + sel.value); await refresh();
+  });
+  updateSel();
+}
+function updateSel() { $('btn-delsel').disabled = !SELECTED.size; $('btn-delsel').textContent = SELECTED.size ? `Delete ${SELECTED.size} selected` : 'Delete selected'; }
+function selectAll(on) { document.querySelectorAll('#songs input[data-p]').forEach(cb => { cb.checked = on; on ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); }); updateSel(); }
+
+async function refresh() { await loadLibrary(); if (CURRENT !== null && !LIB.folders.some(f => f.name === CURRENT)) CURRENT = null; await openFolder(CURRENT); }
+
+async function createFolder() {
+  const name = $('new-folder').value.trim(); if (!name) return;
+  const r = await api('/api/folders', { method: 'POST', body: { name } });
+  $('new-folder').value = ''; CURRENT = r.name; await refresh();
+}
+async function renameFolder() {
+  const name = prompt('New name for "' + CURRENT + '"', CURRENT); if (!name || name === CURRENT) return;
+  const r = await api(`/api/folders/${encodeURIComponent(CURRENT)}/rename`, { method: 'POST', body: { name } });
+  CURRENT = r.name; await refresh();
+}
+async function deleteFolder() {
+  if (!confirm(`Delete folder "${CURRENT}" and its songs? (It goes to the trash.)`)) return;
+  await api('/api/folders/' + encodeURIComponent(CURRENT), { method: 'DELETE' });
+  CURRENT = null; await refresh();
+}
+async function deleteSelected() {
+  if (!confirm(`Delete ${SELECTED.size} song(s)? (They go to the trash.)`)) return;
+  await api('/api/tracks/delete', { method: 'POST', body: { paths: [...SELECTED] } });
+  SELECTED.clear(); await refresh(); loadDupes();
+}
+
+let DUPES = [];
+async function loadDupes() {
+  DUPES = await api('/api/duplicates?scope=' + $('dupe-scope').value);
+  $('dupes').innerHTML = DUPES.length ? DUPES.map((g, gi) => `<div class="group">
+    <div class="group-title">${esc(g[0].artist ? g[0].artist + ' – ' : '')}${esc(g[0].title)} <span class="muted">(${g.length} copies)</span></div>
+    <table>${g.map((t, ti) => `<tr><td><label class="check" style="margin:0"><input type="radio" name="keep-${gi}" value="${ti}" ${ti === 0 ? 'checked' : ''}> keep</label></td>
+      <td>${esc(t.folder)}</td><td class="t">${esc(t.filename)}</td><td class="num">${dur(t.duration)}</td></tr>`).join('')}</table>
+    <button class="danger" style="margin-top:8px" onclick="resolveDupe(${gi})">Remove the others</button></div>`).join('')
+    : '<div class="empty">No duplicates 🎉</div>';
+}
+function extraCopies(gi) { const keep = +document.querySelector(`input[name="keep-${gi}"]:checked`).value; return DUPES[gi].filter((_, i) => i !== keep).map(t => t.path); }
+async function resolveDupe(gi) { await api('/api/tracks/delete', { method: 'POST', body: { paths: extraCopies(gi) } }); await refresh(); loadDupes(); }
+async function removeAllDupes() {
+  const paths = DUPES.flatMap((_, gi) => extraCopies(gi)); if (!paths.length) return;
+  if (!confirm(`Remove ${paths.length} extra copies? (They go to the trash.)`)) return;
+  await api('/api/tracks/delete', { method: 'POST', body: { paths } }); await refresh(); loadDupes();
+}
+
+async function followJob(id, logEl, btn) {
+  btn.disabled = true; logEl.textContent = 'Starting…';
+  while (true) {
+    const j = await api('/api/jobs/' + id);
+    logEl.textContent = j.log.join('\n') || 'Working…'; logEl.scrollTop = logEl.scrollHeight;
+    if (j.status === 'done' || j.status === 'error') break;
+    await new Promise(r => setTimeout(r, 1000));
+    if (j.kind === 'download') loadLibrary();
+  }
+  btn.disabled = false; await refresh(); loadDupes();
+}
+async function startDownload() {
+  const r = await api('/api/download', { method: 'POST', body: { urls: $('urls').value, folder: $('dl-folder').value, allow_dupes: $('allow-dupes').checked } });
+  followJob(r.id, $('dl-log'), $('dl-btn'));
+}
+async function startSync() {
+  const r = await api('/api/sync', { method: 'POST', body: { device: $('device-path').value, mirror: $('mirror').checked } });
+  followJob(r.id, $('sync-log'), $('sync-btn'));
+}
+async function saveSettings() {
+  await api('/api/config', { method: 'POST', body: { capacity_gb: +$('cfg-capacity_gb').value, bitrate: +$('cfg-bitrate').value,
+    dupe_scope: $('cfg-dupe_scope').value, normalize: $('cfg-normalize').value === 'true' } });
+  toast('Saved'); refresh();
+}
+async function emptyTrash() { if (!confirm('Permanently delete everything in the trash?')) return; const r = await api('/api/trash/empty', { method: 'POST' }); toast(`Deleted ${r.deleted} songs for good`); }
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + b.dataset.tab));
+  if (b.dataset.tab === 'dupes') loadDupes();
+});
+$('dupe-scope').addEventListener('change', e => e.target.dataset.touched = 1);
+$('new-folder').onkeydown = e => { if (e.key === 'Enter') createFolder(); };
+refresh();
+</script>
+</body>
+</html>

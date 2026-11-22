@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swimtunes"
+version = "0.1.0"
+description = "Download YouTube/Spotify music as MP3 for swimming earphones, without duplicates"
+requires-python = ">=3.10"
+dependencies = ["yt-dlp>=2024.10.0", "mutagen>=1.47", "flask>=3.0"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+swimtunes = "swimtunes.cli:main"
+
+[tool.setuptools]
+packages = ["swimtunes"]
+
+[tool.setuptools.package-data]
+swimtunes = ["templates/*.html"]
