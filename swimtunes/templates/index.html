@@ -103,6 +103,20 @@
 
     <!-- SONGS -->
     <section id="tab-songs" class="panel hidden">
+      <div id="cards-view">
+        <div class="folder-head">
+          <div><h2><i class="fa-solid fa-layer-group"></i><span data-i18n="cards.title">Your playlists</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.cards"></i></h2><small class="muted" id="cards-sub"></small></div>
+          <div class="row">
+            <span class="swim-pick fit" data-tip="tip.swim_minutes"><i class="fa-solid fa-person-swimming"></i><span data-i18n="cards.swim_is">One swim:</span><select id="swim-min" onchange="setSwimMinutes(this.value)"></select></span>
+            <button onclick="showAllSongs()"><i class="fa-solid fa-list"></i><span data-i18n="cards.all_songs">List every song</span></button>
+          </div>
+        </div>
+        <div class="cards" id="cards"></div>
+        <p class="muted small" id="cards-dev"></p>
+      </div>
+      <div id="list-view">
+      <button class="link back" onclick="showCards()"><i class="fa-solid fa-arrow-left"></i><span data-i18n="cards.back">All playlists</span></button>
+      <div class="hero hidden" id="hero"></div>
       <div class="folder-head">
         <div><h2><i class="fa-solid fa-music"></i><span id="folder-title">All songs</span></h2><small class="muted" id="folder-sub"></small></div>
         <div class="row" id="folder-actions">
@@ -119,6 +133,7 @@
           <th><span data-i18n="col.move_to">Move to</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.move_to"></i></th></tr></thead>
         <tbody id="songs"></tbody>
       </table></div>
+      </div>
     </section>
 
     <!-- ORGANIZE -->
@@ -147,6 +162,12 @@
     <!-- EARPHONES -->
     <section id="tab-device" class="panel hidden">
       <h2><i class="fa-solid fa-headphones"></i><span data-i18n="dev.title">Your earphones</span></h2>
+      <div class="bt" id="bt-box">
+        <h3><i class="fa-brands fa-bluetooth-b"></i><span data-i18n="bt.title">Battery and settings</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.bt"></i></h3>
+        <div id="bt-body"></div>
+        <div class="row" style="margin-top:10px"><select id="bt-dev" class="hidden"></select><button class="fit" id="bt-btn" onclick="readShokz()"><i class="fa-brands fa-bluetooth-b"></i><span data-i18n="bt.read">Read from the earphones</span></button></div>
+        <p class="muted small" id="bt-help"></p>
+      </div>
       <ol class="steps">
         <li data-i18n="dev.s1">Connect the earphones to your computer with their charging cable.</li>
         <li data-i18n="dev.s2">Wait a few seconds, then pick them below.</li>
@@ -290,6 +311,8 @@
   <button class="item" id="f-version" onclick="showTab('settings')" data-tip="tip.f_version"><i class="fa-solid fa-tag"></i><span></span></button>
   <span class="sep"></span>
   <button class="item" id="f-device" onclick="showTab('device')" data-tip="tip.f_device"><i class="fa-solid fa-headphones"></i><span></span></button>
+  <span class="sep hidden" id="f-battery-sep"></span>
+  <button class="item hidden" id="f-battery" onclick="showTab('device')"><i class="fa-solid fa-battery-half"></i><span></span></button>
   <span class="sep hide-sm"></span>
   <button class="item hide-sm" id="f-folder" onclick="openMusicFolder()" data-tip="tip.music_folder"><i class="fa-regular fa-folder-open"></i><span></span></button>
   <span class="grow"></span>
@@ -297,6 +320,15 @@
   <span class="sep"></span>
   <span class="item" data-tip="tip.lang"><i class="fa-solid fa-language"></i><select id="f-lang" class="lang-select" onchange="setLanguage(this.value)"></select></span>
 </footer>
+
+<dialog id="pic-dlg" class="wide">
+  <h2><i class="fa-regular fa-image"></i><span id="pic-title"></span></h2>
+  <label class="drop" id="pic-drop" tabindex="0"><i class="fa-solid fa-cloud-arrow-up"></i><span data-i18n-html="pic.drop">Drop a picture here, paste one (<b>Ctrl+V</b>) or <u>choose a file</u></span><input type="file" id="pic-file" accept="image/*" hidden></label>
+  <div class="row pic-search"><input id="pic-q" data-i18n-ph="pic.search_ph" placeholder="Search pictures (artist, album, mood…)"><button class="fit" onclick="loadPictures($('pic-q').value)"><i class="fa-solid fa-magnifying-glass"></i><span data-i18n="pic.search">Search</span></button></div>
+  <div id="pic-keywords" class="kw"></div>
+  <div id="pic-body"></div>
+  <div class="row" style="justify-content:space-between;margin-top:12px"><button class="fit danger" id="pic-remove" onclick="removePicture()"><i class="fa-regular fa-trash-can"></i><span data-i18n="pic.remove">Remove picture</span></button><button class="fit" onclick="$('pic-dlg').close()" data-i18n="common.close">Close</button></div>
+</dialog>
 
 <dialog id="pl-dlg">
   <h2><i class="fa-solid fa-list-ul"></i><span data-i18n="acc.my_playlists">My playlists</span></h2>

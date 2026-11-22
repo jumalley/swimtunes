@@ -115,6 +115,33 @@ playlists, private ones included, plus your Liked songs/videos. Your logins stay
   *Redirect URI* shown in SwimTunes, paste the Client ID and click **Connect Spotify**. Connected, Spotify playlists have
   no 100-song limit, private playlists work, and album covers come from Spotify.
 
+### Your playlists at a glance
+
+**Songs** opens on your playlists as cards: one card per folder, the same folders as on the earphones.
+Each card shows how long the playlist plays, **how many swims it lasts** (pick how long one swim is: 30 min,
+45 min, 1 h…), when songs were last added or removed, and whether the earphones have the latest version.
+
+![Playlists as cards](docs/screenshots/12-playlists.png)
+
+Click **Add picture** to give a playlist a picture: drop or paste your own, use one of its songs' album covers,
+make a mosaic of them, or pick from albums, playlists and artists suggested from the songs (artists, genres,
+folder name). The picture stays in SwimTunes; the earphones have no screen. Click a card to see its songs.
+
+<img src="docs/screenshots/13-pictures.png" width="720" alt="Choosing a playlist picture">
+
+### Battery and firmware (Bluetooth)
+
+In **Earphones → Battery and settings**, click **Read from the earphones** to see the battery level (and how
+many swims it has left), the firmware version, whether they play MP3 or Bluetooth, the shuffle/repeat setting and the
+sound mode. If they're on **shuffle**, SwimTunes warns you: your playlist order is then ignored.
+
+This uses the same Bluetooth protocol as the free [Gadgetbridge](https://gadgetbridge.org/gadgets/headphones/shokz/)
+app (OpenSwim Pro supported). Pair the earphones once with your computer in its Bluetooth settings, switch them on and
+take them out of the charger. Works on Windows and Linux; on a Mac only what macOS itself knows can be shown.
+Reading doesn't change anything on the earphones.
+
+<img src="docs/screenshots/14-battery.png" width="720" alt="Battery, firmware and settings read over Bluetooth">
+
 ### 4. Sort the songs you already have
 
 **Sort my songs** uses the same sorting options on songs that are already in SwimTunes. It shows where
@@ -137,8 +164,8 @@ and the language.
 
 <p><img src="docs/screenshots/10-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/11-phone.png" width="22%" alt="Phone-sized window"></p>
 
-> Screenshots use sample data: the songs are silent demo files and downloads are simulated,
-> but genre, style and country come from the real Deezer and MusicBrainz databases.
+> Screenshots use sample data: the songs are silent demo files, downloads and the Bluetooth reading are simulated,
+> but genre, style, country and picture suggestions come from the real Deezer and MusicBrainz databases.
 
 ## Questions
 
@@ -168,6 +195,13 @@ folder), so it isn't downloaded twice.
 Connect your Spotify account (Settings → Accounts) to get them all.
 
 **"YouTube won't show this playlist".** It's private (or the link is incomplete). If it's yours, connect your YouTube account.
+
+**"Couldn't connect to the earphones over Bluetooth".** Check they're paired with this computer (its Bluetooth
+settings), switched on, out of the charging cradle and close by. If your phone is connected to them at the same time,
+it can help to turn the phone's Bluetooth off for a moment.
+
+**Does the playlist picture go on the earphones?** No, they have no screen. It's saved as a hidden
+`.swimtunes-cover.jpg` in the folder and is never copied to the earphones.
 
 **It says the earphones aren't found.** Connect them to the computer with the charging cable (not to a wall plug),
 wait 10 seconds and click **Look again**. On Windows they appear in **This PC** (e.g. *SWIM PRO (H:)*).
@@ -216,6 +250,8 @@ Use `python -m swimtunes ...` if the `swimtunes` command isn't found. The music 
 | `swimtunes/sorter.py` | sorting modes, folder rules, learning rules from existing folders |
 | `swimtunes/library.py` | the music folder: tags, stats, duplicates, trash |
 | `swimtunes/device.py` | find the earphones, compare, import, sync in play order |
+| `swimtunes/shokz.py` | battery / firmware / settings over Bluetooth (RFCOMM, Shokz protocol from Gadgetbridge) |
+| `swimtunes/covers.py` | album covers for songs, playlist pictures and picture suggestions |
 | `swimtunes/updater.py` | in-app updates (release download or git pull) |
 | `swimtunes/web.py` | the dashboard's server: jobs with live progress, status bar, translatable messages |
 | `templates/index.html`, `static/app.js`, `static/app.css` | the dashboard page |

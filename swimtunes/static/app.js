@@ -196,10 +196,13 @@ async function loadLibrary() {
   $('s-bar').classList.toggle('full', LIB.size > LIB.capacity * 0.95);
   const b = $('dupe-badge'); b.textContent = LIB.duplicates; b.classList.toggle('hidden', !LIB.duplicates);
   $('folder-names').innerHTML = LIB.folders.map(f => `<option value="${esc(f.name)}">`).join('');
-  const all = `<li data-f="" class="${CURRENT === null ? 'active' : ''}">${ICON('fa-solid fa-layer-group')}<span>${t('side.all')}</span><small>${LIB.count} · ${dur(LIB.duration)}</small></li>`;
+  const all = `<li data-f="" class="${CURRENT === null ? 'active' : ''}">${ICON('fa-solid fa-layer-group')}<span>${t('side.all_playlists')}</span><small>${LIB.count} · ${dur(LIB.duration)}</small></li>`;
   $('folders').innerHTML = all + LIB.folders.map(f =>
     `<li data-f="${esc(f.name)}" class="${CURRENT === f.name ? 'active' : ''}" data-tip-raw="${esc(t('side.folder_tip', { n: f.count, time: longDur(f.duration), size: size(f.size) }))}">${ICON('fa-regular fa-folder')}<span>${esc(f.name)}</span><small>${f.count} · ${dur(f.duration)}</small></li>`).join('');
-  $('folders').querySelectorAll('li').forEach(li => li.onclick = () => { openFolder(li.dataset.f || null); showTab('songs'); });
+  $('folders').querySelectorAll('li').forEach(li => li.onclick = () => { if (!li.dataset.f) SHOW_ALL = false; openFolder(li.dataset.f || null); showTab('songs'); });
+  $('swim-min').innerHTML = [...new Set([...SWIM_CHOICES, swimMin()])].sort((a, b) => a - b).map(m => `<option value="${m}">${esc(t('dur.m', { m }))}</option>`).join('');
+  $('swim-min').value = String(swimMin());
+  renderBatteryFooter();
   for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
   $('cfg-root').value = LIB.root;
   RULES = LIB.config.rules || [];
@@ -212,6 +215,11 @@ async function loadLibrary() {
 async function openFolder(name) {
   if (CURRENT !== name) { SELECTED.clear(); $('filter').value = ''; }
   CURRENT = name;
+  const cards = name === null && !SHOW_ALL;
+  $('cards-view').classList.toggle('hidden', !cards);
+  $('list-view').classList.toggle('hidden', cards);
+  document.querySelectorAll('#folders li').forEach(li => li.classList.toggle('active', (li.dataset.f || null) === name));
+  if (cards) { SONGS = []; renderCards(); loadEarphoneFolders(); return; }
   SONGS = name === null ? await api('/api/tracks') : await api('/api/folders/' + encodeURIComponent(name));
   const f = LIB.folders.find(f => f.name === name);
   $('folder-title').textContent = name ?? t('side.all');
@@ -220,9 +228,181 @@ async function openFolder(name) {
   $('btn-rename').classList.toggle('hidden', name === null);
   $('btn-delfolder').classList.toggle('hidden', name === null);
   $('th-folder').classList.toggle('hidden', name !== null);
-  document.querySelectorAll('#folders li').forEach(li => li.classList.toggle('active', (li.dataset.f || null) === name));
+  renderHero();
+  if (f) loadEarphoneFolders();
   renderSongs();
 }
+
+// ---------- playlists overview: cards, pictures, swims ----------
+let SHOW_ALL = false, EAR = null, EAR_AT = 0;
+const SWIM_CHOICES = [20, 30, 45, 60, 75, 90, 120];
+function swimMin() { return +(LIB?.config.swim_minutes) || 45; }
+function showCards() { SHOW_ALL = false; openFolder(null); }
+function showAllSongs() { SHOW_ALL = true; openFolder(null); }
+async function setSwimMinutes(v) {
+  await api('/api/config', { method: 'POST', body: { swim_minutes: +v } });
+  LIB.config.swim_minutes = +v;
+  renderCards(); renderHero(); renderBatteryFooter(); if (SHOKZ) renderShokz();
+}
+function ago(ts) {
+  if (!ts) return '';
+  const s = (Date.now() / 1000) - ts, rtf = new Intl.RelativeTimeFormat(LANG, { numeric: 'auto' });
+  if (s < 60) return rtf.format(0, 'second');
+  for (const [u, n] of [['minute', 60], ['hour', 3600], ['day', 86400], ['week', 604800], ['month', 2629800], ['year', 31557600]].reverse())
+    if (s >= n) return rtf.format(-Math.floor(s / n), u);
+  return rtf.format(-Math.floor(s / 60), 'minute');
+}
+function swims(sec) { return (sec || 0) / (swimMin() * 60); }
+function swimShort(sec) {
+  const n = swims(sec);
+  return n >= 1 ? t('swim.short', { n, x: nf(n, n < 10 ? 1 : 0) }) : t('swim.short_part', { pct: Math.round(n * 100) });
+}
+function swimText(sec) {
+  const n = swims(sec), m = swimMin();
+  if (!sec) return t('swim.none');
+  return n >= 1 ? t('swim.long', { n, x: nf(n, n < 10 ? 1 : 0), m, time: longDur(sec) })
+    : t('swim.part', { pct: Math.round(n * 100), m, time: longDur(sec) });
+}
+function swimBlocks(sec, max = 8) {
+  const n = swims(sec), count = Math.max(1, Math.min(max, Math.ceil(n)));
+  let html = '';
+  for (let i = 0; i < count; i++) html += `<i><b style="width:${Math.round(Math.max(0, Math.min(1, n - i)) * 100)}%"></b></i>`;
+  return `<span class="swims">${html}${n > max ? '<em>+</em>' : ''}</span>`;
+}
+function folderArt(f) {
+  if (f.cover) return `<img class="art" src="/api/folders/${encodeURIComponent(f.name)}/picture?v=${f.cover}" alt="">`;
+  const pics = f.pics || [];
+  if (pics.length >= 4) return `<div class="art mosaic">${pics.map(p => `<img src="/api/cover?path=${encodeURIComponent(p)}" alt="" loading="lazy">`).join('')}</div>`;
+  if (pics.length) return `<img class="art" src="/api/cover?path=${encodeURIComponent(pics[0])}" alt="" loading="lazy">`;
+  return `<div class="art empty">${ICON('fa-solid fa-music')}</div>`;
+}
+function earChip(f) {
+  const st = EAR?.path ? EAR.folders[f.name] : undefined, synced = LIB.config.synced?.[f.name];
+  if (EAR?.path) {
+    if (st === 'same') return `<span class="chip ok" data-tip="tip.ear_same">${ICON('fa-solid fa-check')}${t('ear.same')}</span>`;
+    if (st === 'different') return `<span class="chip warn" data-tip="tip.ear_changed">${ICON('fa-solid fa-not-equal')}${t('ear.changed')}</span>`;
+    return `<span class="chip info" data-tip="tip.ear_missing">${ICON('fa-solid fa-upload')}${t('ear.missing')}</span>`;
+  }
+  if (!synced) return `<span class="chip" data-tip="tip.ear_never">${ICON('fa-solid fa-headphones')}${t('ear.never')}</span>`;
+  if (f.updated > synced + 2) return `<span class="chip warn" data-tip="tip.ear_newer">${ICON('fa-solid fa-clock-rotate-left')}${t('ear.newer', { when: ago(synced) })}</span>`;
+  return `<span class="chip" data-tip="tip.ear_copied">${ICON('fa-solid fa-headphones')}${t('ear.copied', { when: ago(synced) })}</span>`;
+}
+async function loadEarphoneFolders(force = false) {
+  if (!force && Date.now() - EAR_AT < 15000) return;
+  EAR_AT = Date.now();
+  try { EAR = await api('/api/earphones/folders'); } catch (e) { return; }
+  if (CURRENT === null && !SHOW_ALL) renderCards(); else renderHero();
+}
+function renderCards() {
+  if (!LIB) return;
+  const total = LIB.folders.reduce((a, f) => a + f.duration, 0);
+  $('cards-sub').textContent = LIB.folders.length ? t('cards.sub', { n: LIB.folders.length, time: longDur(total), swims: swimShort(total) }) : '';
+  $('cards').innerHTML = LIB.folders.length ? LIB.folders.map(f => `<div class="card" data-f="${esc(f.name)}" tabindex="0">
+      <div class="art-wrap">${folderArt(f)}<button class="pic-btn" data-pic="${esc(f.name)}" data-tip="tip.pic">${ICON('fa-regular fa-image')}<span>${t(f.cover ? 'pic.change' : 'pic.add')}</span></button></div>
+      <div class="card-body"><b class="name">${esc(f.name)}</b>
+        <small class="muted">${t('common.n_songs', { n: f.count })} · ${longDur(f.duration)} · ${size(f.size)}</small>
+        <div class="swim-line" data-tip-raw="${esc(swimText(f.duration))}">${ICON('fa-solid fa-person-swimming')}${swimBlocks(f.duration)}<small>${esc(swimShort(f.duration))}</small></div>
+        <div class="genres">${(f.genres || []).map(g => `<span class="chip">${esc(g)}</span>`).join('')}</div>
+        <div class="card-foot"><small class="muted" data-tip-raw="${esc(t('cards.updated_tip', { date: new Date(f.updated * 1000).toLocaleString(LANG) }))}">${ICON('fa-regular fa-clock')} ${esc(t('cards.updated', { when: ago(f.updated) }))}</small>${earChip(f)}</div>
+      </div></div>`).join('')
+    : `<div class="empty">${t('songs.empty')}</div>`;
+  $('cards').querySelectorAll('.card').forEach(c => {
+    c.onclick = e => { if (e.target.closest('.pic-btn')) return; openFolder(c.dataset.f); };
+    c.onkeydown = e => { if (e.key === 'Enter') openFolder(c.dataset.f); };
+  });
+  $('cards').querySelectorAll('.pic-btn').forEach(b => b.onclick = () => openPictures(b.dataset.pic));
+  $('cards-dev').innerHTML = EAR?.path ? ICON('fa-solid fa-plug') + ' ' + esc(t('cards.ear_on', { path: EAR.path })) : ICON('fa-solid fa-plug-circle-xmark') + ' ' + esc(t('cards.ear_off'));
+}
+function renderHero() {
+  const f = LIB?.folders.find(f => f.name === CURRENT);
+  $('hero').classList.toggle('hidden', !f);
+  if (!f) return;
+  const synced = LIB.config.synced?.[f.name];
+  $('hero').innerHTML = `<div class="art-wrap big">${folderArt(f)}<button class="pic-btn" onclick="openPictures(CURRENT)" data-tip="tip.pic">${ICON('fa-regular fa-image')}<span>${t(f.cover ? 'pic.change' : 'pic.add')}</span></button></div>
+    <div class="hero-info">
+      <div class="facts">
+        <div><small>${t('hero.plays')}</small><b>${longDur(f.duration)}</b></div>
+        <div data-tip="tip.swim_minutes"><small>${t('hero.swims', { m: swimMin() })}</small><b>${esc(swimShort(f.duration))}</b></div>
+        <div data-tip-raw="${esc(new Date(f.updated * 1000).toLocaleString(LANG))}"><small>${t('hero.updated')}</small><b>${esc(ago(f.updated))}</b></div>
+        <div ${synced ? `data-tip-raw="${esc(new Date(synced * 1000).toLocaleString(LANG))}"` : ''}><small>${t('hero.copied')}</small><b>${synced ? esc(ago(synced)) : '—'}</b></div>
+      </div>
+      <div class="swim-line big">${ICON('fa-solid fa-person-swimming')}${swimBlocks(f.duration, 12)}<small>${esc(swimText(f.duration))}</small></div>
+      <div class="genres">${earChip(f)} ${(f.genres || []).map(g => `<span class="chip">${esc(g)}</span>`).join('')}${(f.artists || []).map(a => `<span class="chip info">${ICON('fa-solid fa-microphone')}${esc(a)}</span>`).join('')}</div>
+    </div>`;
+}
+
+// ---------- folder pictures ----------
+let PIC = null;
+async function openPictures(name) {
+  PIC = { name, seq: 0 };
+  $('pic-title').textContent = t('pic.title', { name });
+  $('pic-q').value = '';
+  $('pic-remove').classList.toggle('hidden', !LIB.folders.find(f => f.name === name)?.cover);
+  $('pic-dlg').showModal();
+  loadPictures();
+}
+async function loadPictures(q = '') {
+  const seq = ++PIC.seq;
+  $('pic-body').innerHTML = `<div class="notice">${SPIN}<span>${t('pic.looking')}</span></div>`;
+  let r;
+  try { r = await api(`/api/folders/${encodeURIComponent(PIC.name)}/pictures` + (q ? '?q=' + encodeURIComponent(q) : '')); }
+  catch (e) { $('pic-body').innerHTML = ''; return; }
+  if (seq !== PIC.seq) return;
+  $('pic-keywords').innerHTML = r.keywords.length ? `<small class="muted">${t('pic.keywords')}</small>` + r.keywords.map(k => `<button class="chip kwb" data-k="${esc(k)}">${esc(k)}</button>`).join('') : '';
+  $('pic-keywords').querySelectorAll('.kwb').forEach(b => b.onclick = () => { $('pic-q').value = b.dataset.k; loadPictures(b.dataset.k); });
+  const tile = (img, attrs, label) => `<button class="tile" ${attrs}><img src="${esc(img)}" alt="" loading="lazy">${label ? `<small>${esc(label)}</small>` : ''}</button>`;
+  let html = '';
+  if (r.songs.length >= 4) html += `<h3>${ICON('fa-solid fa-table-cells-large')} ${t('pic.mosaic')}</h3><div class="tiles"><button class="tile" data-mosaic="1"><canvas id="pic-mosaic" width="600" height="600"></canvas><small>${t('pic.mosaic_label', { n: r.songs.length >= 9 ? 9 : 4 })}</small></button></div>`;
+  if (r.songs.length) html += `<h3>${ICON('fa-solid fa-compact-disc')} ${t('pic.from_songs')}</h3><div class="tiles">${r.songs.map(p => tile('/api/cover?path=' + encodeURIComponent(p), `data-song="${esc(p)}"`, '')).join('')}</div>`;
+  const kinds = { album: 'pic.albums', playlist: 'pic.playlists', artist: 'pic.artists' };
+  for (const k of ['album', 'playlist', 'artist']) {
+    const list = r.web.filter(w => w.kind === k);
+    if (list.length) html += `<h3>${ICON(k === 'artist' ? 'fa-solid fa-microphone' : k === 'album' ? 'fa-solid fa-record-vinyl' : 'fa-solid fa-list')} ${t(kinds[k])}</h3><div class="tiles">${list.map(w => tile(w.url, `data-url="${esc(w.url)}"`, w.label)).join('')}</div>`;
+  }
+  if (!html) html = `<div class="notice">${ICON('fa-regular fa-image')}<span>${t('pic.nothing')}</span></div>`;
+  else if (!r.web.length) html += `<p class="muted small">${t('pic.offline')}</p>`;
+  $('pic-body').innerHTML = html;
+  if (r.songs.length >= 4) drawMosaic($('pic-mosaic'), r.songs);
+  $('pic-body').querySelectorAll('.tile').forEach(b => b.onclick = () => {
+    if (b.dataset.mosaic) return setPicture({ data: $('pic-mosaic').toDataURL('image/jpeg', 0.9) });
+    if (b.dataset.song) return setPicture({ song: b.dataset.song });
+    if (b.dataset.url) return setPicture({ url: b.dataset.url });
+  });
+}
+async function drawMosaic(canvas, paths) {
+  const n = paths.length >= 9 ? 3 : 2, use = Array.from({ length: n * n }, (_, i) => paths[i % paths.length]);
+  const ctx = canvas.getContext('2d'), s = canvas.width / n;
+  ctx.fillStyle = '#888'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const imgs = await Promise.all(use.map(p => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = '/api/cover?path=' + encodeURIComponent(p); })));
+  imgs.forEach((im, i) => { if (im) ctx.drawImage(im, (i % n) * s, Math.floor(i / n) * s, s, s); });
+}
+async function setPicture(body, file) {
+  $('pic-body').querySelectorAll('.tile').forEach(b => b.disabled = true);
+  const url = `/api/folders/${encodeURIComponent(PIC.name)}/picture`;
+  try {
+    if (file) {
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch(url, { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!r.ok) { toast(tEntry({ t: d.error, k: d.key, p: d.params })); return; }
+    } else await api(url, { method: 'POST', body });
+    $('pic-dlg').close(); toast(t('pic.saved'));
+    await loadLibrary(); CURRENT === null && !SHOW_ALL ? renderCards() : renderHero();
+  } finally { $('pic-body').querySelectorAll('.tile').forEach(b => b.disabled = false); }
+}
+async function removePicture() {
+  await api(`/api/folders/${encodeURIComponent(PIC.name)}/picture`, { method: 'DELETE' });
+  $('pic-dlg').close();
+  await loadLibrary(); CURRENT === null && !SHOW_ALL ? renderCards() : renderHero();
+}
+function pictureFromFiles(files) { const f = [...(files || [])].find(f => f.type.startsWith('image/')); if (f) setPicture(null, f); else toast(t('pic.not_image')); }
+$('pic-file').onchange = e => { pictureFromFiles(e.target.files); e.target.value = ''; };
+$('pic-drop').ondragover = e => { e.preventDefault(); $('pic-drop').classList.add('over'); };
+$('pic-drop').ondragleave = () => $('pic-drop').classList.remove('over');
+$('pic-drop').ondrop = e => { e.preventDefault(); $('pic-drop').classList.remove('over'); pictureFromFiles(e.dataTransfer.files); };
+$('pic-q').onkeydown = e => { if (e.key === 'Enter') loadPictures($('pic-q').value); };
+document.addEventListener('paste', e => { if ($('pic-dlg').open && e.clipboardData?.files?.length) pictureFromFiles(e.clipboardData.files); });
+
 function renderSongs() {
   const q = $('filter').value.toLowerCase();
   const rows = SONGS.filter(s => !q || (s.title + ' ' + s.artist + ' ' + (s.meta?.genre || '')).toLowerCase().includes(q));
@@ -658,6 +838,61 @@ async function startSync() {
   const r = await api('/api/sync', { method: 'POST', body: { device: DRIVE, mirror: $('mirror').checked } });
   await followJob(r.id, { log: 'dev-log', progress: 'dev-progress', btn: $('sync-btn') });
   await loadDevice();
+  EAR_AT = 0;
+}
+
+// ---------- earphones over Bluetooth ----------
+let SHOKZ = null;
+function batteryIcon(pct) { return pct >= 85 ? 'fa-battery-full' : pct >= 60 ? 'fa-battery-three-quarters' : pct >= 35 ? 'fa-battery-half' : pct >= 15 ? 'fa-battery-quarter' : 'fa-battery-empty'; }
+function swimsLeft(info) { return info.battery == null ? null : Math.floor(info.battery / 100 * (info.play_hours || 8) * 60 / swimMin()); }
+async function loadShokz() {
+  try { SHOKZ = await api('/api/shokz'); } catch (e) { return; }
+  renderShokz();
+}
+function renderShokz() {
+  const s = SHOKZ, last = s.last || {};
+  $('bt-dev').innerHTML = s.devices.map(d => `<option value="${esc(d.address)}">${esc(d.name)} (${esc(d.address)})</option>`).join('');
+  $('bt-dev').classList.toggle('hidden', s.devices.length < 2);
+  if (last.address && s.devices.some(d => d.address === last.address)) $('bt-dev').value = last.address;
+  $('bt-btn').disabled = !s.devices.length;
+  let html = '';
+  if (last.time) {
+    const left = swimsLeft(last), row = (k, v) => v == null || v === '' ? '' : `<div><small>${t(k)}</small><b>${v}</b></div>`;
+    html = `<div class="facts bt-facts">
+      ${last.battery != null ? `<div class="bat"><small>${t('bt.battery')}</small><b>${ICON('fa-solid ' + batteryIcon(last.battery), ` style="color:var(--${last.battery < 25 ? 'danger' : 'ok'})"`)} ${last.battery}%</b>${left != null ? `<small>${esc(t('bt.swims_left', { n: left, m: swimMin() }))}</small>` : ''}</div>` : ''}
+      ${row('bt.firmware', esc(last.firmware || ''))}
+      ${row('bt.source', last.media_source ? esc(t('bt.src_' + last.media_source)) : '')}
+      ${row('bt.mp3_mode', last.mp3_mode ? esc(t('bt.mode_' + last.mp3_mode)) : '')}
+      ${row('bt.eq', last.equalizer ? esc(t('bt.eq_' + last.equalizer)) : '')}
+      ${row('bt.volume', last.volume != null ? last.volume + '%' : '')}
+    </div>
+    <small class="muted">${esc(t('bt.read_when', { name: last.name || '', when: ago(last.time) }))}${last.partial ? ' · ' + esc(t('bt.partial')) : ''}</small>
+    ${last.mp3_mode === 'shuffle' ? `<div class="notice warn-n">${ICON('fa-solid fa-shuffle')}<span>${t('bt.shuffle_note')}</span></div>` : ''}`;
+  } else if (s.devices.length) {
+    html = `<div class="notice">${ICON('fa-brands fa-bluetooth-b')}<span>${esc(t('bt.found', { name: s.devices.map(d => d.name).join(', ') }))}</span></div>`;
+  } else {
+    html = `<div class="notice">${ICON('fa-solid fa-link-slash')}<span>${t('bt.none')}</span></div>`;
+  }
+  $('bt-body').innerHTML = html;
+  $('bt-help').textContent = s.platform === 'darwin' ? t('bt.help_mac') : t('bt.help');
+}
+async function readShokz() {
+  const r = await api('/api/shokz/read', { method: 'POST', body: { address: $('bt-dev').value } });
+  $('bt-body').innerHTML = `<div class="notice">${SPIN}<span>${t('bt.reading')}</span></div>`;
+  const j = await followJob(r.id, { btn: $('bt-btn') });
+  await loadLibrary();
+  await loadShokz();
+  if (j.status === 'done') toast(t('bt.done'));
+}
+function renderBatteryFooter() {
+  const s = LIB?.config.shokz || {}, el = $('f-battery');
+  const show = s.battery != null && s.time;
+  el.classList.toggle('hidden', !show); $('f-battery-sep').classList.toggle('hidden', !show);
+  if (!show) return;
+  el.querySelector('i').className = 'fa-solid ' + batteryIcon(s.battery);
+  const left = swimsLeft(s);
+  el.querySelector('span').textContent = `${s.battery}%` + (left != null ? ' · ' + t('bt.swims_left_short', { n: left }) : '');
+  el.dataset.tipRaw = t('bt.footer_tip', { name: s.name || '', when: ago(s.time), fw: s.firmware || '?' });
 }
 
 // ---------- duplicates ----------
@@ -850,7 +1085,7 @@ async function loadStatus() {
   fd.className = 'item' + (s.device ? ' ok' : '');
   $('f-folder').querySelector('span').textContent = s.library;
 }
-const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', update: 'settings' };
+const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings' };
 async function pollActivity() {
   let jobs = [];
   try { const r = await fetch('/api/jobs/active'); if (r.ok) jobs = await r.json(); } catch (e) { return; }
@@ -870,7 +1105,7 @@ function showTab(name) {
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === name));
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + name));
   if (name === 'dupes') loadDupes();
-  if (name === 'device') loadDrives();
+  if (name === 'device') { loadDrives(); loadShokz(); }
   if (name === 'settings') { loadHealth(); loadAccounts(); }
   try { localStorage.setItem('swimtunes-tab', name); } catch (e) {}
 }

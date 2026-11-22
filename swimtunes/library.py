@@ -38,7 +38,12 @@ DEFAULT_CONFIG = {
     "rules": [],               # [{"folder": "doomer", "keywords": ["post-punk", "coldwave"]}, ...]
     "sort_mode": "one",        # last used way of sorting new songs
     "language": "auto",        # dashboard language: "auto" (the computer's) or en, fr, es, de, it, pt
+    "swim_minutes": 45,        # length of one swim session, for "plays for N swims"
+    "synced": {},              # folder -> time it was last copied to / checked on the earphones
+    "shokz": {},               # last battery / firmware reading of the earphones (Bluetooth)
 }
+
+FOLDER_COVER = ".swimtunes-cover.jpg"   # a folder's picture (hidden, never copied to the earphones)
 
 
 def default_library_root() -> Path:
@@ -278,15 +283,47 @@ class Library:
                     out.append(t)
         return sorted(out, key=lambda t: (t.folder.lower(), t.track_no or 10**6, t.filename.lower()))
 
+    # ---------- folder pictures ----------
+    def folder_cover(self, name: str) -> Path | None:
+        p = self.folder_path(name) / FOLDER_COVER
+        return p if p.is_file() else None
+
+    def set_folder_cover(self, name: str, jpeg: bytes | None) -> None:
+        d = self.folder_path(name)
+        if not d.is_dir():
+            raise LibraryError(msg("err.no_folder", "No such folder: {name}", name=name))
+        p = d / FOLDER_COVER
+        st = d.stat()     # "last updated" means songs added or removed, not a new picture
+        if jpeg:
+            p.write_bytes(jpeg)
+        else:
+            p.unlink(missing_ok=True)
+        os.utime(d, ns=(st.st_atime_ns, st.st_mtime_ns))
+
     def stats(self) -> dict:
         tracks = self.tracks()
-        per: dict[str, dict] = {f: {"name": f, "count": 0, "duration": 0.0, "size": 0} for f in self.folders()}
+        per: dict[str, dict] = {}
+        for f in self.folders():
+            d = self.folder_path(f)
+            cover = d / FOLDER_COVER
+            per[f] = {"name": f, "count": 0, "duration": 0.0, "size": 0, "updated": d.stat().st_mtime,
+                      "cover": int(cover.stat().st_mtime) if cover.is_file() else 0, "_genres": {}, "_artists": {}, "pics": []}
         for t in tracks:
             s = per[t.folder]
             s["count"] += 1
             s["duration"] += t.duration
             s["size"] += t.size
+            if t.has_cover and len(s["pics"]) < 4:
+                s["pics"].append(t.path.relative_to(self.root).as_posix())
+            if (t.meta or {}).get("genre"):
+                s["_genres"][t.meta["genre"]] = s["_genres"].get(t.meta["genre"], 0) + 1
+            for a in [x.strip() for x in (t.artist or "").split(",") if x.strip()][:1]:
+                s["_artists"][a] = s["_artists"].get(a, 0) + 1
         cfg = self.config()
+        for s in per.values():
+            s["genres"] = [g for g, _ in sorted(s.pop("_genres").items(), key=lambda kv: -kv[1])[:3]]
+            s["artists"] = [a for a, _ in sorted(s.pop("_artists").items(), key=lambda kv: -kv[1])[:3]]
+            s["synced"] = (cfg.get("synced") or {}).get(s["name"])
         total_size = sum(s["size"] for s in per.values())
         return {
             "root": str(self.root),

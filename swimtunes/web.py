@@ -11,7 +11,7 @@ import uuid
 
 from flask import Flask, jsonify, render_template, request
 
-from . import TAG, __version__, accounts, device, i18n, sorter, tools, updater
+from . import TAG, __version__, accounts, covers, device, i18n, shokz, sorter, tools, updater
 from .i18n import as_entry, msg
 from .downloader import Downloader
 from .library import Library, LibraryError
@@ -54,7 +54,10 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         return request.get_json(silent=True) or {}
 
     # ---------- jobs (long tasks shown with a live log) ----------
-    def start_job(kind, fn):
+    import contextlib
+    _no_lock = contextlib.nullcontext()
+
+    def start_job(kind, fn, exclusive=True):
         jid = uuid.uuid4().hex[:8]
         job = {"id": jid, "kind": kind, "status": "queued", "log": [], "result": None, "started": time.time(),
                "progress": None, "current": None, "recent": [], "cancel": False}
@@ -67,7 +70,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             job["progress"] = [done, total]
 
         def run():
-            with job_lock:
+            with job_lock if exclusive else _no_lock:
                 job["status"] = "running"
                 try:
                     job["result"] = fn(log, progress, job)
@@ -445,9 +448,117 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         if not path:
             return err(msg("err.pick_earphones", "Pick your earphones first"))
         lib.set_config(device_path=path)
-        return start_job("sync", lambda log, progress, job: device.sync(
-            lib, path, mirror=bool(b.get("mirror")), replace=bool(b.get("replace")),
-            folders=b.get("folders") or None, log=log, progress=progress))
+        def run(log, progress, job):
+            summary = device.sync(lib, path, mirror=bool(b.get("mirror")), replace=bool(b.get("replace")),
+                                  folders=b.get("folders") or None, log=log, progress=progress)
+            synced = dict(lib.config().get("synced") or {})
+            now = time.time()
+            for name in summary["updated"] + summary["unchanged"]:
+                synced[name] = now
+            lib.set_config(synced={k: v for k, v in synced.items() if k in set(lib.folders())})
+            return summary
+        return start_job("sync", run)
+
+    # ---------- folder pictures ----------
+    @app.get("/api/folders/<name>/picture")
+    def folder_picture(name):
+        from flask import send_file
+        p = lib.folder_cover(name)
+        if not p:
+            return err(msg("err.no_cover", "No picture"), 404)
+        return send_file(p, mimetype="image/jpeg", max_age=0)
+
+    @app.post("/api/folders/<name>/picture")
+    def set_folder_picture(name):
+        """A new picture for a folder: an uploaded file, a web picture, a song's picture or a mosaic."""
+        import base64
+        from .library import read_cover
+        ffmpeg = tools.ffmpeg_path()
+        f = request.files.get("file")
+        b = {} if f else body()
+        try:
+            if f:
+                raw = f.read(15_000_000)
+            elif b.get("song"):
+                pic = read_cover(lib.resolve_track(b["song"]))
+                if not pic:
+                    return err(msg("err.no_cover", "No picture"), 404)
+                raw = pic[0]
+            elif str(b.get("data", "")).startswith("data:image/"):
+                raw = base64.b64decode(b["data"].split(",", 1)[1])
+            elif b.get("url"):
+                raw = covers.download(b["url"])
+            else:
+                return err(msg("err.no_picture", "Choose a picture first"))
+            if not ffmpeg:
+                return err(msg("err.no_ffmpeg", "ffmpeg is missing"))
+            jpeg = covers.square_jpeg(raw, ffmpeg, 600)
+        except LibraryError:
+            raise
+        except Exception as e:
+            return err(msg("err.bad_picture", "Couldn't use this picture: {error}", error=str(e)[:200]))
+        lib.set_folder_cover(name, jpeg)
+        return jsonify({"ok": True, "v": int(time.time())})
+
+    @app.delete("/api/folders/<name>/picture")
+    def delete_folder_picture(name):
+        lib.set_folder_cover(name, None)
+        return jsonify({"ok": True})
+
+    @app.get("/api/folders/<name>/pictures")
+    def folder_picture_ideas(name):
+        if not lib.folder_path(name).is_dir():
+            return err(msg("err.no_folder", "No such folder: {name}", name=name), 404)
+        ideas = covers.suggest(lib.tracks(name), name, request.args.get("q") or None)
+        ideas["songs"] = [p.relative_to(lib.root).as_posix() for p in ideas["songs"]]
+        return jsonify(ideas)
+
+    @app.get("/api/earphones/folders")
+    def folders_on_earphones():
+        """Per folder: is it the same on the plugged-in earphones? (empty when not plugged in)"""
+        path = lib.config()["device_path"]
+        drives = device.find_drives()
+        if not path or not os.path.isdir(path):
+            path = drives[0]["path"] if drives else ""
+        if not path or not os.path.isdir(path):
+            return jsonify({"path": None, "folders": {}})
+        try:
+            rows = device.compare(lib, path)["folders"]
+        except OSError:
+            return jsonify({"path": None, "folders": {}})
+        return jsonify({"path": path, "folders": {r["name"]: r["status"] for r in rows}})
+
+    # ---------- earphones over Bluetooth (battery, firmware) ----------
+    @app.get("/api/shokz")
+    def shokz_status():
+        return jsonify({"devices": shokz.paired_devices(), "can_connect": shokz.can_connect(),
+                        "platform": sys.platform, "last": lib.config().get("shokz") or {}})
+
+    @app.post("/api/shokz/read")
+    def shokz_read():
+        b = body()
+
+        def run(log, progress, job):
+            devs = shokz.paired_devices()
+            dev = next((d for d in devs if d["address"] == b.get("address")), devs[0] if devs else None)
+            if not dev:
+                raise shokz.ShokzError(msg("err.shokz_none", "No Shokz earphones are paired with this computer. "
+                                           "Pair them once in the computer's Bluetooth settings."))
+            last = lib.config().get("shokz") or {}
+            job["current"] = dev["name"]
+            log(msg("log.shokz_connecting", "Connecting to {name} over Bluetooth…", name=dev["name"]))
+            if sys.platform == "darwin" or not shokz.can_connect():
+                info = {k: dev.get(k) for k in ("name", "address", "battery", "firmware") if dev.get(k) is not None}
+                info["partial"] = True
+            else:
+                cached = last.get("channel") if last.get("address") == dev["address"] else None
+                info = shokz.read_device(dev["address"], name=dev["name"], channel=dev.get("channel") or cached)
+            info["time"] = time.time()
+            info["play_hours"] = shokz.play_hours(dev["name"], info.get("media_source"))
+            lib.set_config(shokz=info)
+            log(msg("log.shokz_done", "Read {name}", name=dev["name"]))
+            return info
+        return start_job("shokz", run, exclusive=False)
 
     # ---------- connected accounts ----------
     @app.get("/api/accounts")
