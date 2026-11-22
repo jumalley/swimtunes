@@ -11,7 +11,8 @@ import uuid
 
 from flask import Flask, jsonify, render_template, request
 
-from . import TAG, __version__, device, sorter, tools, updater
+from . import TAG, __version__, device, i18n, sorter, tools, updater
+from .i18n import as_entry, msg
 from .downloader import Downloader
 from .library import Library, LibraryError
 from .meta import MetaLookup, country_name, tempo_label
@@ -36,16 +37,18 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     def _seen():
         app.config["LAST_SEEN"] = time.time()
 
-    def err(msg, code=400):
-        return jsonify({"error": msg}), code
+    def err(message, code=400):
+        """Error for the dashboard; `message` may be a translatable Msg."""
+        e = as_entry(message)
+        return jsonify({"error": e["t"], "key": e.get("k"), "params": e.get("p")}), code
 
     @app.errorhandler(LibraryError)
     def _lib_err(e):
-        return err(str(e))
+        return err(e.args[0] if e.args else str(e))
 
     @app.errorhandler(FileNotFoundError)
     def _fnf(e):
-        return err(str(e))
+        return err(e.args[0] if e.args else str(e))
 
     def body():
         return request.get_json(silent=True) or {}
@@ -54,11 +57,11 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     def start_job(kind, fn):
         jid = uuid.uuid4().hex[:8]
         job = {"id": jid, "kind": kind, "status": "queued", "log": [], "result": None, "started": time.time(),
-               "progress": None}
+               "progress": None, "current": None, "recent": [], "cancel": False}
         jobs[jid] = job
 
         def log(line):
-            job["log"].append(line)
+            job["log"].append(as_entry(line))
 
         def progress(done, total):
             job["progress"] = [done, total]
@@ -70,8 +73,11 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                     job["result"] = fn(log, progress, job)
                     job["status"] = "done"
                 except Exception as e:
-                    log(f"ERROR: {e}")
+                    entry = as_entry(e)
+                    entry["error"] = True
+                    job["log"].append(entry)
                     job["status"] = "error"
+                job["current"] = None
 
         threading.Thread(target=run, daemon=True).start()
         return jsonify({"id": jid})
@@ -79,7 +85,22 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     @app.get("/api/jobs/<jid>")
     def job(jid):
         j = jobs.get(jid)
-        return jsonify(j) if j else err("No such job", 404)
+        return jsonify(j) if j else err(msg("err.no_job", "No such job"), 404)
+
+    @app.post("/api/jobs/<jid>/cancel")
+    def cancel_job(jid):
+        j = jobs.get(jid)
+        if not j:
+            return err(msg("err.no_job", "No such job"), 404)
+        j["cancel"] = True
+        return jsonify({"ok": True})
+
+    @app.get("/api/jobs/active")
+    def active_jobs():
+        """For the status bar: what SwimTunes is busy with right now."""
+        return jsonify([{k: j[k] for k in ("id", "kind", "status", "progress", "current")} | {"last": (j["log"] or [None])[-1]}
+                        for j in sorted(jobs.values(), key=lambda j: j["started"])
+                        if j["status"] in ("queued", "running")])
 
     def busy():
         return any(j["status"] in ("queued", "running") for j in jobs.values())
@@ -165,36 +186,52 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         b = body()
         urls = [u.strip() for u in (b.get("urls") or "").split() if u.strip()]
         if not urls:
-            return err("Paste at least one link")
+            return err(msg("err.no_links", "Paste at least one link"))
 
         def fn(log, progress, job):
             d = downloader_cls(lib, log=log, allow_dupes=bool(b.get("allow_dupes")))
             items, names = [], []
             for u in urls:
-                log(f"Reading {u}")
+                job["current"] = u
+                log(msg("log.pv_reading", "Reading {url}", url=u))
                 data = d.resolve(u)
                 names.append(data["name"])
                 items += data["items"]
-                log(f"Found {len(data['items'])} song(s) in '{data['name']}'")
+                log(msg("log.pv_found", "Found {n} song(s) in '{name}'", n=len(data["items"]), name=data["name"]))
             d.mark_existing(items)  # also catches songs listed in two of the links
+            new = [it for it in items if not it["existing"]]
             for i, it in enumerate(items):
                 it["id"] = i
-            job["items"] = items
-            new = [it for it in items if not it["existing"]]
-            log(f"{len(new)} new, {len(items) - len(new)} already in SwimTunes. Looking up genres…")
+                it["state"] = "waiting" if not it["existing"] else "have"
+            job["items"] = items          # the dashboard shows the list right away and fills it in live
+            job["name"] = names[0] if len(names) == 1 else None
+            log(msg("log.pv_new", "{new} new, {have} already in SwimTunes. Looking up genres…",
+                    new=len(new), have=len(items) - len(new)))
             look = lookup()
+            failures = 0
             for i, it in enumerate(new, 1):
+                if job["cancel"]:
+                    for rest in new[i - 1:]:
+                        rest["state"] = "skipped"
+                    log(msg("log.pv_stopped", "Stopped looking up. {n} song(s) have no genre info.", n=len(new) - i + 1))
+                    break
+                job["current"] = f"{it['artist']} - {it['title']}" if it["artist"] else it["title"]
+                job["current_id"] = it["id"]
+                it["state"] = "looking"
                 try:
                     it["meta"] = look.lookup(it["artist"], it["title"])
                     it["meta"]["country_name"] = country_name(it["meta"].get("country", ""))
+                    it["state"] = "found" if (it["meta"].get("genre") or it["meta"].get("tags")) else "unknown"
                 except Exception as e:
-                    it["meta"] = None
-                    if i == 1:
-                        log(f"Genre lookup unavailable ({e}); you can still download.")
+                    it["meta"], it["state"] = None, "error"
+                    failures += 1
+                    if failures == 1:
+                        log(msg("log.pv_lookup_failed", "Genre lookup unavailable ({error}); you can still download.", error=e))
+                job["recent"].append(it["id"])
                 progress(i, len(new))
             look.save()
-            log("Ready. Check the list, choose how to sort, then download.")
-            return {"name": names[0] if len(names) == 1 else "Downloads", "items": items}
+            log(msg("log.pv_ready", "Ready. Check the list, choose how to sort, then download."))
+            return {"name": job["name"] or "Downloads", "items": items}
         return start_job("preview", fn)
 
     @app.post("/api/sort")
@@ -203,7 +240,8 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         b = body()
         mode, folder = b.get("mode", "one"), (b.get("folder") or "").strip()
         rules = b.get("rules") if b.get("rules") is not None else lib.config()["rules"]
-        out = [sorter.destination(mode, it.get("artist", ""), it.get("meta"), folder=folder, rules=rules)
+        labels = i18n.labels(b.get("labels"))
+        out = [sorter.destination(mode, it.get("artist", ""), it.get("meta"), folder=folder, rules=rules, labels=labels)
                for it in b.get("items", [])]
         if b.get("remember"):
             lib.set_config(sort_mode=mode)
@@ -217,29 +255,49 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             urls = [u.strip() for u in (b.get("urls") or b.get("url") or "").split() if u.strip()]
             folder = (b.get("folder") or "").strip() or None
             if not urls:
-                return err("Paste at least one link")
+                return err(msg("err.no_links", "Paste at least one link"))
 
             def simple(log, progress, job):
                 d = downloader_cls(lib, log=log, allow_dupes=bool(b.get("allow_dupes")))
                 return [d.download(u, folder).to_dict() for u in urls]
             return start_job("download", simple)
         if not items:
-            return err("Tick at least one song")
+            return err(msg("err.no_songs", "Tick at least one song"))
         for it in items:
             if not (it.get("folder") or "").strip() and not it.get("tempo_folder"):
-                return err(f"Choose a folder for {it.get('title')}")
+                return err(msg("err.no_folder_for", "Choose a folder for {title}", title=it.get("title")))
 
         def fn(log, progress, job):
-            d = downloader_cls(lib, log=log, allow_dupes=bool(b.get("allow_dupes")))
+            try:
+                d = downloader_cls(lib, log=log, allow_dupes=bool(b.get("allow_dupes")), labels=b.get("labels"))
+            except TypeError:  # a downloader without language support
+                d = downloader_cls(lib, log=log, allow_dupes=bool(b.get("allow_dupes")))
+            job["items"] = items   # each song gets a live status: downloading 40 %, converting, done…
             count = [0]
 
             def after(_):
                 count[0] += 1
                 progress(count[0], len(items))
-            return d.download_items(items, after_each=after).to_dict()
+            return d.download_items(items, after_each=after, should_stop=lambda: job["cancel"]).to_dict()
         return start_job("download", fn)
 
     # ---------- sorting rules & organizing the library ----------
+    def fill(tracks, log, progress, job):
+        """Look up songs, telling the dashboard which song is being read and what was found."""
+        last = []  # the song being looked up (kept out of `job`, which is sent to the browser as JSON)
+
+        def report(t):
+            job["recent"].append({"song": f"{t.artist} - {t.title}" if t.artist else t.title, "folder": t.folder, "meta": t.meta})
+
+        def current(t):
+            if last:
+                report(last.pop())
+            job["current"] = f"{t.artist} - {t.title}" if t.artist else t.title
+            last.append(t)
+        sorter.fill_meta(lib, tracks, log=log, progress=progress, current=current, should_stop=lambda: job["cancel"])
+        if last:
+            report(last.pop())
+
     @app.get("/api/rules")
     def get_rules():
         return jsonify({"rules": lib.config()["rules"], "modes": sorter.MODES})
@@ -259,10 +317,10 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     def suggest_rules():
         def fn(log, progress, job):
             tracks = lib.tracks()
-            sorter.fill_meta(lib, tracks, log=log, progress=progress)
+            fill(tracks, log, progress, job)
             rules = sorter.suggest_rules(tracks)
-            log(f"Found {len(rules)} rule(s) from your folders." if rules else
-                "Couldn't find anything your folders have in common yet.")
+            log(msg("log.rules_found", "Found {n} rule(s) from your folders.", n=len(rules)) if rules else
+                msg("log.rules_none", "Couldn't find anything your folders have in common yet."))
             return {"rules": rules}
         return start_job("suggest", fn)
 
@@ -272,8 +330,8 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
 
         def fn(log, progress, job):
             tracks = lib.tracks(folder)
-            sorter.fill_meta(lib, tracks, log=log, progress=progress)
-            log("Done. Choose how to sort and check where each song would go.")
+            fill(tracks, log, progress, job)
+            log(msg("log.analyze_done", "Done. Choose how to sort and check where each song would go."))
             return {"tracks": [t.to_dict(lib.root) for t in tracks]}
         return start_job("analyze", fn)
 
@@ -286,7 +344,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     def device_compare():
         path = (request.args.get("path") or lib.config()["device_path"] or "").strip()
         if not path:
-            return err("Pick your earphones first")
+            return err(msg("err.pick_earphones", "Pick your earphones first"))
         info = device.compare(lib, path)
         updates = {"device_path": path}
         if info["capacity_gb"] != lib.config()["capacity_gb"]:
@@ -299,20 +357,20 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         b = body()
         path, folders = (b.get("device") or "").strip(), b.get("folders") or []
         if not path or not folders:
-            return err("Choose the folders to import")
+            return err(msg("err.pick_import", "Choose the folders to import"))
         return start_job("import", lambda log, progress, job: device.import_from_device(
-            lib, path, folders, ffmpeg=tools.ffmpeg_path(), log=log, scope=lib.config()["dupe_scope"]))
+            lib, path, folders, ffmpeg=tools.ffmpeg_path(), log=log, scope=lib.config()["dupe_scope"], progress=progress))
 
     @app.post("/api/sync")
     def sync():
         b = body()
         path = (b.get("device") or lib.config()["device_path"]).strip()
         if not path:
-            return err("Pick your earphones first")
+            return err(msg("err.pick_earphones", "Pick your earphones first"))
         lib.set_config(device_path=path)
         return start_job("sync", lambda log, progress, job: device.sync(
             lib, path, mirror=bool(b.get("mirror")), replace=bool(b.get("replace")),
-            folders=b.get("folders") or None, log=log))
+            folders=b.get("folders") or None, log=log, progress=progress))
 
     # ---------- app: version, updates, health, quit ----------
     @app.get("/api/version")
@@ -330,17 +388,43 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     @app.post("/api/update/apply")
     def update_apply():
         if app.config["SHUTDOWN"] is None:
-            return err("Start SwimTunes with the app or `swimtunes ui` to update from here")
+            return err(msg("err.cant_update_here", "Start SwimTunes with the app or `swimtunes ui` to update from here"))
         if busy():
-            return err("Wait until the current download or copy has finished")
+            return err(msg("err.busy_update", "Wait until the current download or copy has finished"))
 
         def fn(log, progress, job):
             cmd = updater.apply(log)
-            log("Restarting SwimTunes… this page reloads by itself.")
+            log(msg("log.upd_restart", "Restarting SwimTunes… this page reloads by itself."))
             app.config["RESTART"] = cmd
             threading.Timer(1.0, app.config["SHUTDOWN"]).start()
             return {"restart": True}
         return start_job("update", fn)
+
+    health_cache: dict = {}
+
+    @app.get("/api/status")
+    def status():
+        """Everything the status bar at the bottom of the page shows."""
+        if "ok" not in health_cache:
+            health_cache["ok"] = all(r["ok"] for r in tools.health())
+        cfg = lib.config()
+        dev = None
+        path = cfg.get("device_path") or ""
+        if path:
+            drive = next((d for d in device.find_drives() if d["path"] == path), None)
+            if drive:   # the same detection as the Earphones tab
+                dev = {"path": path, "label": drive["label"], "free": drive["free"], "total": drive["total"]}
+            elif os.path.isdir(path):
+                try:
+                    import shutil as _sh
+                    u = _sh.disk_usage(path)
+                    dev = {"path": path, "label": os.path.basename(path.rstrip("\\/")) or path, "free": u.free, "total": u.total}
+                except OSError:
+                    dev = None
+        u = app.config["UPDATE"] or {}
+        return jsonify({"ok": health_cache["ok"], "version": __version__, "tag": TAG, "kind": updater.install_kind(),
+                        "update": u.get("latest") if u.get("available") else None, "device": dev,
+                        "library": str(lib.root), "language": cfg.get("language", "auto")})
 
     @app.get("/api/health")
     def health():
@@ -362,9 +446,9 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     @app.post("/api/quit")
     def quit_app():
         if app.config["SHUTDOWN"] is None:
-            return err("Stop SwimTunes from the terminal with Ctrl+C")
+            return err(msg("err.quit_terminal", "Stop SwimTunes from the terminal with Ctrl+C"))
         if busy() and not body().get("force"):
-            return err("A download or sync is still running")
+            return err(msg("err.busy_quit", "A download or sync is still running"))
         threading.Timer(0.3, app.config["SHUTDOWN"]).start()
         return jsonify({"ok": True})
 

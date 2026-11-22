@@ -1,13 +1,17 @@
-# 🏊 SwimTunes
+<p align="center"><img src="packaging/icon.png" width="96" alt="SwimTunes icon"></p>
+
+# SwimTunes
 
 Put your music on swimming earphones (Shokz OpenSwim, OpenSwim Pro and similar) the easy way.
 Paste a **YouTube** or **Spotify** link, see the songs with their **genre, style, tempo and country**,
 choose which folder each one goes into, and download them as MP3s. Songs you already have are skipped,
 and SwimTunes keeps your earphones in sync, including the folders you made before you had SwimTunes.
 
-Everything happens in a simple page in your web browser. No commands to type.
+Everything happens in a simple page in your web browser, in **English, French, Spanish, German, Italian or
+Portuguese** (your computer's language is picked automatically, and you can switch at the bottom of the page).
+No commands to type.
 
-![Preview before downloading](docs/screenshots/3-preview.png)
+![Songs sorted into folders before downloading](docs/screenshots/2-sorted-by-rules.png)
 
 ## Download
 
@@ -41,11 +45,9 @@ Nothing else to install. SwimTunes includes everything it needs.
 
 ### Updates
 
-When a new version is out, a banner appears at the top of the page. Click **Update now**:
-SwimTunes downloads the new version, restarts, and the page reloads by itself. You can also check
-in **Settings → Updates**.
-
-![Update banner and settings](docs/screenshots/8-settings-update.png)
+When a new version is out, a banner appears at the top of the page and the status bar at the bottom says
+*Update available*. Click **Update now**: SwimTunes downloads the new version, restarts, and the page
+reloads by itself. You can also check in **Settings → Updates**.
 
 ## How to use it
 
@@ -55,20 +57,26 @@ Connect the earphones with their charging cable and open the **Earphones** tab. 
 shows each folder on them and whether SwimTunes has it. Click **Import** to copy those songs into SwimTunes,
 keeping your folders and their play order. Songs that exist only on the earphones are **never** deleted.
 
-![Earphones](docs/screenshots/1-earphones-import.png)
+![Earphones](docs/screenshots/4-earphones.png)
 
 ### 2. Let SwimTunes learn how you sort your music
 
-Click **Edit my rules → Learn from my folders**. SwimTunes looks up every song and finds what each of
-your folders has in common: a style, a country, Cyrillic titles… You can edit the rules or write your own.
+Click **Edit my rules → Learn from my folders**. SwimTunes looks up every song, shows you live what it
+finds, and works out what each of your folders has in common: a style, a country, Cyrillic titles…
+You can edit the rules or write your own.
 
-<img src="docs/screenshots/2-learned-rules.png" width="720" alt="Rules learned from the user's folders">
+<img src="docs/screenshots/5-learning-rules.png" width="720" alt="Learning rules from the songs in each folder, live">
 
 ### 3. Add music
 
 In **Add music**, paste YouTube or Spotify links (**Share → Copy link**) and click **Find songs**.
-Nothing is downloaded yet: you see every song with its genre, style, tempo, year and the artist's country,
-and songs you already have are left out. Then pick how to sort them:
+Nothing is downloaded yet. The list appears right away and fills in live: you see which song is being
+looked up, what was found (genre, style, country, year, tempo), how long is left, and you can **Stop** at any time.
+Songs you already have are left out.
+
+![Looking up songs live](docs/screenshots/1-live-lookup.png)
+
+Then pick how to sort them:
 
 | Sort the songs | Example folders |
 |---|---|
@@ -81,9 +89,10 @@ and songs you already have are left out. Then pick how to sort them:
 | **By artist** | one folder per artist |
 | **All in one folder** | the playlist's name, or any folder you type |
 
-You can change the folder of any song, untick songs you don't want, then click **Download**.
+You can change the folder of any song, untick songs you don't want, then click **Download**. Each song
+shows what's happening: finding it on YouTube, downloading (with %), converting to MP3, measuring the tempo, saved.
 
-![Sorted by genre](docs/screenshots/4-preview-genre.png)
+![Downloading, song by song](docs/screenshots/3-downloading.png)
 
 Tempo comes from Deezer when it knows it. Otherwise SwimTunes measures it from the audio after downloading.
 
@@ -92,32 +101,29 @@ Tempo comes from Deezer when it knows it. Otherwise SwimTunes measures it from t
 **Sort my songs** uses the same sorting options on songs that are already in SwimTunes. It shows where
 each song would go, and nothing moves until you click **Move**.
 
-![Sort my songs](docs/screenshots/5-sort-my-songs.png)
-
 ### 5. Copy to your earphones
 
 Back in **Earphones**, click **Copy to earphones**. Only folders that changed are copied, in playlist order
 (the earphones play songs in the order they were copied). When it says *Sync finished*, eject the earphones.
 
-![Copy to earphones](docs/screenshots/7-sync.png)
+### Help is built in
 
-### Also
+Every option and column has a **?** that explains it, and the status bar at the bottom always shows
+whether everything works, your version, whether your earphones are connected, what SwimTunes is busy with,
+and the language.
 
-- **Songs**: every folder with its songs, genre, tempo, length and size. Rename, delete, move songs, search.
-- **Duplicates**: finds doubles already in your folders ("Official Video", "Lyrics", "feat."… are ignored).
-- **Settings**: earphone size (filled in automatically from your earphones), MP3 quality, even out the volume, health check.
-- Dark mode and small screens are supported.
+<img src="docs/screenshots/8-tooltip.png" width="560" alt="A tooltip explaining the Tempo column">
 
-![Library](docs/screenshots/6-library.png)
+![French](docs/screenshots/9-french.png)
 
-<p><img src="docs/screenshots/9-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/10-phone.png" width="22%" alt="Phone-sized window"></p>
+<p><img src="docs/screenshots/10-dark-mode.png" width="68%" alt="Dark mode"> <img src="docs/screenshots/11-phone.png" width="22%" alt="Phone-sized window"></p>
 
 > Screenshots use sample data: the songs are silent demo files and downloads are simulated,
 > but genre, style and country come from the real Deezer and MusicBrainz databases.
 
 ## Questions
 
-**Where are my MP3s?** In the **Music** folder of your computer, inside **SwimTunes**. Click **📂 Music folder** at the top of the page.
+**Where are my MP3s?** In the **Music** folder of your computer, inside **SwimTunes**. Click **Music folder** at the top of the page.
 
 **Downloads stopped working.** YouTube changes things now and then. Update SwimTunes (banner at the top, or
 Settings → Updates). New versions are built automatically every month.
@@ -133,6 +139,8 @@ For longer playlists, convert the playlist to YouTube with [playlistbuddy.com](h
 wait 10 seconds and click **Look again**. On Windows they appear in **This PC** (e.g. *SWIM PRO (H:)*).
 
 **Is this allowed?** Only download music you're allowed to: your own uploads, free music, or what the law where you live allows for personal use.
+
+**Credits.** Icons: [Font Awesome Free](https://fontawesome.com) (CC BY 4.0 / SIL OFL / MIT), bundled in `swimtunes/static/fa`.
 
 ---
 
@@ -175,7 +183,9 @@ Use `python -m swimtunes ...` if the `swimtunes` command isn't found. The music 
 | `swimtunes/library.py` | the music folder: tags, stats, duplicates, trash |
 | `swimtunes/device.py` | find the earphones, compare, import, sync in play order |
 | `swimtunes/updater.py` | in-app updates (release download or git pull) |
-| `swimtunes/web.py`, `templates/index.html` | the dashboard |
+| `swimtunes/web.py` | the dashboard's server: jobs with live progress, status bar, translatable messages |
+| `templates/index.html`, `static/app.js`, `static/app.css` | the dashboard page |
+| `static/i18n.js` | translations (en, fr, es, de, it, pt); server messages carry keys from `swimtunes/i18n.py` |
 
 ### How the apps are built
 

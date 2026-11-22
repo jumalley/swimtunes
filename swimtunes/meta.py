@@ -188,20 +188,23 @@ class MetaLookup:
 
 
 # ---------- describing a song for sorting ----------
-def tempo_label(bpm) -> str:
+def tempo_label(bpm, labels: dict | None = None) -> str:
+    from .i18n import labels as default_labels
+    lb = labels or default_labels()
     if not bpm:
-        return "Unknown tempo"
+        return lb["unknown_tempo"]
     if bpm < 100:
-        return "Easy (under 100 BPM)"
+        return lb["easy"]
     if bpm < 120:
-        return "Steady (100-120 BPM)"
+        return lb["steady"]
     if bpm < 140:
-        return "Fast (120-140 BPM)"
-    return "Sprint (140+ BPM)"
+        return lb["fast"]
+    return lb["sprint"]
 
 
-def decade_label(year) -> str:
-    return f"{year // 10 * 10}s" if year else "Unknown year"
+def decade_label(year, labels: dict | None = None) -> str:
+    from .i18n import labels as default_labels
+    return f"{year // 10 * 10}s" if year else (labels or default_labels())["unknown_year"]
 
 
 def facts(info: dict, artist: str = "") -> list[str]:

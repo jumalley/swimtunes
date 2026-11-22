@@ -6,6 +6,7 @@ import re
 from collections import Counter
 
 from .meta import country_name, decade_label, facts, tempo_label
+from .i18n import msg
 from .text import safe_name
 
 MODES = {
@@ -42,24 +43,32 @@ def match_rule(rules: list[dict], meta: dict | None, artist: str = "") -> str | 
     return best
 
 
-def destination(mode: str, artist: str, meta: dict | None, *, folder: str = "", rules: list[dict] | None = None) -> str:
+def destination(mode: str, artist: str, meta: dict | None, *, folder: str = "", rules: list[dict] | None = None,
+                labels: dict | None = None) -> str:
+    """Folder for a song. `labels` gives the names of folders SwimTunes invents
+    (Other, Unknown tempo, country names…) in the user's language."""
+    from .i18n import labels as make_labels
+    lb = make_labels(labels)  # anything not translated falls back to English
     m = meta or {}
+    other = lb["other"]
     if mode == "rules":
-        dest = match_rule(rules or [], m, artist) or folder or OTHER
+        dest = match_rule(rules or [], m, artist) or folder or other
     elif mode == "genre":
-        dest = m.get("genre") or OTHER
+        dest = m.get("genre") or other
     elif mode == "style":
-        dest = (m.get("tags") or [m.get("genre") or OTHER])[0].title()
+        dest = (m.get("tags") or [m.get("genre") or other])[0].title()
     elif mode == "tempo":
-        dest = tempo_label(m.get("bpm"))
+        dest = tempo_label(m.get("bpm"), lb)
     elif mode == "decade":
-        dest = decade_label(m.get("year"))
+        dest = decade_label(m.get("year"), lb)
     elif mode == "country":
-        dest = country_name(m.get("country", "")) or ("Russian-language" if m.get("cyrillic") else OTHER)
+        code = m.get("country", "")
+        dest = (lb.get("countries") or {}).get(code) or country_name(code) or (
+            lb["russian_language"] if m.get("cyrillic") else other)
     elif mode == "artist":
-        dest = main_artist(artist) or "Unknown artist"
+        dest = main_artist(artist) or lb["unknown_artist"]
     else:
-        dest = folder or "Downloads"
+        dest = folder or lb["downloads"]
     return safe_name(dest.replace("/", " & "))
 
 
@@ -108,7 +117,8 @@ def _rule_facts(meta: dict) -> list[str]:
     return [x.lower() for x in out if x]
 
 
-def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True) -> int:
+def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True, current=None,
+              should_stop=None) -> int:
     """Look up genre / style / country (and measure tempo) for songs that don't have it yet,
     and save it in the MP3s. Returns how many songs were updated."""
     from . import tools
@@ -118,8 +128,12 @@ def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True) ->
     ffmpeg = tools.ffmpeg_path()
     todo = [t for t in tracks if not t.meta or t.meta.get("partial")]
     if todo:
-        log(f"Looking up genre, style and tempo for {len(todo)} song(s)…")
+        log(msg("log.meta_start", "Looking up genre, style and tempo for {n} song(s)…", n=len(todo)))
     for i, t in enumerate(todo, 1):
+        if should_stop and should_stop():
+            break
+        if current:
+            current(t)
         try:
             info = lookup.lookup(t.artist, t.title)
             if not info.get("genre") and t.meta and t.meta.get("genre"):
@@ -130,7 +144,7 @@ def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True) ->
             write_meta(t.path, info)
             t.meta = info
         except Exception as e:
-            log(f"  couldn't look up {t.artist} - {t.title}: {e}")
+            log(msg("log.meta_failed", "  couldn't look up {song}: {error}", song=f"{t.artist} - {t.title}", error=e))
         if progress:
             progress(i, len(todo))
         if i % 10 == 0:

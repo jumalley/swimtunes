@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
+from .i18n import msg
 from .library import Library
 
 JUNK = (".DS_Store", ".Spotlight-V100", ".Trashes", ".fseventsd")
@@ -40,12 +41,13 @@ def _junk_files(root: Path):
 
 
 def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, mirror: bool = False,
-         dry_run: bool = False, replace: bool = False, log: Callable[[str], None] = print) -> dict:
+         dry_run: bool = False, replace: bool = False, log: Callable[[str], None] = print,
+         progress: Callable[[int, int], None] | None = None) -> dict:
     """Make the earphones match SwimTunes. A folder holding songs that exist only on the
     earphones is left alone (import it first) unless replace=True."""
     device = Path(device).expanduser()
     if not device.is_dir():
-        raise FileNotFoundError(f"Device not found at {device}. Are the earphones plugged in?")
+        raise FileNotFoundError(msg("err.no_earphones", "Earphones not found at {path}. Are they plugged in?", path=device))
     names = folders or lib.folders()
     plan_copy, plan_delete, protected = [], [], []
 
@@ -59,7 +61,8 @@ def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, 
         extra = unknown_songs(lib, dest, have, want) if have else []
         if extra and not replace:
             protected.append({"folder": name, "only_on_earphones": len(extra)})
-            log(f"Skipped {name}: {len(extra)} song(s) there are only on the earphones. Import them first.")
+            log(msg("log.sync_protected", "Skipped {folder}: {n} song(s) there are only on the earphones. Import them first.",
+                    folder=name, n=len(extra)))
             continue
         plan_copy.append((name, tracks, dest, have))
 
@@ -76,8 +79,8 @@ def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, 
     freed = sum(f.stat().st_size for _, _, dest, have in plan_copy for f in (dest / h for h in have))
     freed += sum(f.stat().st_size for d in plan_delete for f in d.iterdir())
     if need > free + freed:
-        raise RuntimeError(f"Not enough space on the earphones: need {need/1e6:.0f} MB, "
-                           f"have {(free+freed)/1e6:.0f} MB. Remove some folders and try again.")
+        raise RuntimeError(msg("err.no_space", "Not enough space on the earphones: need {need} MB, have {have} MB. "
+                               "Remove some folders and try again.", need=round(need / 1e6), have=round((free + freed) / 1e6)))
 
     junk = list(_junk_files(device))
     summary = {"updated": [n for n, *_ in plan_copy], "removed": [d.name for d in plan_delete], "protected": protected,
@@ -95,20 +98,24 @@ def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, 
         else:
             p.unlink(missing_ok=True)
     for d in plan_delete:
-        log(f"Removing {d.name} from device")
+        log(msg("log.sync_removing", "Removing {folder} from the earphones", folder=d.name))
         shutil.rmtree(d)
+    total, done = sum(len(tr) for _, tr, _, _ in plan_copy), 0
     for name, tracks, dest, have in plan_copy:
-        log(f"Copying {name} ({len(tracks)} songs)")
+        log(msg("log.sync_copying", "Copying {folder} ({n} songs)", folder=name, n=len(tracks)))
         dest.mkdir(exist_ok=True)
         for h in have:
             (dest / h).unlink()
         for t in tracks:  # one by one, in order, so the earphones play them in order
             shutil.copyfile(t.path, dest / t.filename)
+            done += 1
+            if progress:
+                progress(done, total)
     if hasattr(os, "sync"):
         os.sync()
     if not plan_copy and not plan_delete:
-        log("The earphones are already up to date.")
-    log("Sync finished. Eject the earphones before unplugging.")
+        log(msg("log.sync_uptodate", "The earphones are already up to date."))
+    log(msg("log.sync_done", "Sync finished. Eject the earphones before unplugging."))
     return summary
 
 
@@ -150,7 +157,7 @@ def compare(lib: Library, device: Path | str) -> dict:
     """Folder by folder: what's on the earphones vs in SwimTunes."""
     device = Path(device)
     if not device.is_dir():
-        raise FileNotFoundError(f"Earphones not found at {device}. Are they plugged in?")
+        raise FileNotFoundError(msg("err.no_earphones", "Earphones not found at {path}. Are they plugged in?", path=device))
     lib_names = lib.folders()
     dev_names = sorted((d.name for d in device.iterdir() if d.is_dir() and not d.name.startswith(".")
                         and d.name not in ("System Volume Information", "$RECYCLE.BIN")), key=str.lower)
@@ -180,7 +187,8 @@ def compare(lib: Library, device: Path | str) -> dict:
 
 
 def import_from_device(lib: Library, device: Path | str, folders: list[str], *, ffmpeg: str | None,
-                       log: Callable[[str], None] = print, scope: str | None = None) -> dict:
+                       log: Callable[[str], None] = print, scope: str | None = None,
+                       progress: Callable[[int, int], None] | None = None) -> dict:
     """Copy songs from the earphones into SwimTunes, keeping folders and play order,
     converting other formats to MP3 and skipping songs SwimTunes already has."""
     import subprocess
@@ -188,14 +196,19 @@ def import_from_device(lib: Library, device: Path | str, folders: list[str], *, 
     from .text import safe_name, split_artist_title
     device = Path(device)
     done = {"imported": 0, "skipped": 0, "failed": 0}
+    total = sum(len(_audio_files(device / n if n != "." else device)) for n in folders)
+    count = 0
     for name in folders:
         src_dir = device / name if name != "." else device
         target = safe_name(name if name != "." else "From earphones")
         files = _audio_files(src_dir)
-        log(f"Importing {target} ({len(files)} songs)")
+        log(msg("log.import_folder", "Importing {folder} ({n} songs)", folder=target, n=len(files)))
         lib.create_folder(target)
         for f in files:
             src = src_dir / f
+            count += 1
+            if progress:
+                progress(count, total)
             try:
                 if src.suffix.lower() == ".mp3":
                     t = read_track(src, target)
@@ -205,9 +218,10 @@ def import_from_device(lib: Library, device: Path | str, folders: list[str], *, 
                 existing = lib.find_existing(artist=artist, title=title, folder=target, scope=scope)
                 if existing:
                     if existing.folder == target and existing.filename == f:
-                        log(f"  already there: {f}")
+                        log(msg("log.import_there", "  already there: {file}", file=f))
                     else:
-                        log(f"  skip {f} (already in {existing.folder}/{existing.filename})")
+                        log(msg("log.import_skip", "  skip {file} (already in {where})", file=f,
+                                where=f"{existing.folder}/{existing.filename}"))
                     done["skipped"] += 1
                     continue
                 out = unique_path(lib.folder_path(target) / (Path(f).stem + ".mp3"))
@@ -225,8 +239,9 @@ def import_from_device(lib: Library, device: Path | str, folders: list[str], *, 
                 done["imported"] += 1
             except Exception as e:
                 done["failed"] += 1
-                log(f"  FAILED {f}: {e}")
-    log(f"Import finished: {done['imported']} imported, {done['skipped']} already in SwimTunes, {done['failed']} failed.")
+                log(msg("log.import_failed", "  FAILED {file}: {error}", file=f, error=e))
+    log(msg("log.import_done", "Import finished: {imported} imported, {skipped} already in SwimTunes, {failed} failed.",
+            **done))
     return done
 
 

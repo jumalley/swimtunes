@@ -5,266 +5,182 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SwimTunes</title>
 <link rel="icon" type="image/png" href="/static/icon.png">
-<style>
-:root { color-scheme: light dark;
-  --bg: #f4f7f9; --panel: #ffffff; --text: #14212b; --muted: #5d6f7c; --line: #dde5ea;
-  --accent: #0a7ea4; --accent-soft: #e2f3f9; --danger: #c0392b; --warn: #a76a12; --warn-soft: #fdf3e1; --ok: #2f855a; --ok-soft: #e3f4ea;
-  --radius: 10px;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #0e1418; --panel: #162027; --text: #e4edf2; --muted: #8fa3b0; --line: #26343d;
-    --accent: #38b2d8; --accent-soft: #15303b; --danger: #e5675a; --warn: #e0a84a; --warn-soft: #33290f; --ok: #5cc28b; --ok-soft: #12301f; }
-}
-* { box-sizing: border-box; }
-input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
-body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
-header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
-h1 { font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px; }
-h1 img { width: 28px; height: 28px; }
-h1 span { color: var(--accent); }
-h2 { font-size: 16px; margin: 0 0 12px; }
-h3 { font-size: 14px; margin: 18px 0 8px; }
-.stats { display: flex; gap: 28px; flex-wrap: wrap; }
-.stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
-.stat small { color: var(--muted); }
-.cap { min-width: 220px; flex: 1; max-width: 360px; }
-.bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 6px; }
-.bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
-.bar.full i { background: var(--danger); }
-.head-actions { display: flex; gap: 8px; margin-left: auto; }
-.layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
-.layout > * { min-width: 0; }
-@media (max-width: 860px) { .layout { grid-template-columns: 1fr; padding: 16px; } header { padding: 14px 16px; } }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
-.folders { list-style: none; margin: 0 0 12px; padding: 0; }
-.folders li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
-.folders li:hover { background: var(--bg); }
-.folders li.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.folders small { color: var(--muted); font-weight: 400; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
-.tabs button { border: 0; background: none; padding: 10px 14px; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; }
-.tabs button.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
-.badge { background: var(--danger); color: #fff; border-radius: 9px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
-button, .btn { white-space: nowrap; font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.big { padding: 10px 20px; font-size: 15px; }
-button.danger { color: var(--danger); }
-button:disabled { opacity: .5; cursor: default; }
-input, select, textarea { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); width: 100%; }
-textarea { min-height: 84px; resize: vertical; }
-label { display: block; color: var(--muted); font-size: 12px; margin: 10px 0 4px; }
-.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.row > * { flex: 1; min-width: 140px; }
-.row > button, .row > .fit { flex: 0 0 auto; min-width: 0; }
-.check { display: flex; gap: 6px; align-items: center; color: var(--muted); margin-top: 10px; font-size: 13px; }
-.check input { width: auto; }
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: middle; }
-th { color: var(--muted); font-weight: 500; font-size: 12px; }
-td.t { white-space: normal; min-width: 180px; }
-td.t small { display: block; color: var(--muted); }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-td select, td input { width: auto; padding: 3px 6px; }
-td input.dest { width: 170px; }
-tr.dim td { opacity: .55; }
-.muted { color: var(--muted); }
-.small { font-size: 12px; }
-.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); font-size: 12px; margin: 1px 2px 1px 0; }
-.chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
-.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
-.chip.info { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
-.log { background: var(--bg); border-radius: 8px; padding: 10px; max-height: 220px; overflow: auto; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; margin-top: 12px; }
-.log:empty { display: none; }
-.progress { margin-top: 10px; }
-.progress small { color: var(--muted); }
-.group { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
-.group-title { font-weight: 600; margin-bottom: 6px; }
-.empty { color: var(--muted); padding: 24px; text-align: center; white-space: normal; }
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; max-width: 90vw; }
-.toast.show { opacity: 1; }
-.folder-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.folder-head h2 { margin: 0; }
-.banner { background: var(--accent-soft); color: var(--text); padding: 10px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.banner ul { margin: 4px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
-.drives { display: grid; gap: 8px; margin: 8px 0 4px; }
-.drive { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
-.drive:hover { border-color: var(--accent); }
-.drive.sel { border-color: var(--accent); background: var(--accent-soft); }
-.drive input { width: auto; }
-.drive b { display: block; }
-.notice { padding: 12px 14px; border-radius: 8px; background: var(--bg); color: var(--muted); }
-details summary { cursor: pointer; color: var(--muted); margin-top: 12px; }
-.overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; z-index: 10; }
-.overlay h2 { font-size: 22px; }
-.steps { margin: 0; padding-left: 20px; color: var(--muted); }
-.steps li { margin: 4px 0; }
-.summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-.summary .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
-.summary .card b { display: block; }
-.summary .card small { color: var(--muted); }
-.rule { display: grid; grid-template-columns: 180px 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
-@media (max-width: 600px) { .rule { grid-template-columns: 1fr; } }
-dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); padding: 20px; width: min(760px, 94vw); }
-dialog::backdrop { background: rgba(0,0,0,.4); }
-.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; }
-.ok-text { color: var(--ok); } .bad-text { color: var(--danger); }
-.hidden { display: none !important; }
-</style>
+<link rel="stylesheet" href="/static/fa/css/all.min.css">
+<link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <header>
   <h1><img src="/static/icon.png" alt="">Swim<span>Tunes</span></h1>
   <div class="stats">
-    <div class="stat"><b id="s-count">–</b><small>songs</small></div>
-    <div class="stat"><b id="s-dur">–</b><small>total time</small></div>
-    <div class="stat"><b id="s-folders">–</b><small>folders</small></div>
+    <div class="stat"><b id="s-count">–</b><small data-i18n="hd.songs">songs</small></div>
+    <div class="stat"><b id="s-dur">–</b><small data-i18n="hd.total_time">total time</small></div>
+    <div class="stat"><b id="s-folders">–</b><small data-i18n="hd.folders">folders</small></div>
   </div>
-  <div class="cap"><small class="muted" id="s-cap">–</small><div class="bar" id="s-bar"><i></i></div></div>
+  <div class="cap" data-tip="tip.capacity_bar"><small class="muted" id="s-cap">–</small><div class="bar" id="s-bar"><i></i></div></div>
   <div class="head-actions">
-    <button onclick="openMusicFolder()" title="Show the MP3 files on your computer">📂 Music folder</button>
-    <button id="quit-btn" class="hidden" onclick="quitApp()">Quit</button>
+    <button onclick="openMusicFolder()" data-tip="tip.music_folder"><i class="fa-solid fa-folder-open"></i><span data-i18n="hd.music_folder">Music folder</span></button>
+    <button id="quit-btn" class="hidden" onclick="quitApp()" data-tip="tip.quit"><i class="fa-solid fa-power-off"></i><span data-i18n="hd.quit">Quit</span></button>
   </div>
 </header>
 <div class="banner hidden" id="update">
-  <div style="flex:1;min-width:220px"><b>🎉 A new version of SwimTunes is available.</b><ul id="update-changes"></ul></div>
-  <button class="primary" id="update-btn" onclick="applyUpdate()">Update now</button>
+  <i class="fa-solid fa-circle-arrow-up"></i>
+  <div style="flex:1;min-width:220px"><b data-i18n="upd.banner">A new version of SwimTunes is available.</b><ul id="update-changes"></ul></div>
+  <button class="primary" id="update-btn" onclick="applyUpdate()" data-tip="tip.update_now"><i class="fa-solid fa-download"></i><span data-i18n="upd.now">Update now</span></button>
 </div>
 
 <div class="layout">
   <aside>
     <div class="panel">
-      <h2>Folders</h2>
+      <h2><i class="fa-solid fa-folder-tree"></i><span data-i18n="side.folders">Folders</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.folders"></i></h2>
       <ul class="folders" id="folders"></ul>
-      <div class="row"><input id="new-folder" placeholder="New folder name"><button onclick="createFolder()">Add</button></div>
+      <div class="row"><input id="new-folder" data-i18n-ph="side.new_folder" placeholder="New folder name"><button onclick="createFolder()" data-tip="tip.new_folder"><i class="fa-solid fa-plus"></i><span data-i18n="side.add">Add</span></button></div>
     </div>
   </aside>
 
   <main>
     <div class="tabs" id="tabs">
-      <button data-tab="add">➕ Add music</button>
-      <button data-tab="songs">Songs</button>
-      <button data-tab="organize">Sort my songs</button>
-      <button data-tab="device">Earphones</button>
-      <button data-tab="dupes">Duplicates <span class="badge hidden" id="dupe-badge"></span></button>
-      <button data-tab="settings">Settings</button>
+      <button data-tab="add"><i class="fa-solid fa-plus"></i><span data-i18n="tab.add">Add music</span></button>
+      <button data-tab="songs"><i class="fa-solid fa-music"></i><span data-i18n="tab.songs">Songs</span></button>
+      <button data-tab="organize"><i class="fa-solid fa-wand-magic-sparkles"></i><span data-i18n="tab.organize">Sort my songs</span></button>
+      <button data-tab="device"><i class="fa-solid fa-headphones"></i><span data-i18n="tab.device">Earphones</span></button>
+      <button data-tab="dupes"><i class="fa-regular fa-clone"></i><span data-i18n="tab.dupes">Duplicates</span> <span class="badge hidden" id="dupe-badge"></span></button>
+      <button data-tab="settings"><i class="fa-solid fa-gear"></i><span data-i18n="tab.settings">Settings</span></button>
     </div>
 
     <!-- ADD MUSIC -->
     <section id="tab-add">
       <div class="panel">
-        <h2>1. Paste links</h2>
-        <p class="muted" style="margin-top:0">On YouTube or Spotify, click <b>Share → Copy link</b> and paste it here. Playlists work too. You'll see the songs before anything is downloaded.</p>
-        <textarea id="urls" placeholder="https://www.youtube.com/playlist?list=...&#10;https://open.spotify.com/playlist/..."></textarea>
-        <label class="check"><input type="checkbox" id="allow-dupes"> Let me download songs I already have again</label>
-        <div class="row" style="margin-top:12px"><button class="primary big" id="find-btn" onclick="startPreview()">Find songs</button></div>
+        <h2><i class="fa-solid fa-link"></i><span data-i18n="add.step1">1. Paste links</span></h2>
+        <p class="muted" style="margin-top:0" data-i18n-html="add.step1_help">On YouTube or Spotify, click <b>Share → Copy link</b> and paste it here. Playlists work too. You'll see the songs before anything is downloaded.</p>
+        <textarea id="urls" data-tip="tip.urls" placeholder="https://www.youtube.com/playlist?list=...&#10;https://open.spotify.com/playlist/..."></textarea>
+        <label class="check"><input type="checkbox" id="allow-dupes"> <span data-i18n="add.allow_dupes">Let me download songs I already have again</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.allow_dupes"></i></label>
+        <div class="row" style="margin-top:12px"><button class="primary big" id="find-btn" onclick="startPreview()" data-tip="tip.find"><i class="fa-solid fa-magnifying-glass"></i><span data-i18n="add.find">Find songs</span></button></div>
         <div class="progress hidden" id="pv-progress"><div class="bar"><i></i></div><small></small></div>
-        <div class="log" id="pv-log"></div>
+      </div>
+
+      <div id="how" class="how" style="margin-bottom:20px">
+        <div class="step"><span class="num">1</span><i class="fa-solid fa-link"></i><b data-i18n="how.1t">Paste a link</b><p data-i18n="how.1">A YouTube video or playlist, or a Spotify playlist, album or song.</p></div>
+        <div class="step"><span class="num">2</span><i class="fa-solid fa-list-check"></i><b data-i18n="how.2t">Check the songs</b><p data-i18n="how.2">SwimTunes looks up each song's genre, style, tempo and country, and skips songs you already have.</p></div>
+        <div class="step"><span class="num">3</span><i class="fa-solid fa-folder-tree"></i><b data-i18n="how.3t">Choose the folders</b><p data-i18n="how.3">Sort by your own rules, genre, tempo, country… or put everything in one folder.</p></div>
+        <div class="step"><span class="num">4</span><i class="fa-solid fa-headphones"></i><b data-i18n="how.4t">Copy to your earphones</b><p data-i18n="how.4">Connect them with the charging cable and click Copy in the Earphones tab.</p></div>
       </div>
 
       <div class="panel hidden" id="pv-panel">
-        <h2>2. Choose where they go</h2>
-        <div class="row">
-          <div><label>Sort the songs</label><select id="pv-mode" onchange="applySort()"></select></div>
-          <div id="pv-folder-wrap"><label id="pv-folder-label">Folder</label><input id="pv-folder" list="folder-names" oninput="applySort()"></div>
-          <button class="fit" style="align-self:flex-end" id="pv-rules-btn" onclick="openRules()">✏️ Edit my rules</button>
+        <h2><i class="fa-solid fa-folder-tree"></i><span data-i18n="add.step2">2. Choose where they go</span></h2>
+        <div id="pv-live"></div>
+        <div id="pv-controls">
+          <div class="row">
+            <div><label><span data-i18n="add.sort_label">Sort the songs</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.sort_mode"></i></label><select id="pv-mode" onchange="applySort()"></select></div>
+            <div id="pv-folder-wrap"><label><span id="pv-folder-label" data-i18n="add.folder">Folder</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.fallback_folder"></i></label><input id="pv-folder" list="folder-names" oninput="applySort()"></div>
+            <button class="fit" style="align-self:flex-end" id="pv-rules-btn" onclick="openRules()" data-tip="tip.rules"><i class="fa-solid fa-pen"></i><span data-i18n="rules.edit">Edit my rules</span></button>
+          </div>
+          <p class="muted small" id="pv-mode-help"></p>
+          <div class="summary" id="pv-summary"></div>
         </div>
-        <p class="muted small" id="pv-mode-help"></p>
-        <div class="summary" id="pv-summary"></div>
         <div class="row" style="margin-bottom:8px">
-          <input id="pv-filter" placeholder="Search…" oninput="renderPreview()">
-          <label class="check fit" style="margin:0"><input type="checkbox" id="pv-show-have" onchange="renderPreview()"> Show songs I already have</label>
-          <button class="fit" onclick="checkAll(true)">Tick all</button><button class="fit" onclick="checkAll(false)">Untick all</button>
+          <input id="pv-filter" data-i18n-ph="common.search" placeholder="Search…" oninput="renderPreview()">
+          <label class="check fit" style="margin:0"><input type="checkbox" id="pv-show-have" onchange="renderPreview()"> <span data-i18n="add.show_have">Show songs I already have</span></label>
+          <button class="fit" onclick="checkAll(true)" data-tip="tip.tick_all"><i class="fa-regular fa-square-check"></i><span data-i18n="add.tick_all">Tick all</span></button>
+          <button class="fit" onclick="checkAll(false)"><i class="fa-regular fa-square"></i><span data-i18n="add.untick_all">Untick all</span></button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th></th><th>Song</th><th>Genre</th><th>Style</th><th class="num">Tempo</th><th class="num">Year</th><th>Country</th><th class="num">Length</th><th>Goes to folder</th></tr></thead>
+          <thead><tr><th></th><th data-i18n="col.song">Song</th>
+            <th><span data-i18n="col.genre">Genre</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_genre"></i></th>
+            <th><span data-i18n="col.style">Style</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_style"></i></th>
+            <th class="num"><span data-i18n="col.tempo">Tempo</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_tempo"></i></th>
+            <th class="num" data-i18n="col.year">Year</th>
+            <th><span data-i18n="col.country">Country</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_country"></i></th>
+            <th class="num" data-i18n="col.length">Length</th>
+            <th><span id="pv-last-col" data-i18n="col.goes_to">Goes to folder</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_folder"></i></th></tr></thead>
           <tbody id="pv-rows"></tbody>
         </table></div>
-        <p class="muted small">Tip: you can type any folder name for a song. A new folder is created for it.</p>
-        <div class="row" style="margin-top:12px"><button class="primary big" id="dl-btn" onclick="startDownload()">Download</button><span class="muted" id="dl-summary"></span></div>
-        <div class="progress hidden" id="dl-progress"><div class="bar"><i></i></div><small></small></div>
-        <div class="log" id="dl-log"></div>
+        <p class="muted small" data-i18n="add.tip_folder">Tip: you can type any folder name for a song. A new folder is created for it.</p>
+        <div class="row" style="margin-top:12px"><button class="primary big" id="dl-btn" onclick="startDownload()" data-tip="tip.download"><i class="fa-solid fa-download"></i><span id="dl-btn-text" data-i18n="add.download">Download</span></button><span class="muted" id="dl-summary"></span></div>
+        <details class="log-details"><summary data-i18n="common.details">Technical details</summary><div class="log" id="pv-log"></div><div class="log" id="dl-log"></div></details>
       </div>
     </section>
 
     <!-- SONGS -->
     <section id="tab-songs" class="panel hidden">
       <div class="folder-head">
-        <div><h2 id="folder-title">All songs</h2><small class="muted" id="folder-sub"></small></div>
+        <div><h2><i class="fa-solid fa-music"></i><span id="folder-title">All songs</span></h2><small class="muted" id="folder-sub"></small></div>
         <div class="row" id="folder-actions">
-          <input id="filter" placeholder="Search…" oninput="renderSongs()">
-          <button id="btn-rename" onclick="renameFolder()">Rename</button>
-          <button id="btn-delfolder" class="danger" onclick="deleteFolder()">Delete folder</button>
-          <button id="btn-delsel" class="danger" onclick="deleteSelected()" disabled>Delete selected</button>
+          <input id="filter" data-i18n-ph="common.search" placeholder="Search…" oninput="renderSongs()">
+          <button id="btn-rename" onclick="renameFolder()"><i class="fa-solid fa-i-cursor"></i><span data-i18n="songs.rename">Rename</span></button>
+          <button id="btn-delfolder" class="danger" onclick="deleteFolder()" data-tip="tip.trash_folder"><i class="fa-regular fa-trash-can"></i><span data-i18n="songs.delete_folder">Delete folder</span></button>
+          <button id="btn-delsel" class="danger" onclick="deleteSelected()" disabled data-tip="tip.trash_songs"><i class="fa-regular fa-trash-can"></i><span id="btn-delsel-text" data-i18n="songs.delete_selected">Delete selected</span></button>
         </div>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th>Song</th><th>Genre</th><th class="num">Tempo</th><th id="th-folder">Folder</th><th class="num">Length</th><th class="num">Size</th><th>Move to</th></tr></thead>
+        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th data-i18n="col.song">Song</th>
+          <th data-i18n="col.genre">Genre</th><th class="num"><span data-i18n="col.tempo">Tempo</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_tempo"></i></th>
+          <th id="th-folder" data-i18n="col.folder">Folder</th><th class="num" data-i18n="col.length">Length</th><th class="num" data-i18n="col.size">Size</th>
+          <th><span data-i18n="col.move_to">Move to</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.move_to"></i></th></tr></thead>
         <tbody id="songs"></tbody>
       </table></div>
     </section>
 
     <!-- ORGANIZE -->
     <section id="tab-organize" class="panel hidden">
-      <h2>Sort the songs you already have</h2>
-      <p class="muted" style="margin-top:0">SwimTunes looks up each song's genre, style, tempo and country, then suggests a folder. Nothing moves until you click <b>Move</b>.</p>
+      <h2><i class="fa-solid fa-wand-magic-sparkles"></i><span data-i18n="org.title">Sort the songs you already have</span></h2>
+      <p class="muted" style="margin-top:0" data-i18n-html="org.help">SwimTunes looks up each song's genre, style, tempo and country, then suggests a folder. Nothing moves until you click <b>Move</b>.</p>
       <div class="row">
-        <div><label>Songs from</label><select id="org-source"></select></div>
-        <div><label>Sort them</label><select id="org-mode" onchange="applyOrgSort()"></select></div>
-        <div id="org-folder-wrap"><label>Songs matching no rule</label><input id="org-folder" list="folder-names" placeholder="leave where they are" oninput="applyOrgSort()"></div>
-        <button class="fit" style="align-self:flex-end" onclick="openRules()">✏️ Edit my rules</button>
+        <div><label data-i18n="org.source">Songs from</label><select id="org-source"></select></div>
+        <div><label><span data-i18n="org.mode">Sort them</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.sort_mode"></i></label><select id="org-mode" onchange="applyOrgSort()"></select></div>
+        <div id="org-folder-wrap"><label data-i18n="org.no_rule">Songs matching no rule</label><input id="org-folder" list="folder-names" data-i18n-ph="org.leave" placeholder="leave where they are" oninput="applyOrgSort()"></div>
+        <button class="fit" style="align-self:flex-end" onclick="openRules()" data-tip="tip.rules"><i class="fa-solid fa-pen"></i><span data-i18n="rules.edit">Edit my rules</span></button>
       </div>
-      <div class="row" style="margin-top:12px"><button class="primary" id="org-btn" onclick="startAnalyze()">Look up genres</button></div>
-      <div class="progress hidden" id="org-progress"><div class="bar"><i></i></div><small></small></div>
-      <div class="log" id="org-log"></div>
+      <div class="row" style="margin-top:12px"><button class="primary" id="org-btn" onclick="startAnalyze()" data-tip="tip.org_analyze"><i class="fa-solid fa-magnifying-glass"></i><span data-i18n="org.analyze">Look up genres</span></button></div>
+      <div id="org-live" style="margin-top:12px"></div>
+      <details class="log-details"><summary data-i18n="common.details">Technical details</summary><div class="log" id="org-log"></div></details>
       <div id="org-result" class="hidden">
         <div class="summary" id="org-summary"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th></th><th>Song</th><th>Genre</th><th>Style</th><th class="num">Tempo</th><th>Country</th><th>Now in</th><th>Move to</th></tr></thead>
+          <thead><tr><th></th><th data-i18n="col.song">Song</th><th data-i18n="col.genre">Genre</th><th data-i18n="col.style">Style</th><th class="num" data-i18n="col.tempo">Tempo</th><th data-i18n="col.country">Country</th><th data-i18n="col.now_in">Now in</th><th data-i18n="col.move_to">Move to</th></tr></thead>
           <tbody id="org-rows"></tbody>
         </table></div>
-        <div class="row" style="margin-top:12px"><button class="primary" id="org-apply" onclick="applyMoves()">Move songs</button></div>
+        <div class="row" style="margin-top:12px"><button class="primary" id="org-apply" onclick="applyMoves()"><i class="fa-solid fa-arrow-right-arrow-left"></i><span id="org-apply-text" data-i18n="org.move">Move songs</span></button></div>
       </div>
     </section>
 
     <!-- EARPHONES -->
     <section id="tab-device" class="panel hidden">
-      <h2>Your earphones</h2>
+      <h2><i class="fa-solid fa-headphones"></i><span data-i18n="dev.title">Your earphones</span></h2>
       <ol class="steps">
-        <li>Connect the earphones to your computer with their charging cable.</li>
-        <li>Wait a few seconds, then pick them below.</li>
-        <li>Import the songs that are only on the earphones, then click <b>Copy to earphones</b>.</li>
-        <li>When it says <i>Sync finished</i>, eject the earphones before unplugging them.</li>
+        <li data-i18n="dev.s1">Connect the earphones to your computer with their charging cable.</li>
+        <li data-i18n="dev.s2">Wait a few seconds, then pick them below.</li>
+        <li data-i18n-html="dev.s3">Import the songs that are only on the earphones, then click <b>Copy to earphones</b>.</li>
+        <li data-i18n-html="dev.s4">When it says <i>Sync finished</i>, eject the earphones before unplugging them.</li>
       </ol>
-      <div class="row" style="margin-top:14px"><h3 style="margin:0">Connected drives</h3><button onclick="loadDrives()">↻ Look again</button></div>
+      <div class="row" style="margin-top:14px"><h3 style="margin:0"><span data-i18n="dev.drives">Connected drives</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.drives"></i></h3><button onclick="loadDrives()"><i class="fa-solid fa-rotate"></i><span data-i18n="dev.look_again">Look again</span></button></div>
       <div class="drives" id="drives"></div>
-      <details id="manual"><summary>Not in the list? Type the location yourself</summary>
-        <div class="row" style="margin-top:8px"><input id="device-path" placeholder="H:\  on Windows,  /Volumes/SWIM  on Mac"><button onclick="useManualPath()">Use</button></div>
+      <details id="manual"><summary data-i18n="dev.manual">Not in the list? Type the location yourself</summary>
+        <div class="row" style="margin-top:8px"><input id="device-path" placeholder="H:\  /Volumes/SWIM"><button onclick="useManualPath()" data-i18n="dev.use">Use</button></div>
       </details>
       <div id="dev-info" class="hidden">
-        <h3 id="dev-title">What's on the earphones</h3>
+        <h3 id="dev-title"></h3>
         <div class="table-wrap"><table>
-          <thead><tr><th></th><th>Folder</th><th class="num">On earphones</th><th class="num">In SwimTunes</th><th>Status</th></tr></thead>
+          <thead><tr><th></th><th data-i18n="col.folder">Folder</th><th class="num" data-i18n="dev.on_earphones">On earphones</th><th class="num" data-i18n="dev.in_swimtunes">In SwimTunes</th><th><span data-i18n="dev.status">Status</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.dev_status"></i></th></tr></thead>
           <tbody id="dev-rows"></tbody>
         </table></div>
         <div class="row" style="margin-top:12px">
-          <button id="import-btn" onclick="startImport()">⬇ Import ticked folders into SwimTunes</button>
-          <button class="primary" id="sync-btn" onclick="startSync()">⬆ Copy to earphones</button>
+          <button id="import-btn" onclick="startImport()" data-tip="tip.import"><i class="fa-solid fa-file-import"></i><span data-i18n="dev.import">Import ticked folders into SwimTunes</span></button>
+          <button class="primary" id="sync-btn" onclick="startSync()" data-tip="tip.sync"><i class="fa-solid fa-upload"></i><span data-i18n="dev.sync">Copy to earphones</span></button>
         </div>
-        <label class="check"><input type="checkbox" id="mirror"> Also remove folders from the earphones that aren't in SwimTunes</label>
-        <p class="muted small">Only folders that changed are copied, in playlist order (the earphones play songs in the order they were copied). Songs that exist only on the earphones are never deleted.</p>
+        <label class="check"><input type="checkbox" id="mirror"> <span data-i18n="dev.mirror">Also remove folders from the earphones that aren't in SwimTunes</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.mirror"></i></label>
+        <p class="muted small" data-i18n="dev.note">Only folders that changed are copied, in playlist order (the earphones play songs in the order they were copied). Songs that exist only on the earphones are never deleted.</p>
       </div>
+      <div class="progress hidden" id="dev-progress"><div class="bar"><i></i></div><small></small></div>
       <div class="log" id="dev-log"></div>
     </section>
 
     <!-- DUPLICATES -->
     <section id="tab-dupes" class="panel hidden">
-      <h2>Duplicate songs</h2>
-      <p class="muted">Same YouTube video, or same artist and title (ignoring “Official Video”, “Lyrics”, “feat.”, “Remastered” and so on). The oldest copy is ticked as the one to keep.</p>
+      <h2><i class="fa-regular fa-clone"></i><span data-i18n="dup.title">Duplicate songs</span></h2>
+      <p class="muted" data-i18n="dup.help">Same YouTube video, or same artist and title (ignoring “Official Video”, “Lyrics”, “feat.”, “Remastered” and so on). The oldest copy is ticked as the one to keep.</p>
       <div class="row" style="margin-bottom:12px">
-        <select id="dupe-scope" onchange="loadDupes()"><option value="library">Across all folders</option><option value="folder">Within each folder only</option></select>
-        <button class="danger" onclick="removeAllDupes()">Remove all extra copies</button>
+        <select id="dupe-scope" onchange="loadDupes()" data-tip="tip.dupe_scope"><option value="library" data-i18n="dup.all">Across all folders</option><option value="folder" data-i18n="dup.within">Within each folder only</option></select>
+        <button class="danger" onclick="removeAllDupes()" data-tip="tip.trash_songs"><i class="fa-regular fa-trash-can"></i><span data-i18n="dup.remove_all">Remove all extra copies</span></button>
       </div>
       <div id="dupes"></div>
     </section>
@@ -272,544 +188,86 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
     <!-- SETTINGS -->
     <section id="tab-settings" class="hidden">
       <div class="panel">
-        <h2>Preferences</h2>
+        <h2><i class="fa-solid fa-sliders"></i><span data-i18n="set.prefs">Preferences</span></h2>
         <div class="row">
-          <div><label>Earphone size</label><select id="cfg-capacity_gb"><option value="4">4 GB (OpenSwim)</option><option value="8">8 GB</option><option value="16">16 GB</option><option value="32">32 GB (OpenSwim Pro)</option><option value="64">64 GB</option></select></div>
-          <div><label>MP3 quality</label><select id="cfg-bitrate"><option value="128">128 kbps (more songs)</option><option value="192">192 kbps (recommended)</option><option value="256">256 kbps</option><option value="320">320 kbps (best)</option></select></div>
+          <div><label><span data-i18n="set.capacity">Earphone size</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.capacity"></i></label><select id="cfg-capacity_gb"><option value="4">4 GB (OpenSwim)</option><option value="8">8 GB</option><option value="16">16 GB</option><option value="32">32 GB (OpenSwim Pro)</option><option value="64">64 GB</option></select></div>
+          <div><label><span data-i18n="set.quality">MP3 quality</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.bitrate"></i></label><select id="cfg-bitrate"><option value="128" data-i18n="set.q128">128 kbps (more songs)</option><option value="192" data-i18n="set.q192">192 kbps (recommended)</option><option value="256">256 kbps</option><option value="320" data-i18n="set.q320">320 kbps (best)</option></select></div>
         </div>
         <div class="row">
-          <div><label>No duplicates…</label><select id="cfg-dupe_scope"><option value="library">anywhere in SwimTunes</option><option value="folder">within the same folder</option></select></div>
-          <div><label>Volume</label><select id="cfg-normalize"><option value="false">Keep original loudness</option><option value="true">Even out loudness between songs</option></select></div>
+          <div><label><span data-i18n="set.dupes">No duplicates…</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.dupes_setting"></i></label><select id="cfg-dupe_scope"><option value="library" data-i18n="set.dupes_all">anywhere in SwimTunes</option><option value="folder" data-i18n="set.dupes_folder">within the same folder</option></select></div>
+          <div><label><span data-i18n="set.volume">Volume</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.normalize"></i></label><select id="cfg-normalize"><option value="false" data-i18n="set.vol_keep">Keep original loudness</option><option value="true" data-i18n="set.vol_even">Even out loudness between songs</option></select></div>
         </div>
-        <div class="row" style="margin-top:16px"><button class="primary" onclick="saveSettings()">Save</button></div>
+        <div class="row">
+          <div><label><i class="fa-solid fa-language"></i><span data-i18n="set.language">Language</span></label><select id="cfg-language" class="lang-select" onchange="setLanguage(this.value)"></select></div>
+          <div></div>
+        </div>
+        <div class="row" style="margin-top:16px"><button class="primary" onclick="saveSettings()"><i class="fa-solid fa-check"></i><span data-i18n="common.save">Save</span></button></div>
       </div>
 
       <div class="panel">
-        <h2>My folder rules</h2>
-        <p class="muted" style="margin-top:0">Tell SwimTunes which songs go in which folder. Used by <b>My folder rules</b> when adding or sorting music.</p>
-        <button onclick="openRules()">✏️ Edit my rules</button> <span class="muted" id="rules-count"></span>
+        <h2><i class="fa-solid fa-diagram-project"></i><span data-i18n="rules.title">My folder rules</span></h2>
+        <p class="muted" style="margin-top:0" data-i18n-html="rules.settings_help">Tell SwimTunes which songs go in which folder. Used by <b>My folder rules</b> when adding or sorting music.</p>
+        <button onclick="openRules()"><i class="fa-solid fa-pen"></i><span data-i18n="rules.edit">Edit my rules</span></button> <span class="muted" id="rules-count"></span>
       </div>
 
       <div class="panel">
-        <h2>Updates</h2>
-        <div class="kv"><span class="muted">Version</span><span id="ver-current">–</span><span class="muted">Installed as</span><span id="ver-kind">–</span></div>
-        <div class="row" style="margin-top:12px"><button class="fit" onclick="checkUpdate()" id="check-btn">Check for updates</button><span id="update-status" class="muted"></span></div>
+        <h2><i class="fa-solid fa-circle-arrow-up"></i><span data-i18n="upd.title">Updates</span></h2>
+        <div class="kv"><span class="muted" data-i18n="upd.version">Version</span><span id="ver-current">–</span><span class="muted" data-i18n="upd.installed_as">Installed as</span><span id="ver-kind">–</span></div>
+        <div class="row" style="margin-top:12px"><button class="fit" onclick="checkUpdate()" id="check-btn" data-tip="tip.check_update"><i class="fa-solid fa-rotate"></i><span data-i18n="upd.check">Check for updates</span></button><span id="update-status" class="muted"></span></div>
         <ul id="update-list" class="small muted"></ul>
         <div class="log" id="upd-log"></div>
       </div>
 
       <div class="panel">
-        <h2>Is everything working?</h2>
-        <div id="health" class="muted">Checking…</div>
+        <h2><i class="fa-solid fa-stethoscope"></i><span data-i18n="health.title">Is everything working?</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.health"></i></h2>
+        <div id="health" class="muted"></div>
       </div>
 
       <div class="panel">
-        <h2>Other</h2>
-        <label>Your music is saved in</label><div class="row"><input id="cfg-root" disabled><button onclick="openMusicFolder()">Open</button></div>
+        <h2><i class="fa-solid fa-ellipsis"></i><span data-i18n="set.other">Other</span></h2>
+        <label data-i18n="set.saved_in">Your music is saved in</label><div class="row"><input id="cfg-root" disabled><button onclick="openMusicFolder()"><i class="fa-solid fa-folder-open"></i><span data-i18n="common.open">Open</span></button></div>
         <div class="row" style="margin-top:14px">
-          <button class="fit" onclick="makeShortcut()">🖥️ Put a SwimTunes icon on my desktop</button>
-          <button class="fit danger" onclick="emptyTrash()">Empty trash</button>
+          <button class="fit" onclick="makeShortcut()" data-tip="tip.shortcut"><i class="fa-solid fa-desktop"></i><span data-i18n="set.shortcut">Put a SwimTunes icon on my desktop</span></button>
+          <button class="fit danger" onclick="emptyTrash()" data-tip="tip.empty_trash"><i class="fa-solid fa-dumpster"></i><span data-i18n="set.empty_trash">Empty trash</span></button>
         </div>
-        <p class="muted small">Deleted songs and folders go to <code>.trash</code> inside the music folder until you empty it.</p>
+        <p class="muted small" data-i18n-html="set.trash_note">Deleted songs and folders go to <code>.trash</code> inside the music folder until you empty it.</p>
       </div>
     </section>
   </main>
 </div>
 
 <dialog id="rules-dlg">
-  <h2>My folder rules</h2>
-  <p class="muted" style="margin-top:0">Each rule sends matching songs to a folder. When a song matches several rules, the one with the most matching keywords wins.
-    Keywords can be a <b>genre</b> (pop, rock, rap), a <b>style</b> (post-punk, house, synth-pop), a <b>country</b> (Russia, France, RU),
-    <b>cyrillic</b> (songs with Russian/Cyrillic titles), or an <b>artist</b> name. Separate keywords with commas.</p>
+  <h2><i class="fa-solid fa-diagram-project"></i><span data-i18n="rules.title">My folder rules</span></h2>
+  <p class="muted" style="margin-top:0" data-i18n-html="rules.help">Each rule sends matching songs to a folder. When a song matches several rules, the one with the most matching keywords wins. Keywords can be a <b>genre</b> (pop, rock, rap), a <b>style</b> (post-punk, house, synth-pop), a <b>country</b> (Russia, France, RU), <b>cyrillic</b> (songs with Russian/Cyrillic titles), or an <b>artist</b> name. Separate keywords with commas.</p>
   <div id="rules-list"></div>
   <div class="row" style="margin:8px 0 16px">
-    <button class="fit" onclick="addRule()">+ Add a rule</button>
-    <button class="fit" id="learn-btn" onclick="learnRules()">✨ Learn from my folders</button>
+    <button class="fit" onclick="addRule()"><i class="fa-solid fa-plus"></i><span data-i18n="rules.add">Add a rule</span></button>
+    <button class="fit" id="learn-btn" onclick="learnRules()" data-tip="tip.learn"><i class="fa-solid fa-wand-magic-sparkles"></i><span data-i18n="rules.learn">Learn from my folders</span></button>
   </div>
-  <div class="progress hidden" id="learn-progress"><div class="bar"><i></i></div><small></small></div>
-  <div class="log" id="learn-log"></div>
-  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="fit" onclick="closeRules()">Cancel</button><button class="primary fit" onclick="saveRules()">Save rules</button></div>
+  <div id="learn-live"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="fit" onclick="closeRules()" data-i18n="common.cancel">Cancel</button><button class="primary fit" onclick="saveRules()"><i class="fa-solid fa-check"></i><span data-i18n="rules.save">Save rules</span></button></div>
 </dialog>
 
+<footer id="footer">
+  <button class="item" id="f-health" onclick="showTab('settings')" data-tip="tip.f_health"><i class="fa-solid fa-circle-check"></i><span></span></button>
+  <span class="sep"></span>
+  <button class="item" id="f-version" onclick="showTab('settings')" data-tip="tip.f_version"><i class="fa-solid fa-tag"></i><span></span></button>
+  <span class="sep"></span>
+  <button class="item" id="f-device" onclick="showTab('device')" data-tip="tip.f_device"><i class="fa-solid fa-headphones"></i><span></span></button>
+  <span class="sep hide-sm"></span>
+  <button class="item hide-sm" id="f-folder" onclick="openMusicFolder()" data-tip="tip.music_folder"><i class="fa-regular fa-folder-open"></i><span></span></button>
+  <span class="grow"></span>
+  <button class="item activity hidden" id="f-activity"><i class="fa-solid fa-circle-notch fa-spin"></i><span></span></button>
+  <span class="sep"></span>
+  <span class="item" data-tip="tip.lang"><i class="fa-solid fa-language"></i><select id="f-lang" class="lang-select" onchange="setLanguage(this.value)"></select></span>
+</footer>
+
 <datalist id="folder-names"></datalist>
+<div id="tip" role="tooltip"></div>
 <div class="toast" id="toast"></div>
-<div class="overlay hidden" id="overlay"><div><h2 id="ov-title">SwimTunes is closed</h2><p class="muted" id="ov-text">To use it again, open the SwimTunes app. You can close this tab.</p></div></div>
+<div class="overlay hidden" id="overlay"><div><h2 id="ov-title"></h2><p class="muted" id="ov-text"></p></div></div>
 
-<script>
-let LIB = null, CURRENT = null, SONGS = [], SELECTED = new Set(), MODES = {}, RULES = [], UPDATING = false;
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const dur = s => { s = Math.round(s || 0); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
-  return h ? `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}` : `${m}:${String(x).padStart(2,'0')}`; };
-const longDur = s => { s = Math.round(s||0); const h = Math.floor(s/3600), m = Math.round(s%3600/60); return h ? `${h} h ${m} min` : `${m} min`; };
-const size = b => b >= 1e9 ? (b/1e9).toFixed(2)+' GB' : (b/1e6).toFixed(1)+' MB';
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3000); }
-function showClosed(title, text) {
-  if (title) $('ov-title').textContent = title;
-  if (text) $('ov-text').textContent = text;
-  $('overlay').classList.remove('hidden');
-}
-async function api(path, opts = {}) {
-  let r;
-  try { r = await fetch(path, { headers: {'Content-Type': 'application/json'}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined }); }
-  catch (e) { if (!UPDATING) showClosed('SwimTunes has stopped', 'To use it again, open the SwimTunes app. You can close this tab.'); throw e; }
-  const data = await r.json();
-  if (!r.ok) { toast(data.error || 'Something went wrong'); throw new Error(data.error); }
-  return data;
-}
-
-// ----- metadata display -----
-function metaCells(m, withYear = true) {
-  if (!m) return `<td class="muted">?</td><td></td><td class="num muted">?</td>${withYear ? '<td></td>' : ''}<td></td>`;
-  const tags = (m.tags || []).slice(0, 2).map(t => `<span class="chip">${esc(t)}</span>`).join('');
-  const bpm = m.bpm ? `${m.bpm_measured ? '~' : ''}${m.bpm}` : '<span class="muted" title="Measured from the audio after download">?</span>';
-  const country = m.country_name || m.country || (m.cyrillic ? 'Cyrillic' : '');
-  return `<td>${esc(m.genre || '–')}</td><td>${tags}</td><td class="num">${bpm}</td>${withYear ? `<td class="num">${m.year || ''}</td>` : ''}<td>${esc(country)}</td>`;
-}
-
-// ----- library -----
-async function loadLibrary() {
-  LIB = await api('/api/library');
-  $('s-count').textContent = LIB.count;
-  $('s-dur').textContent = longDur(LIB.duration);
-  $('s-folders').textContent = LIB.folders.length;
-  const pct = Math.min(100, LIB.size / LIB.capacity * 100);
-  $('s-cap').textContent = `${size(LIB.size)} of ${LIB.config.capacity_gb} GB earphones (${pct.toFixed(0)}% full)`;
-  $('s-bar').firstElementChild.style.width = pct + '%';
-  $('s-bar').classList.toggle('full', LIB.size > LIB.capacity * 0.95);
-  const b = $('dupe-badge'); b.textContent = LIB.duplicates; b.classList.toggle('hidden', !LIB.duplicates);
-  $('folder-names').innerHTML = LIB.folders.map(f => `<option value="${esc(f.name)}">`).join('');
-  const all = `<li data-f="" class="${CURRENT === null ? 'active' : ''}"><span>All songs</span><small>${LIB.count} · ${dur(LIB.duration)}</small></li>`;
-  $('folders').innerHTML = all + LIB.folders.map(f =>
-    `<li data-f="${esc(f.name)}" class="${CURRENT === f.name ? 'active' : ''}"><span>${esc(f.name)}</span><small>${f.count} · ${dur(f.duration)}</small></li>`).join('');
-  $('folders').querySelectorAll('li').forEach(li => li.onclick = () => { openFolder(li.dataset.f || null); showTab('songs'); });
-  for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
-  $('cfg-root').value = LIB.root;
-  RULES = LIB.config.rules || [];
-  $('rules-count').textContent = RULES.length ? plural(RULES.length, 'rule') : 'No rules yet';
-  const src = $('org-source').value;
-  $('org-source').innerHTML = `<option value="">All songs</option>` + LIB.folders.map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
-  $('org-source').value = src;
-  if (!$('dupe-scope').dataset.touched) $('dupe-scope').value = LIB.config.dupe_scope;
-}
-
-async function openFolder(name) {
-  if (CURRENT !== name) { SELECTED.clear(); $('filter').value = ''; }
-  CURRENT = name;
-  SONGS = name === null ? await api('/api/tracks') : await api('/api/folders/' + encodeURIComponent(name));
-  const f = LIB.folders.find(f => f.name === name);
-  $('folder-title').textContent = name ?? 'All songs';
-  $('folder-sub').textContent = f ? `${plural(f.count, 'song')} · ${longDur(f.duration)} · ${size(f.size)}` : `${plural(LIB.count, 'song')} · ${longDur(LIB.duration)} · ${size(LIB.size)}`;
-  $('btn-rename').classList.toggle('hidden', name === null);
-  $('btn-delfolder').classList.toggle('hidden', name === null);
-  $('th-folder').classList.toggle('hidden', name !== null);
-  document.querySelectorAll('#folders li').forEach(li => li.classList.toggle('active', (li.dataset.f || null) === name));
-  renderSongs();
-}
-
-function renderSongs() {
-  const q = $('filter').value.toLowerCase();
-  const rows = SONGS.filter(s => !q || (s.title + ' ' + s.artist + ' ' + (s.meta?.genre || '')).toLowerCase().includes(q));
-  const opts = LIB.folders.map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
-  $('songs').innerHTML = rows.length ? rows.map((s, i) => `<tr>
-    <td><input type="checkbox" data-p="${esc(s.path)}" ${SELECTED.has(s.path) ? 'checked' : ''}></td>
-    <td class="muted">${s.track_no ?? i + 1}</td>
-    <td class="t">${esc(s.title)}<small>${esc(s.artist)}</small></td>
-    <td>${esc(s.meta?.genre || '')}</td><td class="num">${s.meta?.bpm ? (s.meta.bpm_measured ? '~' : '') + s.meta.bpm : ''}</td>
-    <td class="${CURRENT === null ? '' : 'hidden'}">${esc(s.folder)}</td>
-    <td class="num">${dur(s.duration)}</td><td class="num muted">${size(s.size)}</td>
-    <td><select data-move="${esc(s.path)}"><option value="">—</option>${opts}</select></td></tr>`).join('')
-    : `<tr><td colspan="9" class="empty">${SONGS.length ? 'No matches' : 'No songs yet. Use <b>Add music</b>, or import from your earphones in <b>Earphones</b>.'}</td></tr>`;
-  $('songs').querySelectorAll('input[data-p]').forEach(cb => cb.onchange = () => {
-    cb.checked ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); updateSel(); });
-  $('songs').querySelectorAll('select[data-move]').forEach(sel => sel.onchange = async () => {
-    if (!sel.value) return;
-    await api('/api/tracks/move', { method: 'POST', body: { path: sel.dataset.move, folder: sel.value } });
-    toast('Moved to ' + sel.value); await refresh();
-  });
-  updateSel();
-}
-function updateSel() { $('btn-delsel').disabled = !SELECTED.size; $('btn-delsel').textContent = SELECTED.size ? `Delete ${SELECTED.size} selected` : 'Delete selected'; }
-function selectAll(on) { document.querySelectorAll('#songs input[data-p]').forEach(cb => { cb.checked = on; on ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); }); updateSel(); }
-async function refresh() { await loadLibrary(); if (CURRENT !== null && !LIB.folders.some(f => f.name === CURRENT)) CURRENT = null; await openFolder(CURRENT); }
-
-async function createFolder() {
-  const name = $('new-folder').value.trim(); if (!name) return;
-  const r = await api('/api/folders', { method: 'POST', body: { name } });
-  $('new-folder').value = ''; CURRENT = r.name; await refresh(); showTab('songs');
-}
-async function renameFolder() {
-  const name = prompt('New name for "' + CURRENT + '"', CURRENT); if (!name || name === CURRENT) return;
-  const r = await api(`/api/folders/${encodeURIComponent(CURRENT)}/rename`, { method: 'POST', body: { name } });
-  CURRENT = r.name; await refresh();
-}
-async function deleteFolder() {
-  if (!confirm(`Delete folder "${CURRENT}" and its songs? (It goes to the trash.)`)) return;
-  await api('/api/folders/' + encodeURIComponent(CURRENT), { method: 'DELETE' });
-  CURRENT = null; await refresh();
-}
-async function deleteSelected() {
-  if (!confirm(`Delete ${SELECTED.size} song(s)? (They go to the trash.)`)) return;
-  await api('/api/tracks/delete', { method: 'POST', body: { paths: [...SELECTED] } });
-  SELECTED.clear(); await refresh();
-}
-
-// ----- jobs -----
-async function followJob(id, { log, progress, btn, onUpdate } = {}) {
-  if (btn) btn.disabled = true;
-  if (log) $(log).textContent = 'Starting…';
-  const pr = progress ? $(progress) : null;
-  if (pr) { pr.classList.remove('hidden'); pr.querySelector('i').style.width = '0%'; pr.querySelector('small').textContent = ''; }
-  let j;
-  while (true) {
-    j = await api('/api/jobs/' + id);
-    if (log) { const el = $(log); el.textContent = j.log.join('\n') || 'Working…'; el.scrollTop = el.scrollHeight; }
-    if (pr && j.progress) { const [d, t] = j.progress; pr.querySelector('i').style.width = (t ? d / t * 100 : 0) + '%'; pr.querySelector('small').textContent = `${d} of ${t}`; }
-    if (onUpdate) onUpdate(j);
-    if (j.status === 'done' || j.status === 'error') break;
-    await new Promise(r => setTimeout(r, 800));
-  }
-  if (pr) pr.classList.add('hidden');
-  if (btn) btn.disabled = false;
-  return j;
-}
-
-// ----- add music: preview -----
-let PV = null;   // {name, items}
-function fillModes(sel, current) {
-  sel.innerHTML = Object.entries(MODES).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
-  sel.value = current || 'one';
-}
-async function startPreview() {
-  const urls = $('urls').value.trim();
-  if (!urls) { toast('Paste a YouTube or Spotify link first'); return; }
-  $('pv-panel').classList.add('hidden'); $('dl-log').textContent = '';
-  const r = await api('/api/preview', { method: 'POST', body: { urls, allow_dupes: $('allow-dupes').checked } });
-  const j = await followJob(r.id, { log: 'pv-log', progress: 'pv-progress', btn: $('find-btn') });
-  if (j.status !== 'done') return;
-  PV = j.result;
-  PV.items.forEach(it => { it.checked = !it.existing; it.manual = false; });
-  $('pv-folder').value = PV.name;
-  fillModes($('pv-mode'), LIB.config.sort_mode);
-  $('pv-show-have').checked = false;
-  $('pv-panel').classList.remove('hidden');
-  await applySort();
-  $('pv-panel').scrollIntoView({ behavior: 'smooth' });
-}
-const MODE_HELP = {
-  one: 'All songs go into the folder you choose.',
-  rules: 'Songs go to the folder whose rule they match best. Songs matching no rule go to the folder you choose here.',
-  genre: 'One folder per genre, e.g. Pop, Rock, Rap & Hip Hop, Electro.',
-  style: 'One folder per style, e.g. Post-Punk, House, Synth-Pop: more detailed than genre.',
-  tempo: 'Folders by beats per minute: Easy, Steady, Fast, Sprint. Songs with unknown tempo are measured after downloading.',
-  decade: 'One folder per decade: 1980s, 1990s, 2000s…',
-  country: "One folder per artist's country, e.g. Russia, France, USA.",
-  artist: 'One folder per artist.',
-};
-async function applySort() {
-  if (!PV) return;
-  const mode = $('pv-mode').value;
-  const showFolder = mode === 'one' || mode === 'rules';
-  $('pv-folder-wrap').classList.toggle('hidden', !showFolder);
-  $('pv-folder-label').textContent = mode === 'rules' ? 'Songs matching no rule go to' : 'Folder';
-  $('pv-rules-btn').classList.toggle('hidden', mode !== 'rules');
-  $('pv-mode-help').textContent = MODE_HELP[mode] + (mode === 'rules' && !RULES.length ? ' You have no rules yet: click "Edit my rules".' : '');
-  const r = await api('/api/sort', { method: 'POST', body: { items: PV.items.map(i => ({ artist: i.artist, meta: i.meta })), mode, folder: $('pv-folder').value, remember: true } });
-  LIB.config.sort_mode = mode;
-  PV.items.forEach((it, i) => {
-    it.tempo_folder = mode === 'tempo' && !(it.meta && it.meta.bpm);
-    if (!it.manual) it.folder = it.tempo_folder ? '' : r.folders[i];
-  });
-  renderPreview();
-}
-function renderPreview() {
-  const q = $('pv-filter').value.toLowerCase(), showHave = $('pv-show-have').checked;
-  const rows = PV.items.filter(it => (showHave || !it.existing) && (!q || (it.title + ' ' + it.artist + ' ' + (it.meta?.genre || '') + ' ' + (it.folder || '')).toLowerCase().includes(q)));
-  $('pv-rows').innerHTML = rows.length ? rows.map(it => `<tr class="${it.checked ? '' : 'dim'}">
-    <td><input type="checkbox" data-id="${it.id}" ${it.checked ? 'checked' : ''}></td>
-    <td class="t">${esc(it.title)}<small>${esc(it.artist)}${it.existing ? ` · <span class="chip warn">already have: ${esc(it.existing)}</span>` : ''}</small></td>
-    ${metaCells(it.meta)}
-    <td class="num">${dur(it.duration)}</td>
-    <td>${it.tempo_folder && !it.manual ? '<span class="chip info" title="The tempo is measured from the audio after download">by measured tempo</span>' : `<input class="dest" data-dest="${it.id}" value="${esc(it.folder)}" list="folder-names">`}</td></tr>`).join('')
-    : `<tr><td colspan="9" class="empty">${PV.items.length ? 'All these songs are already in SwimTunes. Tick "Show songs I already have" to see them.' : 'No songs found at this link.'}</td></tr>`;
-  $('pv-rows').querySelectorAll('input[data-id]').forEach(cb => cb.onchange = () => { PV.items[cb.dataset.id].checked = cb.checked; renderPreview(); });
-  $('pv-rows').querySelectorAll('input[data-dest]').forEach(inp => inp.onchange = () => { const it = PV.items[inp.dataset.dest]; it.folder = inp.value.trim(); it.manual = true; renderSummary(); });
-  renderSummary();
-}
-function summarize(items, key) {
-  const groups = {};
-  for (const it of items) { const k = key(it); (groups[k] ||= { n: 0, d: 0 }); groups[k].n++; groups[k].d += it.duration || 0; }
-  return Object.entries(groups).sort((a, b) => b[1].n - a[1].n);
-}
-function renderSummary() {
-  const chosen = PV.items.filter(it => it.checked);
-  const groups = summarize(chosen, it => it.tempo_folder && !it.manual ? 'By measured tempo' : (it.folder || '(no folder)'));
-  const known = new Set(LIB.folders.map(f => f.name));
-  $('pv-summary').innerHTML = groups.map(([name, g]) => `<div class="card"><b>📁 ${esc(name)} ${known.has(name) || name.startsWith('By ') ? '' : '<span class="chip info">new</span>'}</b><small>${plural(g.n, 'song')} · ${longDur(g.d)}</small></div>`).join('');
-  const total = chosen.reduce((a, it) => a + (it.duration || 0), 0);
-  const mb = total * LIB.config.bitrate * 1000 / 8 / 1e6;
-  $('dl-btn').textContent = chosen.length ? `Download ${plural(chosen.length, 'song')}` : 'Download';
-  $('dl-btn').disabled = !chosen.length;
-  $('dl-summary').textContent = chosen.length ? `${longDur(total)} · about ${mb.toFixed(0)} MB` : 'Tick the songs you want';
-}
-function checkAll(on) { PV.items.forEach(it => { if (!it.existing || $('pv-show-have').checked) it.checked = on; }); renderPreview(); }
-async function startDownload() {
-  const items = PV.items.filter(it => it.checked).map(it => ({ kind: it.kind, video_id: it.video_id, artist: it.artist, title: it.title,
-    duration: it.duration, meta: it.meta, folder: it.folder, tempo_folder: it.tempo_folder && !it.manual }));
-  const missing = items.find(it => !it.folder && !it.tempo_folder);
-  if (missing) { toast(`Choose a folder for "${missing.title}"`); return; }
-  const r = await api('/api/download', { method: 'POST', body: { items, allow_dupes: $('allow-dupes').checked } });
-  const j = await followJob(r.id, { log: 'dl-log', progress: 'dl-progress', btn: $('dl-btn'), onUpdate: j => { if (j.progress) loadLibrary(); } });
-  if (j.status === 'done') {
-    const res = j.result;
-    toast(`Downloaded ${plural(res.downloaded.length, 'song')}` + (res.failed.length ? `, ${res.failed.length} failed` : ''));
-    PV.items.forEach(it => { if (it.checked && res.downloaded.includes(it.artist ? `${it.artist} - ${it.title}` : it.title)) { it.existing = 'just downloaded'; it.checked = false; } });
-    renderPreview();
-  }
-  await refresh();
-}
-
-// ----- organize -----
-let ORG = null;
-async function startAnalyze() {
-  const r = await api('/api/organize/analyze', { method: 'POST', body: { folder: $('org-source').value || null } });
-  const j = await followJob(r.id, { log: 'org-log', progress: 'org-progress', btn: $('org-btn') });
-  if (j.status !== 'done') return;
-  ORG = j.result.tracks;
-  $('org-result').classList.remove('hidden');
-  await applyOrgSort();
-  await refresh();
-}
-async function applyOrgSort() {
-  const mode = $('org-mode').value;
-  $('org-folder-wrap').classList.toggle('hidden', mode !== 'rules');
-  if (!ORG) return;
-  const r = await api('/api/sort', { method: 'POST', body: { items: ORG.map(t => ({ artist: t.artist, meta: t.meta })), mode, folder: '__keep__' } });
-  const fallback = $('org-folder').value.trim();
-  ORG.forEach((t, i) => {
-    let dest = r.folders[i];
-    if (dest === '__keep__') dest = fallback || t.folder;
-    t.dest = dest; t.checked = dest !== t.folder;
-  });
-  renderOrg();
-}
-function renderOrg() {
-  $('org-rows').innerHTML = ORG.length ? ORG.map((t, i) => `<tr class="${t.checked ? '' : 'dim'}">
-    <td><input type="checkbox" data-i="${i}" ${t.checked ? 'checked' : ''}></td>
-    <td class="t">${esc(t.title)}<small>${esc(t.artist)}</small></td>
-    ${metaCells(t.meta, false)}
-    <td>${esc(t.folder)}</td>
-    <td><input class="dest" data-od="${i}" value="${esc(t.dest)}" list="folder-names"></td></tr>`).join('')
-    : '<tr><td colspan="8" class="empty">No songs here.</td></tr>';
-  $('org-rows').querySelectorAll('input[data-i]').forEach(cb => cb.onchange = () => { ORG[cb.dataset.i].checked = cb.checked; renderOrg(); });
-  $('org-rows').querySelectorAll('input[data-od]').forEach(inp => inp.onchange = () => { const t = ORG[inp.dataset.od]; t.dest = inp.value.trim(); t.checked = !!t.dest && t.dest !== t.folder; renderOrg(); });
-  const moving = ORG.filter(t => t.checked && t.dest && t.dest !== t.folder);
-  $('org-summary').innerHTML = summarize(moving, t => t.dest).map(([name, g]) => `<div class="card"><b>→ 📁 ${esc(name)}</b><small>${plural(g.n, 'song')} · ${longDur(g.d)}</small></div>`).join('') || '<span class="muted">Every song is already in the right folder.</span>';
-  $('org-apply').disabled = !moving.length;
-  $('org-apply').textContent = moving.length ? `Move ${plural(moving.length, 'song')}` : 'Move songs';
-}
-async function applyMoves() {
-  const moves = ORG.filter(t => t.checked && t.dest && t.dest !== t.folder).map(t => ({ path: t.path, folder: t.dest }));
-  if (!confirm(`Move ${plural(moves.length, 'song')}?`)) return;
-  await api('/api/tracks/move', { method: 'POST', body: { moves } });
-  toast(`Moved ${plural(moves.length, 'song')}`);
-  ORG = null; $('org-result').classList.add('hidden'); $('org-log').textContent = '';
-  await refresh();
-}
-
-// ----- rules editor -----
-let DRAFT = [];
-function openRules() { DRAFT = JSON.parse(JSON.stringify(RULES)); if (!DRAFT.length) DRAFT.push({ folder: '', keywords: [] }); renderRules(); $('learn-log').textContent = ''; $('rules-dlg').showModal(); }
-function closeRules() { $('rules-dlg').close(); }
-function renderRules() {
-  $('rules-list').innerHTML = DRAFT.map((r, i) => `<div class="rule">
-    <input placeholder="Folder" value="${esc(r.folder)}" data-rf="${i}" list="folder-names">
-    <input placeholder="Keywords, e.g. post-punk, coldwave, darkwave" value="${esc((r.keywords || []).join(', '))}" data-rk="${i}">
-    <button class="danger" data-rd="${i}" title="Remove rule">✕</button>
-    ${r.covers ? `<small class="muted" style="grid-column:1/-1;margin-top:-4px">Learned from your folder: matches ${esc(r.covers)}</small>` : ''}</div>`).join('');
-  $('rules-list').querySelectorAll('[data-rf]').forEach(el => el.oninput = () => DRAFT[el.dataset.rf].folder = el.value);
-  $('rules-list').querySelectorAll('[data-rk]').forEach(el => el.oninput = () => DRAFT[el.dataset.rk].keywords = el.value.split(',').map(s => s.trim()).filter(Boolean));
-  $('rules-list').querySelectorAll('[data-rd]').forEach(el => el.onclick = () => { DRAFT.splice(+el.dataset.rd, 1); renderRules(); });
-}
-function addRule() { DRAFT.push({ folder: '', keywords: [] }); renderRules(); }
-async function learnRules() {
-  const r = await api('/api/rules/suggest', { method: 'POST' });
-  const j = await followJob(r.id, { log: 'learn-log', progress: 'learn-progress', btn: $('learn-btn') });
-  if (j.status !== 'done') return;
-  for (const s of j.result.rules) {
-    const existing = DRAFT.find(d => d.folder === s.folder);
-    if (existing) { existing.keywords = [...new Set([...(existing.keywords || []), ...s.keywords])]; existing.covers = s.covers; }
-    else DRAFT.push(s);
-  }
-  DRAFT = DRAFT.filter(d => d.folder || (d.keywords || []).length);
-  renderRules();
-}
-async function saveRules() {
-  const r = await api('/api/rules', { method: 'POST', body: { rules: DRAFT } });
-  RULES = r.rules; LIB.config.rules = RULES;
-  $('rules-count').textContent = RULES.length ? plural(RULES.length, 'rule') : 'No rules yet';
-  closeRules(); toast('Rules saved');
-  if (PV) applySort();
-  if (ORG) applyOrgSort();
-}
-
-// ----- earphones -----
-let DRIVE = null, DEV = null;
-async function loadDrives() {
-  const drives = await api('/api/drives');
-  const saved = LIB?.config.device_path;
-  if (!drives.some(d => d.path === DRIVE)) DRIVE = (drives.find(d => d.path === saved) || drives.find(d => d.likely) || (drives.length === 1 ? drives[0] : null))?.path ?? null;
-  $('drives').innerHTML = drives.length ? drives.map(d => `<label class="drive ${d.path === DRIVE ? 'sel' : ''}">
-      <input type="radio" name="drive" value="${esc(d.path)}" ${d.path === DRIVE ? 'checked' : ''}>
-      <span><b>${esc(d.label)}</b><small class="muted">${esc(d.path)} · ${size(d.total - d.free)} used of ${size(d.total)}</small></span></label>`).join('')
-    : `<div class="notice">No earphones found. Connect them with the charging cable, wait a few seconds, then click <b>Look again</b>.</div>`;
-  $('drives').querySelectorAll('input[name=drive]').forEach(r => r.onchange = () => { DRIVE = r.value; loadDrives(); });
-  if (DRIVE) loadDevice(); else $('dev-info').classList.add('hidden');
-}
-function useManualPath() { const p = $('device-path').value.trim(); if (p) { DRIVE = p; loadDevice(); } }
-const STATUS = {
-  same: ['ok', '✓ Up to date'],
-  different: ['warn', 'Different'],
-  only_on_earphones: ['warn', 'Only on the earphones'],
-  only_in_swimtunes: ['info', 'Not copied yet'],
-};
-async function loadDevice() {
-  DEV = await api('/api/device?path=' + encodeURIComponent(DRIVE));
-  await loadLibrary();
-  $('dev-info').classList.remove('hidden');
-  $('dev-title').textContent = `What's on the earphones (${DEV.capacity_gb} GB, ${size(DEV.free)} free)`;
-  $('dev-rows').innerHTML = DEV.folders.length ? DEV.folders.map(f => {
-    const [cls, label] = STATUS[f.status];
-    const extra = f.only_on_earphones && f.status !== 'only_on_earphones' ? `<span class="chip warn">${plural(f.only_on_earphones, 'song')} only on the earphones</span>` : '';
-    const missing = f.missing_on_earphones && f.status === 'different' ? `<span class="chip info">${f.missing_on_earphones} to copy</span>` : '';
-    return `<tr><td>${f.only_on_earphones ? `<input type="checkbox" data-imp="${esc(f.name)}" checked>` : ''}</td>
-      <td>📁 ${esc(f.name)}</td><td class="num">${f.on_earphones}</td><td class="num">${f.in_swimtunes}</td>
-      <td><span class="chip ${cls}">${label}</span> ${extra} ${missing}</td></tr>`;
-  }).join('') : '<tr><td colspan="5" class="empty">The earphones are empty.</td></tr>';
-  $('import-btn').classList.toggle('hidden', !DEV.folders.some(f => f.only_on_earphones));
-}
-async function startImport() {
-  const folders = [...document.querySelectorAll('[data-imp]:checked')].map(c => c.dataset.imp);
-  if (!folders.length) { toast('Tick the folders to import'); return; }
-  const r = await api('/api/device/import', { method: 'POST', body: { device: DRIVE, folders } });
-  await followJob(r.id, { log: 'dev-log', btn: $('import-btn') });
-  await refresh(); await loadDevice();
-}
-async function startSync() {
-  if (!DRIVE) { toast('Pick your earphones first'); return; }
-  if ($('mirror').checked && !confirm('Folders on the earphones that are not in SwimTunes will be deleted from the earphones. Continue?')) return;
-  const r = await api('/api/sync', { method: 'POST', body: { device: DRIVE, mirror: $('mirror').checked } });
-  await followJob(r.id, { log: 'dev-log', btn: $('sync-btn') });
-  await loadDevice();
-}
-
-// ----- duplicates -----
-let DUPES = [];
-async function loadDupes() {
-  DUPES = await api('/api/duplicates?scope=' + $('dupe-scope').value);
-  $('dupes').innerHTML = DUPES.length ? DUPES.map((g, gi) => `<div class="group">
-    <div class="group-title">${esc(g[0].artist ? g[0].artist + ' – ' : '')}${esc(g[0].title)} <span class="muted">(${g.length} copies)</span></div>
-    <table>${g.map((t, ti) => `<tr><td><label class="check" style="margin:0"><input type="radio" name="keep-${gi}" value="${ti}" ${ti === 0 ? 'checked' : ''}> keep</label></td>
-      <td>${esc(t.folder)}</td><td class="t">${esc(t.filename)}</td><td class="num">${dur(t.duration)}</td></tr>`).join('')}</table>
-    <button class="danger" style="margin-top:8px" onclick="resolveDupe(${gi})">Remove the others</button></div>`).join('')
-    : '<div class="empty">No duplicates 🎉</div>';
-}
-function extraCopies(gi) { const keep = +document.querySelector(`input[name="keep-${gi}"]:checked`).value; return DUPES[gi].filter((_, i) => i !== keep).map(t => t.path); }
-async function resolveDupe(gi) { await api('/api/tracks/delete', { method: 'POST', body: { paths: extraCopies(gi) } }); await refresh(); loadDupes(); }
-async function removeAllDupes() {
-  const paths = DUPES.flatMap((_, gi) => extraCopies(gi)); if (!paths.length) return;
-  if (!confirm(`Remove ${paths.length} extra copies? (They go to the trash.)`)) return;
-  await api('/api/tracks/delete', { method: 'POST', body: { paths } }); await refresh(); loadDupes();
-}
-
-// ----- settings, updates, health -----
-async function saveSettings() {
-  await api('/api/config', { method: 'POST', body: { capacity_gb: +$('cfg-capacity_gb').value, bitrate: +$('cfg-bitrate').value,
-    dupe_scope: $('cfg-dupe_scope').value, normalize: $('cfg-normalize').value === 'true' } });
-  toast('Saved'); refresh();
-}
-async function emptyTrash() { if (!confirm('Permanently delete everything in the trash?')) return; const r = await api('/api/trash/empty', { method: 'POST' }); toast(`Deleted ${r.deleted} songs for good`); }
-async function openMusicFolder() { await api('/api/open', { method: 'POST', body: {} }); }
-async function makeShortcut() { const r = await api('/api/shortcut', { method: 'POST' }); toast('Shortcut created: ' + r.path); }
-const KIND = { app: 'the SwimTunes app', git: 'a copy of the GitHub project (git)', pip: 'a Python package' };
-async function loadHealth() {
-  const h = await api('/api/health');
-  $('ver-current').textContent = h.tag !== 'dev' ? h.tag : h.version;
-  $('ver-kind').textContent = KIND[h.kind] || h.kind;
-  $('health').innerHTML = `<table>${h.tools.map(t => `<tr><td>${t.ok ? '<span class="ok-text">✓</span>' : '<span class="bad-text">✗</span>'}</td><td>${esc(t.name)}</td><td class="muted small">${esc(t.detail)}</td></tr>`).join('')}</table>
-    ${h.tools.every(t => t.ok) ? '<p class="ok-text">Everything SwimTunes needs is installed.</p>' : '<p class="bad-text">Something is missing, so downloads may fail. Updating SwimTunes usually fixes this.</p>'}`;
-}
-function showUpdate(u) {
-  $('update').classList.toggle('hidden', !u);
-  if (!u) return;
-  $('update-changes').innerHTML = (u.changes || []).slice(0, 6).map(c => `<li>${esc(c)}</li>`).join('');
-}
-async function checkUpdate() {
-  $('update-status').textContent = 'Checking…'; $('check-btn').disabled = true;
-  try {
-    const u = await api('/api/update');
-    $('check-btn').disabled = false;
-    if (u.error) { $('update-status').textContent = "Couldn't check: " + u.error; return; }
-    $('update-status').innerHTML = u.available ? `<b>New version available.</b> <button class="primary" onclick="applyUpdate()">Update now</button>` : '✓ You have the newest version.';
-    $('update-list').innerHTML = u.available ? (u.changes || []).map(c => `<li>${esc(c)}</li>`).join('') : '';
-    if (u.note) $('update-status').innerHTML += `<br><span class="small">${esc(u.note)}</span>`;
-    showUpdate(u.available ? u : null);
-  } catch (e) { $('check-btn').disabled = false; }
-}
-async function applyUpdate() {
-  if (!confirm('Update SwimTunes now? It restarts by itself, which takes a few seconds.')) return;
-  const r = await api('/api/update/apply', { method: 'POST' });
-  $('update-btn').disabled = true;
-  const j = await followJob(r.id, { log: 'upd-log', onUpdate: j => { $('update-changes').innerHTML = `<li>${esc(j.log[j.log.length - 1] || 'Updating…')}</li>`; } });
-  if (j.status !== 'done') { $('update-btn').disabled = false; toast('The update failed. See Settings → Updates.'); showTab('settings'); return; }
-  UPDATING = true;
-  showClosed('Updating SwimTunes…', 'This page reloads by itself in a few seconds.');
-  const before = Date.now();
-  await new Promise(r => setTimeout(r, 2500));
-  while (Date.now() - before < 120000) {
-    try { const v = await fetch('/api/version'); if (v.ok) { location.reload(); return; } } catch (e) {}
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  showClosed('SwimTunes is restarting', "If this page doesn't come back, open SwimTunes again.");
-}
-async function quitApp() {
-  let r = await fetch('/api/quit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
-  if (!r.ok) {
-    if (!confirm('A download or copy is still running. Quit anyway?')) return;
-    await fetch('/api/quit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{"force":true}' });
-  }
-  showClosed('SwimTunes is closed', 'To use it again, open the SwimTunes app. You can close this tab.');
-}
-async function loadVersion() {
-  const v = await api('/api/version');
-  $('quit-btn').classList.toggle('hidden', !v.can_quit);
-  showUpdate(v.update);
-}
-
-// ----- tabs & start -----
-function showTab(name) {
-  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === name));
-  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + name));
-  if (name === 'dupes') loadDupes();
-  if (name === 'device') loadDrives();
-  if (name === 'settings') loadHealth();
-  try { localStorage.setItem('swimtunes-tab', name); } catch (e) {}
-}
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
-$('dupe-scope').addEventListener('change', e => e.target.dataset.touched = 1);
-$('new-folder').onkeydown = e => { if (e.key === 'Enter') createFolder(); };
-$('device-path').onkeydown = e => { if (e.key === 'Enter') useManualPath(); };
-setInterval(() => { if ($('overlay').classList.contains('hidden')) api('/api/ping', { method: 'POST' }).catch(() => {}); }, 30000);
-(async () => {
-  const r = await api('/api/rules'); MODES = r.modes;
-  await refresh();
-  fillModes($('org-mode'), 'rules');
-  let tab = null; try { tab = localStorage.getItem('swimtunes-tab'); } catch (e) {}
-  showTab(tab && $('tab-' + tab) ? tab : (LIB.count ? 'songs' : 'add'));
-  loadVersion();
-})();
-</script>
+<script src="/static/i18n.js"></script>
+<script src="/static/app.js"></script>
 </body>
 </html>

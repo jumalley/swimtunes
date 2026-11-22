@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import REPO, TAG, __version__, tools
+from .i18n import msg
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -104,16 +105,16 @@ def apply(log: Callable[[str], None] = print) -> list[str]:
 
 def _apply_git(log) -> list[str]:
     before = _git("rev-parse", "HEAD")
-    log("Downloading the changes…")
+    log(msg("log.upd_pull", "Downloading the changes…"))
     _git("pull", "--ff-only", timeout=300)
     changed = _git("diff", "--name-only", before, "HEAD").splitlines()
     if "pyproject.toml" in changed or not _deps_ok():
-        log("Installing new requirements (this can take a minute)…")
+        log(msg("log.upd_deps", "Installing new requirements (this can take a minute)…"))
         r = subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", "-e", str(REPO_ROOT)],
                            capture_output=True, text=True, creationflags=NO_WINDOW)
         if r.returncode != 0:
             raise RuntimeError("Installing requirements failed: " + (r.stderr.strip().splitlines() or ["?"])[-1])
-    log("Update installed.")
+    log(msg("log.upd_done", "Update installed."))
     return [sys.executable, "-m", "swimtunes", "ui", "--no-browser"]
 
 
@@ -137,7 +138,7 @@ def _download(url: str, dest: Path, log) -> None:
             done += len(chunk)
             pct = int(done * 100 / total) if total else 0
             if pct >= last + 10:
-                log(f"Downloading new version… {pct}%")
+                log(msg("log.upd_download", "Downloading new version… {pct}%", pct=pct))
                 last = pct
 
 
@@ -154,7 +155,7 @@ def _apply_app(log) -> list[str]:
         old.unlink(missing_ok=True)
         exe.rename(old)          # Windows allows renaming a running program
         new.rename(exe)
-        log("Update installed.")
+        log(msg("log.upd_done", "Update installed."))
         return [str(exe)]
     # macOS: replace the whole SwimTunes.app
     app = exe.parents[2]
@@ -171,7 +172,7 @@ def _apply_app(log) -> list[str]:
     shutil.move(str(new_app), str(app))
     subprocess.run(["xattr", "-dr", "com.apple.quarantine", str(app)], capture_output=True)
     shutil.rmtree(tmp, ignore_errors=True)
-    log("Update installed.")
+    log(msg("log.upd_done", "Update installed."))
     return [str(app / "Contents" / "MacOS" / "SwimTunes")]
 
 

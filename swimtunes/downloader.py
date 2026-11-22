@@ -10,7 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from . import spotify, tools
+from . import i18n, spotify, tools
+from .i18n import msg
 from .library import Library, unique_path, write_tags
 from .meta import estimate_bpm, tempo_label
 from .text import channel_artist, clean_title, norm_title, safe_name, same_song, song_key, split_artist_title
@@ -72,7 +73,7 @@ def score_search_result(entry: dict, artist: str, title: str, duration: float) -
 class Downloader:
     def __init__(self, library: Library, *, bitrate: int | None = None, normalize: bool | None = None,
                  allow_dupes: bool = False, scope: str | None = None,
-                 log: Callable[[str], None] = print):
+                 log: Callable[[str], None] = print, labels: dict | None = None):
         cfg = library.config()
         self.lib = library
         self.bitrate = bitrate or cfg["bitrate"]
@@ -80,6 +81,8 @@ class Downloader:
         self.allow_dupes = allow_dupes
         self.scope = scope or cfg["dupe_scope"]
         self.log = log
+        self.labels = i18n.labels(labels)   # names of folders SwimTunes creates, in the user's language
+        self._item = None                   # song being downloaded (gets status and % for the dashboard)
         self.ffmpeg = tools.ffmpeg_path()
         if not self.ffmpeg:
             raise RuntimeError("ffmpeg is missing. Reinstall SwimTunes (see README).")
@@ -111,7 +114,13 @@ class Downloader:
         return [e for e in (info.get("entries") or []) if e and e.get("id")]
 
     def fetch_audio(self, video_id: str, tmpdir: Path) -> Path:
-        with self._ydl(format="bestaudio/best", outtmpl=str(tmpdir / "%(id)s.%(ext)s"), noplaylist=True) as ydl:
+        def hook(d):
+            if self._item is not None and d.get("status") == "downloading":
+                total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                if total:
+                    self._item["pct"] = int(d.get("downloaded_bytes", 0) * 100 / total)
+        with self._ydl(format="bestaudio/best", outtmpl=str(tmpdir / "%(id)s.%(ext)s"), noplaylist=True,
+                       progress_hooks=[hook]) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
             for d in info.get("requested_downloads") or []:
                 if d.get("filepath"):
@@ -168,30 +177,43 @@ class Downloader:
             seen.append((src, key))
 
     # ----- step 2: download chosen songs into their folders -----
-    def download_items(self, items: list[dict], *, after_each: Callable[[dict], None] | None = None) -> Result:
+    def download_items(self, items: list[dict], *, after_each: Callable[[dict], None] | None = None,
+                       should_stop: Callable[[], bool] | None = None) -> Result:
         """Each item needs 'folder'. Items with 'tempo_folder' get their folder chosen after the
-        download, once the tempo has been measured from the audio."""
+        download, once the tempo has been measured from the audio. Each item gets a 'status'
+        (waiting, searching, downloading, converting, measuring, done, skipped, failed, stopped)."""
         res = Result(folder=", ".join(sorted({it.get("folder", "") for it in items})))
+        for it in items:
+            it["status"] = "waiting"
         for i, it in enumerate(items, 1):
+            if should_stop and should_stop():
+                for rest in items[i - 1:]:
+                    rest["status"] = "stopped"
+                self.log(msg("log.dl_stopped", "Stopped. {n} song(s) were not downloaded.", n=len(items) - i + 1))
+                break
             label = f"{it['artist']} - {it['title']}" if it.get("artist") else it["title"]
             prefix = f"[{i}/{len(items)}]"
+            self._item = it
             try:
-                self._one(it, res, prefix)
+                self._one(it, res, prefix, i, len(items))
             except Exception as e:  # keep going with the rest
-                msg = str(e).splitlines()[0][:200] if str(e) else type(e).__name__
-                res.failed.append((label, msg))
-                self.log(f"{prefix} FAILED {label}: {msg}")
+                err = str(e).splitlines()[0][:200] if str(e) else type(e).__name__
+                res.failed.append((label, err))
+                it["status"], it["error"] = "failed", err
+                self.log(msg("log.dl_failed", "[{i}/{n}] FAILED {song}: {error}", i=i, n=len(items), song=label, error=err))
+            finally:
+                self._item = None
             if after_each:
                 after_each(it)
-        self.log(f"Done: {len(res.downloaded)} downloaded, {len(res.skipped)} skipped (already have), "
-                 f"{len(res.failed)} failed.")
+        self.log(msg("log.dl_done", "Done: {done} downloaded, {skipped} skipped (already have), {failed} failed.",
+                     done=len(res.downloaded), skipped=len(res.skipped), failed=len(res.failed)))
         return res
 
     def download(self, url: str, folder: str | None = None) -> Result:
         """Download everything behind a link into one folder (used by the command line)."""
         data = self.resolve(url)
         folder = safe_name(folder or data["name"])
-        self.log(f"{len(data['items'])} song(s) → folder '{folder}'")
+        self.log(f"{len(data['items'])} song(s) -> folder '{folder}'")
         for it in data["items"]:
             it["folder"] = folder
         res = self.download_items(data["items"])
@@ -203,14 +225,16 @@ class Downloader:
             return None
         return self.lib.find_existing(artist=artist, title=title, source=source, folder=folder, scope=self.scope)
 
-    def _one(self, it: dict, res: Result, prefix: str) -> None:
-        artist, title, folder = it["artist"], it["title"], safe_name(it["folder"])
+    def _one(self, it: dict, res: Result, prefix: str, i: int = 1, n: int = 1) -> None:
+        artist, title = it["artist"], it["title"]
+        folder = safe_name(it.get("folder") or self.labels["downloads"])
         label = f"{artist} - {title}" if artist else title
         video_id = it.get("video_id")
         source = f"youtube:{video_id}" if video_id else None
         if (t := self._existing(artist, title, source, folder)):
-            return self._skip(res, prefix, label, t)
+            return self._skip(res, it, i, n, label, t)
         if not video_id:  # Spotify song: find it on YouTube
+            it["status"] = "searching"
             results = self.search(f"{artist} - {title}")
             if not results:
                 raise RuntimeError("no match found on YouTube")
@@ -218,34 +242,39 @@ class Downloader:
             video_id = it["video_id"] = best["id"]
             source = f"youtube:{video_id}"
             if (t := self._existing("", "", source, folder)):
-                return self._skip(res, prefix, label, t)
+                return self._skip(res, it, i, n, label, t)
 
-        self.log(f"{prefix} Downloading {label}")
+        it["status"], it["pct"] = "downloading", 0
+        self.log(msg("log.dl_downloading", "[{i}/{n}] Downloading {song}", i=i, n=n, song=label))
         meta = dict(it.get("meta") or {}) or None
         with tempfile.TemporaryDirectory(prefix="swimtunes-") as tmp:
             src = self.fetch_audio(video_id, Path(tmp))
             part = Path(tmp) / "song.mp3"
+            it["status"] = "converting"
             try:
                 self.to_mp3(src, part)
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"ffmpeg failed: {e.stderr.decode(errors='replace').strip()[:200]}") from e
             if meta is not None and not meta.get("bpm"):
+                it["status"] = "measuring"
                 try:
                     if bpm := estimate_bpm(part, self.ffmpeg):
                         meta["bpm"], meta["bpm_measured"] = bpm, True
                 except Exception:
                     pass
             if it.get("tempo_folder"):
-                folder = safe_name(tempo_label((meta or {}).get("bpm")))
+                folder = safe_name(tempo_label((meta or {}).get("bpm"), self.labels))
             self.lib.create_folder(folder)
             write_tags(part, title=title, artist=artist, album=folder, source=source,
                        track_no=self.lib.next_track_no(folder), meta=meta)
             out = unique_path(self.lib.folder_path(folder) / f"{safe_name(label)}.mp3")
             shutil.move(str(part), str(out))
         it["saved_to"] = f"{folder}/{out.name}"
+        it["status"], it["meta"] = "done", meta
         res.downloaded.append(label)
 
-    def _skip(self, res: Result, prefix: str, label: str, existing) -> None:
+    def _skip(self, res: Result, it: dict, i: int, n: int, label: str, existing) -> None:
         where = f"{existing.folder}/{existing.filename}"
         res.skipped.append((label, f"already in {where}"))
-        self.log(f"{prefix} Skip {label} (already in {where})")
+        it["status"], it["where"] = "skipped", where
+        self.log(msg("log.dl_skip", "[{i}/{n}] Skip {song} (already in {where})", i=i, n=n, song=label, where=where))

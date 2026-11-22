@@ -22,6 +22,7 @@ from mutagen import MutagenError
 from mutagen.id3 import ID3, TALB, TBPM, TCON, TDRC, TIT2, TPE1, TRCK, TXXX, ID3NoHeaderError
 from mutagen.mp3 import MP3
 
+from .i18n import msg
 from .text import same_song, safe_name, song_key, split_artist_title
 
 SOURCE_TAG = "swimtunes_source"
@@ -36,6 +37,7 @@ DEFAULT_CONFIG = {
     "dupe_scope": "library",   # "library" = no song twice anywhere; "folder" = only within a folder
     "rules": [],               # [{"folder": "doomer", "keywords": ["post-punk", "coldwave"]}, ...]
     "sort_mode": "one",        # last used way of sorting new songs
+    "language": "auto",        # dashboard language: "auto" (the computer's) or en, fr, es, de, it, pt
 }
 
 
@@ -213,15 +215,15 @@ class Library:
     # ---------- paths ----------
     def folder_path(self, name: str) -> Path:
         if not name or name != safe_name(name) or name.startswith("."):
-            raise LibraryError(f"Invalid folder name: {name!r}")
+            raise LibraryError(msg("err.bad_folder", "Invalid folder name: {name}", name=name))
         return self.root / name
 
     def resolve_track(self, rel: str) -> Path:
         p = (self.root / rel).resolve()
         if self.root.resolve() not in p.parents or p.suffix.lower() != ".mp3" or not p.is_file():
-            raise LibraryError(f"No such song: {rel}")
+            raise LibraryError(msg("err.no_song", "No such song: {song}", song=rel))
         if p.parent.name.startswith("."):
-            raise LibraryError(f"No such song: {rel}")
+            raise LibraryError(msg("err.no_song", "No such song: {song}", song=rel))
         return p
 
     # ---------- reading ----------
@@ -237,7 +239,7 @@ class Library:
         for name in names:
             d = self.folder_path(name)
             if not d.is_dir():
-                raise LibraryError(f"No such folder: {name}")
+                raise LibraryError(msg("err.no_folder", "No such folder: {name}", name=name))
             files = [f for f in d.iterdir() if f.suffix.lower() == ".mp3" and not f.name.startswith(".")]
             for f in files:
                 st = f.stat()
@@ -318,9 +320,9 @@ class Library:
     def rename_folder(self, old: str, new: str) -> Path:
         src, dst = self.folder_path(old), self.folder_path(safe_name(new))
         if not src.is_dir():
-            raise LibraryError(f"No such folder: {old}")
+            raise LibraryError(msg("err.no_folder", "No such folder: {name}", name=old))
         if dst.exists() and dst.resolve() != src.resolve():
-            raise LibraryError(f"Folder already exists: {new}")
+            raise LibraryError(msg("err.folder_exists", "Folder already exists: {name}", name=new))
         src.rename(dst)
         for t in self.tracks(dst.name):  # keep album tag in sync with the folder name
             write_tags(t.path, title=t.title, artist=t.artist, album=dst.name, track_no=t.track_no)
@@ -329,7 +331,7 @@ class Library:
     def delete_folder(self, name: str, permanent: bool = False) -> None:
         p = self.folder_path(name)
         if not p.is_dir():
-            raise LibraryError(f"No such folder: {name}")
+            raise LibraryError(msg("err.no_folder", "No such folder: {name}", name=name))
         shutil.rmtree(p) if permanent else self._trash(p)
 
     def delete_track(self, rel: str, permanent: bool = False) -> None:
@@ -340,7 +342,7 @@ class Library:
         src = self.resolve_track(rel)
         dst_dir = self.folder_path(folder)
         if not dst_dir.is_dir():
-            raise LibraryError(f"No such folder: {folder}")
+            raise LibraryError(msg("err.no_folder", "No such folder: {name}", name=folder))
         dst = unique_path(dst_dir / src.name)
         t = read_track(src, src.parent.name)
         shutil.move(str(src), str(dst))
