@@ -66,6 +66,17 @@ def _tag_tuple(tag: str) -> tuple:
         return ()
 
 
+def release_changes(body: str) -> list[str]:
+    """What changed, from release notes: the lines under "## What's new" (older releases: every line)."""
+    lines = body.splitlines()
+    heads = [i for i, line in enumerate(lines) if line.lower().startswith("## what")]
+    if heads:
+        lines = lines[heads[0] + 1:]
+        end = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+        lines = lines[:end]
+    return [line.strip("-* ").strip() for line in lines if line.strip()][:10]
+
+
 def check() -> dict:
     """Is there a newer version? Returns what changed, in plain words."""
     kind = install_kind()
@@ -86,7 +97,7 @@ def check() -> dict:
             rel = _latest_release()
             out["latest"] = rel.get("tag_name")
             out["available"] = (kind in ("app", "launcher") and _tag_tuple(out["latest"] or "") > _tag_tuple(TAG))
-            out["changes"] = [l.strip("-* ").strip() for l in (rel.get("body") or "").splitlines() if l.strip()][:10]
+            out["changes"] = release_changes(rel.get("body") or "")
             out["download"] = rel.get("html_url")
             if kind == "pip":
                 out["note"] = "This copy can't update itself. Download the app from the releases page instead."

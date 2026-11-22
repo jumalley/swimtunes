@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "swimtunes"
 version = "0.9.0"
 description = "Download YouTube/Spotify music as MP3 for swimming earphones, without duplicates"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "yt-dlp[default,deno]>=2026.10.26",
   "imageio-ffmpeg>=0.6",
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "ruff"]
+test = ["pytest", "pytest-timeout", "ruff"]
 
 [project.scripts]
 swimtunes = "swimtunes.cli:main"
@@ -31,7 +31,7 @@ swimtunes = ["templates/*.html", "static/*", "static/fa/*", "static/fa/css/*", "
 
 [tool.ruff]
 line-length = 130
-target-version = "py310"
+target-version = "py311"
 extend-include = ["SwimTunes.pyw"]
 
 [tool.ruff.lint]
@@ -44,3 +44,4 @@ ignore = ["B905"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+timeout = 120   # a test waiting for something that never comes fails instead of hanging

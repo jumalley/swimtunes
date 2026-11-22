@@ -41,7 +41,8 @@ def test_tray_icon_is_optional():
     if _sys.platform != "win32":
         assert tray.start("http://localhost:8765", lambda: None) is None   # only on Windows
     from swimtunes import app as app_mod
-    app_mod._error_box("x")          # no-op outside Windows
+    if _sys.platform != "win32":     # on Windows it really opens a message box and waits for a click
+        app_mod._error_box("x")      # no-op elsewhere
     app_mod._attach_terminal()
 
 
@@ -67,3 +68,10 @@ def test_launcher_file_is_standalone():
             mods.add((node.module or "").split(".")[0])
     import sys as _sys
     assert mods <= set(_sys.stdlib_module_names), mods - set(_sys.stdlib_module_names)
+
+
+def test_update_banner_lists_only_whats_new():
+    from swimtunes.updater import release_changes
+    body = "## What's new\n\n- Faster downloads\n- Battery in the status bar\n\n## Download\n\n- **Windows:** SwimTunes-Setup.exe\n"
+    assert release_changes(body) == ["Faster downloads", "Battery in the status bar"]
+    assert release_changes("- Old style note") == ["Old style note"]

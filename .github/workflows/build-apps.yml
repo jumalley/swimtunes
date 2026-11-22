@@ -111,14 +111,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: SwimTunes.pyw
-          sparse-checkout-cone-mode: false
+          fetch-depth: 0          # the history, for "What's new"
           path: src
       - uses: actions/download-artifact@v4
         with:
           path: assets
           merge-multiple: true
       - run: cp src/SwimTunes.pyw assets/
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          # "What's new" = the commit titles since the previous release (the app shows these in its update banner)
+          prev=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName -q '.[0].tagName')
+          {
+            echo "## What's new"
+            echo
+            if [ -n "$prev" ] && git -C src rev-parse -q --verify "refs/tags/$prev" > /dev/null; then
+              git -C src log --no-merges --format='- %s' "$prev..HEAD" | head -15
+            fi
+            if [ "${{ github.event_name }}" != "push" ]; then echo "- The newest YouTube downloader (yt-dlp), for YouTube changes"; fi
+            echo
+            echo "## Download"
+            echo
+            echo "- **Windows:** SwimTunes-Setup.exe (installer). No install: SwimTunes-Windows.exe"
+            echo "- **Windows blocks it (Smart App Control)?** Install Python from python.org, then double-click SwimTunes.pyw"
+            echo "- **Mac with Apple chip (M1, M2, M3...):** SwimTunes-Mac-AppleSilicon.dmg"
+            echo "- **Mac with Intel processor:** SwimTunes-Mac-Intel.dmg"
+            echo
+            echo "The .zip files are used by automatic updates. Instructions: https://github.com/${{ github.repository }}#download"
+          } > notes.md
+          cat notes.md
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,14 +150,4 @@ jobs:
         run: |
           ls -la assets
           gh release create "$TAG" assets/* --repo "${{ github.repository }}" --target "${{ github.sha }}" \
-            --title "SwimTunes $TAG" --latest --notes "Download the file for your computer below.
-
-          - **Windows:** SwimTunes-Setup.exe (installer: Start menu and desktop icon). No install: SwimTunes-Windows.exe
-          - **Mac (2020 or newer, M1/M2/M3/M4):** SwimTunes-Mac-AppleSilicon.dmg
-          - **Older Mac (Intel):** SwimTunes-Mac-Intel.dmg
-
-          - **Windows blocks the app (Smart App Control)?** Install Python from python.org, then download SwimTunes.pyw and double-click it.
-
-          The .zip files are used by SwimTunes' automatic updates.
-
-          First time? See the instructions: https://github.com/${{ github.repository }}#readme"
+            --title "SwimTunes $TAG" --latest --notes-file notes.md

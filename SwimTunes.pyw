@@ -1,6 +1,6 @@
 """SwimTunes launcher: double-click this file to start SwimTunes.
 
-Needs Python 3.10 or newer (https://www.python.org/downloads/). Nothing else:
+Needs Python 3.11 or newer (https://www.python.org/downloads/). Nothing else:
 the first time, this sets SwimTunes up in its own folder (about a minute);
 after that, each start checks for a new version, installs it, and opens
 SwimTunes in your web browser.
@@ -40,32 +40,32 @@ APP_LOG = os.path.join(HOME, "swimtunes.log")
 TEXTS = {
     "en": {"title": "SwimTunes", "setup": "Setting up SwimTunes (first time only, about a minute)…",
            "update": "Updating SwimTunes to {v}…", "start": "Starting SwimTunes…", "check": "Checking for updates…",
-           "old_python": "SwimTunes needs Python 3.10 or newer. You have {v}.\n\nInstall the latest Python from python.org, then double-click SwimTunes again.",
+           "old_python": "SwimTunes needs Python 3.11 or newer. You have {v}.\n\nInstall the latest Python from python.org, then double-click SwimTunes again.",
            "offline": "SwimTunes needs the internet the first time, to set itself up. Check your connection and try again.",
            "failed": "SwimTunes could not start.\n\n{err}\n\nDetails are in:\n{log}"},
     "fr": {"title": "SwimTunes", "setup": "Installation de SwimTunes (la première fois seulement, environ une minute)…",
            "update": "Mise à jour de SwimTunes vers {v}…", "start": "Démarrage de SwimTunes…", "check": "Recherche de mises à jour…",
-           "old_python": "SwimTunes a besoin de Python 3.10 ou plus récent. Vous avez {v}.\n\nInstallez la dernière version de Python sur python.org, puis double-cliquez à nouveau sur SwimTunes.",
+           "old_python": "SwimTunes a besoin de Python 3.11 ou plus récent. Vous avez {v}.\n\nInstallez la dernière version de Python sur python.org, puis double-cliquez à nouveau sur SwimTunes.",
            "offline": "SwimTunes a besoin d'internet la première fois pour s'installer. Vérifiez votre connexion et réessayez.",
            "failed": "SwimTunes n'a pas pu démarrer.\n\n{err}\n\nLes détails sont dans :\n{log}"},
     "es": {"title": "SwimTunes", "setup": "Preparando SwimTunes (solo la primera vez, un minuto aprox.)…",
            "update": "Actualizando SwimTunes a {v}…", "start": "Iniciando SwimTunes…", "check": "Buscando actualizaciones…",
-           "old_python": "SwimTunes necesita Python 3.10 o más reciente. Tienes {v}.\n\nInstala el último Python desde python.org y vuelve a hacer doble clic en SwimTunes.",
+           "old_python": "SwimTunes necesita Python 3.11 o más reciente. Tienes {v}.\n\nInstala el último Python desde python.org y vuelve a hacer doble clic en SwimTunes.",
            "offline": "SwimTunes necesita internet la primera vez para prepararse. Revisa tu conexión e inténtalo de nuevo.",
            "failed": "SwimTunes no pudo iniciarse.\n\n{err}\n\nLos detalles están en:\n{log}"},
     "de": {"title": "SwimTunes", "setup": "SwimTunes wird eingerichtet (nur beim ersten Mal, etwa eine Minute)…",
            "update": "SwimTunes wird auf {v} aktualisiert…", "start": "SwimTunes startet…", "check": "Suche nach Updates…",
-           "old_python": "SwimTunes braucht Python 3.10 oder neuer. Du hast {v}.\n\nInstalliere das neueste Python von python.org und doppelklicke dann erneut auf SwimTunes.",
+           "old_python": "SwimTunes braucht Python 3.11 oder neuer. Du hast {v}.\n\nInstalliere das neueste Python von python.org und doppelklicke dann erneut auf SwimTunes.",
            "offline": "SwimTunes braucht beim ersten Mal Internet, um sich einzurichten. Prüfe die Verbindung und versuche es erneut.",
            "failed": "SwimTunes konnte nicht starten.\n\n{err}\n\nDetails stehen in:\n{log}"},
     "it": {"title": "SwimTunes", "setup": "Preparazione di SwimTunes (solo la prima volta, circa un minuto)…",
            "update": "Aggiornamento di SwimTunes a {v}…", "start": "Avvio di SwimTunes…", "check": "Controllo aggiornamenti…",
-           "old_python": "SwimTunes richiede Python 3.10 o successivo. Hai {v}.\n\nInstalla l'ultimo Python da python.org, poi fai di nuovo doppio clic su SwimTunes.",
+           "old_python": "SwimTunes richiede Python 3.11 o successivo. Hai {v}.\n\nInstalla l'ultimo Python da python.org, poi fai di nuovo doppio clic su SwimTunes.",
            "offline": "SwimTunes ha bisogno di internet la prima volta per prepararsi. Controlla la connessione e riprova.",
            "failed": "SwimTunes non è riuscito ad avviarsi.\n\n{err}\n\nI dettagli sono in:\n{log}"},
     "pt": {"title": "SwimTunes", "setup": "Preparando o SwimTunes (só na primeira vez, cerca de um minuto)…",
            "update": "Atualizando o SwimTunes para {v}…", "start": "Iniciando o SwimTunes…", "check": "Procurando atualizações…",
-           "old_python": "O SwimTunes precisa do Python 3.10 ou mais novo. Você tem {v}.\n\nInstale o Python mais recente em python.org e clique duas vezes no SwimTunes de novo.",
+           "old_python": "O SwimTunes precisa do Python 3.11 ou mais novo. Você tem {v}.\n\nInstale o Python mais recente em python.org e clique duas vezes no SwimTunes de novo.",
            "offline": "O SwimTunes precisa de internet na primeira vez para se preparar. Verifique a conexão e tente de novo.",
            "failed": "O SwimTunes não conseguiu iniciar.\n\n{err}\n\nOs detalhes estão em:\n{log}"},
 }
@@ -253,7 +253,7 @@ def _last_lines(path, n=6):
 
 
 def main():
-    if sys.version_info < (3, 10):
+    if sys.version_info < (3, 11):
         message(T["old_python"].format(v=sys.version.split()[0]))
         return 1
     os.makedirs(HOME, exist_ok=True)
