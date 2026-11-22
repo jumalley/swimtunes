@@ -214,7 +214,7 @@ def test_spotify_parsing():
 
 
 # ---------- device sync ----------
-def test_sync(lib, tmp_path):
+def test_sync(lib, tmp_path, monkeypatch):
     dev = tmp_path / "SWIM"
     dev.mkdir()
     add_song(lib, "Swim", "Z", "First")
@@ -225,10 +225,18 @@ def test_sync(lib, tmp_path):
     (dev / "Notes").mkdir()
     (dev / "Notes" / "readme.txt").write_text("keep me")
 
+    # Simulate FAT32: the folder lists files in the order they were copied.
+    copied = []
+    real_copy = device.shutil.copyfile
+    def copy(src, dst):
+        copied.append(Path(dst).name)
+        return real_copy(src, dst)
+    monkeypatch.setattr(device.shutil, "copyfile", copy)
+    monkeypatch.setattr(device, "_play_order", lambda folder: [n for n in copied if (folder / n).exists()])
+
     s = device.sync(lib, dev, log=lambda _: None)
     assert s["updated"] == ["Swim"] and s["junk_removed"] == 1
-    import os
-    assert os.listdir(dev / "Swim") == ["Z - First.mp3", "A - Second.mp3"]  # playlist order, not A-Z
+    assert copied == ["Z - First.mp3", "A - Second.mp3"]  # playlist order, not A-Z
     assert device.sync(lib, dev, log=lambda _: None)["updated"] == []       # nothing changed
     s = device.sync(lib, dev, mirror=True, log=lambda _: None)
     assert s["removed"] == ["Old Stuff"] and (dev / "Notes").exists()

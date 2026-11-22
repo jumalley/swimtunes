@@ -19,6 +19,12 @@ from .library import Library
 JUNK = (".DS_Store", ".Spotlight-V100", ".Trashes", ".fseventsd")
 
 
+def _play_order(folder: Path) -> list[str]:
+    """Files in the order the earphones play them. On the earphones' FAT32
+    drive, os.listdir returns them in the order they were copied."""
+    return os.listdir(folder)
+
+
 def _junk_files(root: Path):
     for p in root.rglob("*"):
         if p.name.startswith("._") or p.name in JUNK:
@@ -37,8 +43,8 @@ def sync(lib: Library, device: Path | str, *, folders: list[str] | None = None, 
         tracks = lib.tracks(name)
         dest = device / name
         want = [t.filename for t in tracks]
-        have = [f for f in os.listdir(dest) if f.lower().endswith(".mp3") and not f.startswith(".")] if dest.is_dir() else []
-        if have == want:  # os.listdir on FAT returns directory (= play) order
+        have = [f for f in _play_order(dest) if f.lower().endswith(".mp3") and not f.startswith(".")] if dest.is_dir() else []
+        if have == want:
             continue
         plan_copy.append((name, tracks, dest, have))
 
