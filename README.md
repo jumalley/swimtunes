@@ -54,8 +54,10 @@ reloads by itself. You can also check in **Settings → Updates**.
 ### 1. Bring in the songs already on your earphones
 
 Connect the earphones with their charging cable and open the **Earphones** tab. SwimTunes finds them,
-shows each folder on them and whether SwimTunes has it. Click **Import** to copy those songs into SwimTunes,
-keeping your folders and their play order. Songs that exist only on the earphones are **never** deleted.
+shows each folder on them (and the songs lying outside any folder) and whether SwimTunes has it.
+Click **Import** to copy those songs into SwimTunes, keeping your folders and their play order; songs in
+sub-folders are included. A live report shows each song: imported, already in SwimTunes (and where), or failed.
+Songs that exist only on the earphones are **never** deleted.
 
 ![Earphones](docs/screenshots/4-earphones.png)
 
@@ -89,8 +91,10 @@ Then pick how to sort them:
 | **By artist** | one folder per artist |
 | **All in one folder** | the playlist's name, or any folder you type |
 
-You can change the folder of any song, untick songs you don't want, then click **Download**. Each song
-shows what's happening: finding it on YouTube, downloading (with %), converting to MP3, measuring the tempo, saved.
+You can change the folder of any song, untick songs you don't want, then click **Download**. Three songs
+are downloaded at the same time (and still saved in playlist order). Each song shows what's happening:
+finding it on YouTube, downloading (with %), converting to MP3, measuring the tempo, saved. Album covers
+(from Deezer, or the YouTube thumbnail) are shown in the list and saved inside the MP3s.
 
 ![Downloading, song by song](docs/screenshots/3-downloading.png)
 
@@ -135,6 +139,13 @@ so each song is looked up only once.
 **A song has wrong or missing genre info.** Music databases don't know every song (soundtracks, fan uploads…).
 SwimTunes then guesses from the title, channel and YouTube tags (soundtrack, anime, nightcore, lo-fi…), marked with a
 small wand. Click the **pencil** next to a song to correct its artist or title and look it up again.
+
+**Some downloads failed.** Hover the red label to see why. When YouTube refuses a download, SwimTunes already
+tries other ways automatically; click **Retry failed songs** a bit later, it usually works. Age-restricted or
+region-blocked videos can't be downloaded: try another upload of the same song.
+
+**"Already there" when downloading.** SwimTunes found that you already have this song (the tooltip says in which
+folder), so it isn't downloaded twice.
 
 **Some songs say "Unavailable on YouTube".** The video is private or was deleted. It's unticked and skipped.
 

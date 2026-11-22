@@ -84,7 +84,7 @@
           <button class="fit" onclick="checkAll(false)"><i class="fa-regular fa-square"></i><span data-i18n="add.untick_all">Untick all</span></button>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th></th><th data-i18n="col.song">Song</th>
+          <thead><tr><th></th><th></th><th data-i18n="col.song">Song</th>
             <th><span data-i18n="col.genre">Genre</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_genre"></i></th>
             <th><span data-i18n="col.style">Style</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_style"></i></th>
             <th class="num"><span data-i18n="col.tempo">Tempo</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_tempo"></i></th>
@@ -112,7 +112,7 @@
         </div>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th data-i18n="col.song">Song</th>
+        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th></th><th data-i18n="col.song">Song</th>
           <th data-i18n="col.genre">Genre</th><th class="num"><span data-i18n="col.tempo">Tempo</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_tempo"></i></th>
           <th id="th-folder" data-i18n="col.folder">Folder</th><th class="num" data-i18n="col.length">Length</th><th class="num" data-i18n="col.size">Size</th>
           <th><span data-i18n="col.move_to">Move to</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.move_to"></i></th></tr></thead>
@@ -167,11 +167,13 @@
           <button id="import-btn" onclick="startImport()" data-tip="tip.import"><i class="fa-solid fa-file-import"></i><span data-i18n="dev.import">Import ticked folders into SwimTunes</span></button>
           <button class="primary" id="sync-btn" onclick="startSync()" data-tip="tip.sync"><i class="fa-solid fa-upload"></i><span data-i18n="dev.sync">Copy to earphones</span></button>
         </div>
+        <label class="check"><input type="checkbox" id="imp-dupes"> <span data-i18n="dev.import_dupes">Import songs even if SwimTunes already has them</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.import_dupes"></i></label>
         <label class="check"><input type="checkbox" id="mirror"> <span data-i18n="dev.mirror">Also remove folders from the earphones that aren't in SwimTunes</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.mirror"></i></label>
         <p class="muted small" data-i18n="dev.note">Only folders that changed are copied, in playlist order (the earphones play songs in the order they were copied). Songs that exist only on the earphones are never deleted.</p>
       </div>
       <div class="progress hidden" id="dev-progress"><div class="bar"><i></i></div><small></small></div>
-      <div class="log" id="dev-log"></div>
+      <div id="dev-live" style="margin-top:12px"></div>
+      <details class="log-details"><summary data-i18n="common.details">Technical details</summary><div class="log" id="dev-log"></div></details>
     </section>
 
     <!-- DUPLICATES -->

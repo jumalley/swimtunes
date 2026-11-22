@@ -135,23 +135,29 @@ function metaChips(m) {
 }
 
 // ---------- live progress card ----------
-const STARTS = {};
-function eta(jobId, done, total) {
-  if (!done || !total) return '';
+const SPEED = {};
+function eta(jobId, done, total, workers = 1) {
+  // estimate from the last minute or so of progress, not from the start: the first songs
+  // (and songs YouTube refuses) can be much slower than the rest
+  if (!total || done >= total) return '';
   const now = Date.now();
-  if (!STARTS[jobId]) STARTS[jobId] = { t: now, d: done };
-  const s = STARTS[jobId];
-  if (done - s.d < 2) return t('live.estimating');
-  const left = (now - s.t) / (done - s.d) * (total - done) / 1000;
+  const h = SPEED[jobId] ||= [];
+  if (!h.length || h[h.length - 1][1] !== done) h.push([now, done]);
+  while (h.length > 2 && now - h[0][0] > 90000) h.shift();
+  if (h.length < 2 || h[h.length - 1][1] - h[0][1] < 1) return t('live.estimating');
+  const [t0, d0] = h[0], [t1, d1] = h[h.length - 1];
+  const perItem = (t1 - t0) / (d1 - d0);
+  const sinceLast = now - t1;
+  const left = Math.max(0, (total - done) * perItem - Math.min(sinceLast, perItem)) / 1000;
   if (left < 15) return t('live.eta_soon');
   if (left < 90) return t('live.eta_sec', { n: Math.round(left / 5) * 5 });
   return t('live.eta_min', { n: Math.round(left / 60) });
 }
-function liveCard({ jobId, icon, title, current, done, total, stop, stopTip, feed }) {
+function liveCard({ jobId, icon, title, current, done, total, stop, stopTip, feed, sub }) {
   const pct = total ? Math.round(done / total * 100) : 0;
   return `<div class="live"><div class="live-head">
       <span style="font-size:20px;color:var(--accent)">${icon || SPIN}</span>
-      <div class="what"><small>${esc(title)}</small><b>${esc(current || '…')}</b></div>
+      <div class="what"><small>${esc(title)}</small><b>${esc(current || '…')}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div>
       ${stop ? `<button class="small" onclick="${stop}" data-tip="${stopTip}">${ICON('fa-solid fa-stop')}${t('live.stop')}</button>` : ''}
     </div>
     ${total ? `<div class="bar"><i style="width:${pct}%"></i></div><div class="meta"><span>${t('live.n_of', { done, n: total })}</span><span>${eta(jobId, done, total)}</span></div>` : ''}
@@ -165,12 +171,17 @@ function markNew(ctx, html, key) {
   if (fresh) { FEED_TOP[ctx] = key; FEED_TOP[ctx + ':t'] = Date.now(); }
   return Date.now() - (FEED_TOP[ctx + ':t'] || 0) < 450 ? html.replace('<li>', '<li class="new">') : html;
 }
-function feedLine(song, meta, state) {
+function coverImg(meta, videoId, size = 36, path = null) {
+  const src = path ? `/api/cover?path=${encodeURIComponent(path)}` : meta?.cover || (videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : '');
+  return src ? `<img class="cover" src="${esc(src)}" width="${size}" height="${size}" loading="lazy" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'cover none',innerHTML:'<i class=\\'fa-solid fa-music\\'></i>'}))">`
+    : `<span class="cover none" style="width:${size}px;height:${size}px"><i class="fa-solid fa-music"></i></span>`;
+}
+function feedLine(song, meta, state, videoId) {
   if (state === 'unavailable') return `<li>${ICON('fa-solid fa-ban', ' style="color:var(--danger)"')}<span class="song">${esc(song)}</span><i class="fa-solid fa-arrow-right arrow"></i><span class="chip bad">${t('st.unavailable')}</span></li>`;
   const icon = state === 'error' ? ICON('fa-solid fa-triangle-exclamation', ' style="color:var(--warn)"')
     : meta && (meta.genre || (meta.tags || []).length) ? ICON('fa-solid fa-circle-check', ' style="color:var(--ok)"')
     : ICON('fa-regular fa-circle-question', ' style="color:var(--muted)"');
-  return `<li>${icon}<span class="song">${esc(song)}</span><i class="fa-solid fa-arrow-right arrow"></i>${metaChips(meta)}</li>`;
+  return `<li>${icon}${coverImg(meta, videoId, 24)}<span class="song">${esc(song)}</span><i class="fa-solid fa-arrow-right arrow"></i>${metaChips(meta)}</li>`;
 }
 
 // ---------- library ----------
@@ -219,12 +230,13 @@ function renderSongs() {
   $('songs').innerHTML = rows.length ? rows.map((s, i) => `<tr>
     <td><input type="checkbox" data-p="${esc(s.path)}" ${SELECTED.has(s.path) ? 'checked' : ''}></td>
     <td class="muted">${s.track_no ?? i + 1}</td>
+    <td class="cv">${s.has_cover ? coverImg(null, null, 36, s.path) : coverImg(s.meta, null)}</td>
     <td class="t">${esc(s.title)}<small>${esc(s.artist)}</small></td>
     <td>${esc(s.meta?.genre || '')}</td><td class="num">${s.meta?.bpm ? (s.meta.bpm_measured ? '~' : '') + s.meta.bpm : ''}</td>
     <td class="${CURRENT === null ? '' : 'hidden'}">${esc(s.folder)}</td>
     <td class="num">${dur(s.duration)}</td><td class="num muted">${size(s.size)}</td>
     <td><select data-move="${esc(s.path)}"><option value="">—</option>${opts}</select></td></tr>`).join('')
-    : `<tr><td colspan="9" class="empty">${SONGS.length ? t('common.no_matches') : t('songs.empty')}</td></tr>`;
+    : `<tr><td colspan="10" class="empty">${SONGS.length ? t('common.no_matches') : t('songs.empty')}</td></tr>`;
   $('songs').querySelectorAll('input[data-p]').forEach(cb => cb.onchange = () => { cb.checked ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); updateSel(); });
   $('songs').querySelectorAll('select[data-move]').forEach(sel => sel.onchange = async () => {
     if (!sel.value) return;
@@ -329,12 +341,13 @@ function previewUpdate(j) {
       if (it.edited) continue;   // the user corrected this one by hand
       Object.assign(it, { state: s.state, meta: s.meta, artist: s.artist, title: s.title, duration: s.duration, unavailable: s.unavailable });
       if (s.unavailable) it.checked = false;
+      if (s.existing && !it.existing) { it.existing = s.existing; it.checked = false; }   // turned out we have it
     }
   }
   if (j.status === 'running' && PV.loading) {
     const [done, total] = j.progress || [0, PV.items.filter(i => !i.existing).length];
     const rec = (j.recent || []).slice(-6).reverse();
-    const feed = markNew('pv', rec.map(id => { const it = PV.items[id]; return feedLine(`${it.artist ? it.artist + ' – ' : ''}${it.title}`, it.meta, it.state); }).join(''), rec[0]);
+    const feed = markNew('pv', rec.map(id => { const it = PV.items[id]; return feedLine(`${it.artist ? it.artist + ' – ' : ''}${it.title}`, it.meta, it.state, it.video_id); }).join(''), rec[0]);
     const cur = j.current_id != null ? PV.items[j.current_id] : null;
     $('pv-live').innerHTML = liveCard({ jobId: j.id, title: t('live.reading_song'), current: cur ? `${cur.artist ? cur.artist + ' – ' : ''}${cur.title}` : t('live.preparing'),
       done, total, stop: `cancelJob('${j.id}')`, stopTip: 'tip.stop_lookup', feed });
@@ -361,15 +374,16 @@ function dlState(d) {
   const S = {
     waiting: ['', ICON('fa-regular fa-clock'), t('st.waiting')],
     searching: ['busy', SPIN, t('st.searching')],
-    downloading: ['busy', SPIN, `${t('st.downloading')} ${d.pct ?? 0}%<span class="bar thin"><i style="width:${d.pct ?? 0}%"></i></span>`],
+    downloading: ['busy', SPIN, `${d.retry ? t('st.retrying') : t('st.downloading')} ${d.pct ?? 0}%<span class="bar thin"><i style="width:${d.pct ?? 0}%"></i></span>`],
     converting: ['busy', ICON('fa-solid fa-gear fa-spin'), t('st.converting')],
     measuring: ['busy', ICON('fa-solid fa-wave-square fa-beat-fade'), t('st.measuring')],
     done: ['ok', ICON('fa-solid fa-circle-check'), t('st.done', { folder: (d.saved_to || '').split('/')[0] })],
     skipped: ['warn', ICON('fa-solid fa-forward'), t('st.skipped')],
-    failed: ['bad', ICON('fa-solid fa-triangle-exclamation'), t('st.failed')],
+    failed: ['bad', ICON('fa-solid fa-triangle-exclamation'), t('dlerr.' + (d.error_kind || 'other'))],
+    saving: ['busy', ICON('fa-solid fa-floppy-disk'), t('st.saving')],
     stopped: ['', ICON('fa-solid fa-ban'), t('st.stopped')],
   }[d.status] || ['', '', d.status];
-  const tip = d.status === 'failed' ? d.error : d.status === 'skipped' ? t('st.already_in', { where: d.where || '' }) : '';
+  const tip = d.status === 'failed' ? `${t('dlerr_help.' + (d.error_kind || 'other'))}\n\n${d.error || ''}` : d.status === 'skipped' ? t('st.already_in', { where: d.where || '' }) : '';
   return `<span class="state ${S[0]}"${tip ? ` data-tip-raw="${esc(tip)}"` : ''}>${S[1]}${S[2]}</span>`;
 }
 function renderPreview(nowId) {
@@ -381,6 +395,7 @@ function renderPreview(nowId) {
   const have = it => it.existing === 'listed twice' ? t('pv.listed_twice') : it.existing === 'just' ? t('pv.just') : t('pv.have', { where: it.existing });
   $('pv-rows').innerHTML = rows.length ? rows.map(it => `<tr class="${it.checked || it.dl ? '' : 'dim'} ${it.id === nowId || ['downloading', 'converting', 'measuring', 'searching'].includes(it.dl?.status) ? 'now' : ''}">
     <td><input type="checkbox" data-id="${it.id}" ${it.checked ? 'checked' : ''} ${anyDl && DL_JOB ? 'disabled' : ''}></td>
+    <td class="cv">${coverImg(it.meta, it.video_id)}</td>
     ${songCell(it, have)}
     ${it.unavailable ? `<td colspan="5"><span class="chip bad" data-tip-raw="${esc(it.unavailable)}">${ICON('fa-solid fa-ban')}${t('st.unavailable')}</span></td>` : metaCells(it.meta, true, it.existing ? 'have' : it.state)}
     <td class="num">${dur(it.duration)}</td>
@@ -388,7 +403,7 @@ function renderPreview(nowId) {
       : PV.loading || it.unavailable ? '<span class="muted">–</span>'
       : it.tempo_folder && !it.manual ? `<span class="chip info" data-tip="tip.by_tempo">${ICON('fa-solid fa-gauge-high')}${t('add.by_tempo')}</span>`
       : `<input class="dest" data-dest="${it.id}" value="${esc(it.folder)}" list="folder-names">`}</td></tr>`).join('')
-    : `<tr><td colspan="9" class="empty">${PV.items.length ? t('add.all_have') : t('add.none_found')}</td></tr>`;
+    : `<tr><td colspan="10" class="empty">${PV.items.length ? t('add.all_have') : t('add.none_found')}</td></tr>`;
   $('pv-rows').querySelectorAll('input[data-id]').forEach(cb => cb.onchange = () => { PV.items[cb.dataset.id].checked = cb.checked; renderPreview(); });
   $('pv-rows').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { EDITING = +b.dataset.edit; renderPreview(); $('ed-artist')?.focus(); });
   $('pv-rows').querySelectorAll('[data-ed-cancel]').forEach(b => b.onclick = () => { EDITING = null; renderPreview(); });
@@ -443,8 +458,13 @@ function renderSummary() {
   $('dl-summary').textContent = chosen.length ? t('add.dl_size', { time: longDur(total), mb: Math.round(mb) }) : t('add.tick_some');
 }
 function checkAll(on) { if (!PV) return; PV.items.forEach(it => { if (!it.existing || $('pv-show-have').checked) it.checked = on; }); renderPreview(); }
-async function startDownload() {
-  const chosen = PV.items.filter(it => it.checked && !it.unavailable);
+async function retryFailed() {
+  PV.items.forEach(it => { if (it.dl && it.dl.status === 'failed') { it.checked = true; it.dl = null; } else if (it.dl) it.checked = false; });
+  renderPreview();
+  await startDownload(PV.items.filter(it => it.checked));
+}
+async function startDownload(only) {
+  const chosen = only || PV.items.filter(it => it.checked && !it.unavailable);
   const items = chosen.map(it => ({ id: it.id, kind: it.kind, video_id: it.video_id, artist: it.artist, title: it.title,
     duration: it.duration, meta: it.meta, folder: it.folder, tempo_folder: it.tempo_folder && !it.manual }));
   const missing = items.find(it => !it.folder && !it.tempo_folder);
@@ -455,10 +475,11 @@ async function startDownload() {
   $('dl-btn').disabled = true; $('dl-btn-text').textContent = t('add.downloading');
   const j = await followJob(r.id, { log: 'dl-log', onUpdate: j => {
     for (const s of j.items || []) if (PV.items[s.id]) PV.items[s.id].dl = s;
-    const cur = (j.items || []).find(s => ['searching', 'downloading', 'converting', 'measuring'].includes(s.status));
+    const cur = (j.items || []).find(s => ['searching', 'downloading', 'converting', 'measuring', 'saving'].includes(s.status));
     const [done, n] = j.progress || [0, items.length];
     if (j.status === 'running') $('pv-live').innerHTML = liveCard({ jobId: j.id, title: cur ? t('live.dl_now', { i: done + 1, n }) : t('live.dl_prep'),
-      current: cur ? `${cur.artist ? cur.artist + ' – ' : ''}${cur.title}` : '', done, total: n, stop: `cancelJob('${j.id}')`, stopTip: 'tip.stop_download' });
+      current: cur ? `${cur.artist ? cur.artist + ' – ' : ''}${cur.title}` : '', done, total: n, stop: `cancelJob('${j.id}')`, stopTip: 'tip.stop_download',
+      sub: (j.items || []).filter(s => ['searching', 'downloading', 'converting', 'measuring', 'saving'].includes(s.status)).length > 1 ? t('live.parallel', { n: (j.items || []).filter(s => ['searching', 'downloading', 'converting', 'measuring', 'saving'].includes(s.status)).length }) : '' });
     renderPreview();
     if (j.progress) loadLibrary();
   } });
@@ -468,6 +489,7 @@ async function startDownload() {
     PV.items.forEach(it => { if (it.dl && it.dl.status === 'done') { it.existing = 'just'; it.checked = false; } });
     $('pv-live').innerHTML = `<div class="live done-card"><div class="live-head">${ICON('fa-solid fa-circle-check', ' style="font-size:20px;color:var(--ok)"')}
       <div class="what"><b>${t('live.dl_done', { n: res.downloaded.length })}</b><small>${t('live.dl_done_detail', { skipped: res.skipped.length, failed: res.failed.length })}</small></div>
+      ${res.failed.length ? `<button class="small" onclick="retryFailed()" data-tip="tip.retry">${ICON('fa-solid fa-rotate-right')}${t('live.retry_n', { n: res.failed.length })}</button>` : ''}
       <button class="small" onclick="showTab('songs')">${ICON('fa-solid fa-music')}${t('live.see_songs')}</button>
       <button class="small primary" onclick="showTab('device')">${ICON('fa-solid fa-headphones')}${t('dev.sync')}</button></div></div>`;
   }
@@ -581,7 +603,7 @@ async function loadDrives() {
   if (DRIVE) loadDevice(); else $('dev-info').classList.add('hidden');
 }
 function useManualPath() { const p = $('device-path').value.trim(); if (p) { DRIVE = p; loadDevice(); } }
-const DEV_STATUS = { same: ['ok', 'fa-solid fa-check'], different: ['warn', 'fa-solid fa-not-equal'], only_on_earphones: ['warn', 'fa-solid fa-headphones'], only_in_swimtunes: ['info', 'fa-solid fa-upload'] };
+const DEV_STATUS = { imported: ['ok', 'fa-solid fa-check'], same: ['ok', 'fa-solid fa-check'], different: ['warn', 'fa-solid fa-not-equal'], only_on_earphones: ['warn', 'fa-solid fa-headphones'], only_in_swimtunes: ['info', 'fa-solid fa-upload'] };
 async function loadDevice() {
   DEV = await api('/api/device?path=' + encodeURIComponent(DRIVE));
   await loadLibrary();
@@ -593,7 +615,7 @@ async function loadDevice() {
     const extra = f.only_on_earphones && f.status !== 'only_on_earphones' ? `<span class="chip warn">${t('dev.n_only', { n: f.only_on_earphones })}</span>` : '';
     const missing = f.missing_on_earphones && f.status === 'different' ? `<span class="chip info">${t('dev.n_to_copy', { n: f.missing_on_earphones })}</span>` : '';
     return `<tr><td>${f.only_on_earphones ? `<input type="checkbox" data-imp="${esc(f.name)}" checked data-tip="tip.import_tick">` : ''}</td>
-      <td>${ICON('fa-regular fa-folder')} ${esc(f.name)}</td><td class="num">${f.on_earphones}</td><td class="num">${f.in_swimtunes}</td>
+      <td>${f.name === '.' ? ICON('fa-solid fa-headphones') + ' ' + esc(t('dev.root')) : ICON('fa-regular fa-folder') + ' ' + esc(f.name)}</td><td class="num">${f.on_earphones}</td><td class="num">${f.in_swimtunes}</td>
       <td><span class="chip ${cls}" data-tip="tip.dst_${f.status}">${ICON(icon)}${t('dst.' + f.status)}</span> ${extra} ${missing}</td></tr>`;
   }).join('') : `<tr><td colspan="5" class="empty">${t('dev.empty')}</td></tr>`;
   $('import-btn').classList.toggle('hidden', !DEV.folders.some(f => f.only_on_earphones));
@@ -601,8 +623,26 @@ async function loadDevice() {
 async function startImport() {
   const folders = [...document.querySelectorAll('[data-imp]:checked')].map(c => c.dataset.imp);
   if (!folders.length) { toast(t('dev.tick_import')); return; }
-  const r = await api('/api/device/import', { method: 'POST', body: { device: DRIVE, folders } });
-  await followJob(r.id, { log: 'dev-log', progress: 'dev-progress', btn: $('import-btn') });
+  const r = await api('/api/device/import', { method: 'POST', body: { device: DRIVE, folders, allow_dupes: $('imp-dupes').checked, root_name: t('dev.root_folder') } });
+  const line = e => {
+    const icon = e.status === 'imported' ? ICON('fa-solid fa-circle-check', ' style="color:var(--ok)"')
+      : e.status === 'skipped' ? ICON('fa-solid fa-forward', ' style="color:var(--warn)"') : ICON('fa-solid fa-triangle-exclamation', ' style="color:var(--danger)"');
+    const what = e.status === 'imported' ? t('imp.imported', { folder: e.folder }) : e.status === 'skipped' ? t('imp.skipped', { where: e.where }) : t('imp.failed', { error: e.error });
+    return `<li>${icon}<span class="song">${esc(e.file)}</span><i class="fa-solid fa-arrow-right arrow"></i><span class="muted">${esc(what)}</span></li>`;
+  };
+  const j = await followJob(r.id, { log: 'dev-log', btn: $('import-btn'), onUpdate: j => {
+    if (j.status !== 'running') return;
+    $('dev-live').innerHTML = liveCard({ jobId: j.id, title: t('imp.title'), current: j.current || t('live.preparing'),
+      done: j.progress?.[0] || 0, total: j.progress?.[1] || 0, feed: (j.recent || []).slice(-8).reverse().map(line).join('') });
+  } });
+  if (j.status === 'done') {
+    const res = j.result, rec = j.recent || [];
+    const skipped = rec.filter(e => e.status === 'skipped'), failed = rec.filter(e => e.status === 'failed');
+    $('dev-live').innerHTML = `<div class="live done-card"><div class="live-head">${ICON('fa-solid fa-circle-check', ' style="font-size:20px;color:var(--ok)"')}
+      <div class="what"><b>${t('imp.done', { n: res.imported })}</b><small>${t('imp.done_detail', { skipped: res.skipped, failed: res.failed })}</small>
+      ${res.skipped && !res.imported ? `<small>${t('imp.all_skipped_hint')}</small>` : ''}</div></div>
+      ${skipped.length || failed.length ? `<details style="margin-top:8px"><summary>${t('imp.show_details')}</summary><ul class="feed">${[...failed, ...skipped].map(line).join('')}</ul></details>` : ''}</div>`;
+  } else $('dev-live').innerHTML = '';
   await refresh(); await loadDevice();
 }
 async function startSync() {

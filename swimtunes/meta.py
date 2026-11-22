@@ -129,6 +129,8 @@ class MetaLookup:
         info.update({k: dz[k] for k in (("genre",) if maybe_cover else ("genre", "bpm", "year")) if dz.get(k)})
         if maybe_cover:
             info["maybe_cover"] = True
+        elif dz.get("cover"):
+            info["cover"] = dz["cover"]   # album picture
         if used and used != attempts[0]:
             info["swapped"] = True   # "Song - Artist": the halves were the other way round
         main_artist = used[0] if used and used[0] else artist
@@ -202,7 +204,9 @@ class MetaLookup:
                 best, best_score = r, score
         if not best:
             return {}
-        out = {"title": best.get("title"), "artist": (best.get("artist") or {}).get("name")}
+        album = best.get("album") or {}
+        out = {"title": best.get("title"), "artist": (best.get("artist") or {}).get("name"),
+               "cover": album.get("cover_medium") or album.get("cover") or ""}
         track = self.fetch(f"https://api.deezer.com/track/{best['id']}", _DEEZER) or {}
         if track.get("bpm"):
             out["bpm"] = round(float(track["bpm"]))

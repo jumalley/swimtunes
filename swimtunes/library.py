@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mutagen import MutagenError
-from mutagen.id3 import ID3, TALB, TBPM, TCON, TDRC, TIT2, TPE1, TRCK, TXXX, ID3NoHeaderError
+from mutagen.id3 import APIC, ID3, TALB, TBPM, TCON, TDRC, TIT2, TPE1, TRCK, TXXX, ID3NoHeaderError
 from mutagen.mp3 import MP3
 
 from .i18n import msg
@@ -58,6 +58,7 @@ class Track:
     track_no: int | None
     added: float
     meta: dict | None = None   # genre, bpm, year, tags, country, cyrillic (None = not looked up yet)
+    has_cover: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
@@ -79,6 +80,7 @@ class Track:
             "source": self.source,
             "track_no": self.track_no,
             "meta": _with_country_name(self.meta),
+            "has_cover": self.has_cover,
         }
 
 
@@ -95,6 +97,7 @@ def read_track(path: Path, folder: str) -> Track:
     track_no = None
     duration = 0.0
     meta = None
+    has_cover = False
     try:
         audio = MP3(path)
         duration = audio.info.length
@@ -116,6 +119,7 @@ def read_track(path: Path, folder: str) -> Track:
             elif "TCON" in tags:  # genre written by another program
                 meta = {"genre": str(tags["TCON"].text[0]), "bpm": None, "year": None, "tags": [],
                         "country": "", "cyrillic": False, "partial": True}
+            has_cover = bool(tags.getall("APIC"))
             if "TRCK" in tags:
                 try:
                     track_no = int(str(tags["TRCK"].text[0]).split("/")[0])
@@ -127,7 +131,7 @@ def read_track(path: Path, folder: str) -> Track:
         a, t = split_artist_title(path.stem)
         title, artist = t, artist or a
     st = path.stat()
-    return Track(path, folder, title, artist, duration, st.st_size, source, track_no, st.st_mtime, meta)
+    return Track(path, folder, title, artist, duration, st.st_size, source, track_no, st.st_mtime, meta, has_cover)
 
 
 def write_meta(path: Path, meta: dict) -> None:
@@ -150,6 +154,28 @@ def _set_meta(tags, meta: dict) -> None:
         tags.setall("TBPM", [TBPM(encoding=3, text=str(int(meta["bpm"])))])
     if meta.get("year"):
         tags.setall("TDRC", [TDRC(encoding=3, text=str(meta["year"]))])
+
+
+def write_cover(path: Path, image: bytes, mime: str = "image/jpeg") -> None:
+    """Embed the album cover in the MP3."""
+    try:
+        tags = ID3(path)
+    except ID3NoHeaderError:
+        tags = ID3()
+    tags.delall("APIC")
+    tags.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=image))
+    tags.save(path, v2_version=3)
+
+
+def read_cover(path: Path) -> tuple[bytes, str] | None:
+    try:
+        pics = ID3(path).getall("APIC")
+    except (ID3NoHeaderError, MutagenError, OSError):
+        return None
+    if not pics:
+        return None
+    pic = next((p for p in pics if p.type == 3), pics[0])
+    return pic.data, pic.mime or "image/jpeg"
 
 
 def write_tags(path: Path, *, title: str, artist: str, album: str,

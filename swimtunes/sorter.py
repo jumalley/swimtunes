@@ -118,7 +118,7 @@ def _rule_facts(meta: dict) -> list[str]:
 
 
 def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True, current=None,
-              should_stop=None) -> int:
+              should_stop=None, covers: bool = True) -> int:
     """Look up genre / style / country (and measure tempo) for songs that don't have it yet,
     and save it in the MP3s. Returns how many songs were updated."""
     from . import tools
@@ -143,6 +143,13 @@ def fill_meta(lib, tracks, *, log=print, progress=None, measure: bool = True, cu
                     info["bpm"], info["bpm_measured"] = bpm, True
             write_meta(t.path, info)
             t.meta = info
+            if covers and not t.has_cover and ffmpeg:   # songs imported without a picture get one
+                from .covers import cover_urls, make_cover
+                from .library import write_cover
+                vid = (t.source or "").split("youtube:", 1)[1] if (t.source or "").startswith("youtube:") else None
+                if pic := make_cover(cover_urls(info, vid), ffmpeg):
+                    write_cover(t.path, pic)
+                    t.has_cover = True
         except Exception as e:
             log(msg("log.meta_failed", "  couldn't look up {song}: {error}", song=f"{t.artist} - {t.title}", error=e))
         if progress:

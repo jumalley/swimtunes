@@ -159,6 +159,9 @@ class FakeDownloader(Downloader):
         return [{"id": "s-live", "title": query + " (Live)", "channel": "x", "duration": 200},
                 {"id": "s-good", "title": query + " (Official Audio)", "channel": "x", "duration": 180}]
 
+    def fetch_cover(self, it, workdir):
+        return None   # no network in tests
+
     def fetch_audio(self, vid, tmpdir):
         self.fetched.append(vid)
         return make_audio(tmpdir / f"{vid}.wav", 1)

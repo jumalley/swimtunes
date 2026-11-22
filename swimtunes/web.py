@@ -16,7 +16,7 @@ from .i18n import as_entry, msg
 from .downloader import Downloader
 from .library import Library, LibraryError
 from .meta import MetaLookup, country_name, tempo_label
-from .text import safe_name
+from .text import safe_name, same_song, song_key
 
 
 def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Flask:
@@ -122,6 +122,16 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
     def all_tracks():
         return jsonify([t.to_dict(lib.root) for t in lib.tracks()])
 
+    @app.get("/api/cover")
+    def cover():
+        """The album picture inside an MP3 (for the Songs list)."""
+        from flask import Response
+        from .library import read_cover
+        pic = read_cover(lib.resolve_track(request.args.get("path", "")))
+        if not pic:
+            return err(msg("err.no_cover", "No picture"), 404)
+        return Response(pic[0], mimetype=pic[1], headers={"Cache-Control": "max-age=86400"})
+
     @app.post("/api/folders")
     def create_folder():
         p = lib.create_folder(body().get("name", ""))
@@ -218,9 +228,12 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                 job["current"] = f"{it['artist']} - {it['title']}" if it["artist"] else it["title"]
                 job["current_id"] = it["id"]
                 it["state"] = "looking"
+                renamed = False
                 if it.get("needs_details") and it.get("video_id"):
                     it["state"] = "reading"          # the playlist said too little: read the video's page
+                    before = (it["artist"], it["title"])
                     d.add_details(it)
+                    renamed = (it["artist"], it["title"]) != before
                     job["current"] = f"{it['artist']} - {it['title']}" if it["artist"] else it["title"]
                     if it.get("unavailable"):
                         it["state"] = "unavailable"
@@ -239,8 +252,13 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
                     if it["meta"].pop("swapped", False):   # it was "Song - Artist"
                         it["artist"], it["title"] = it["title"], it["artist"]
                         it["reliable"] = True
+                        renamed = True
                     it["meta"]["country_name"] = country_name(it["meta"].get("country", ""))
                     it["state"] = "found" if (it["meta"].get("genre") or it["meta"].get("tags")) else "unknown"
+                    if renamed and not b.get("allow_dupes"):   # now we know its real name: do we have it already?
+                        have = _already(it, items)
+                        if have:
+                            it["existing"], it["state"] = have, "have"
                 except Exception as e:
                     it["meta"], it["state"] = None, "error"
                     failures += 1
@@ -252,6 +270,20 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
             log(msg("log.pv_ready", "Ready. Check the list, choose how to sort, then download."))
             return {"name": job["name"] or "Downloads", "items": items}
         return start_job("preview", fn)
+
+    def _already(it, items):
+        t = lib.find_existing(artist=it["artist"], title=it["title"],
+                              source=f"youtube:{it['video_id']}" if it.get("video_id") else None,
+                              scope=lib.config()["dupe_scope"])
+        if t:
+            return f"{t.folder}/{t.filename}"
+        key = song_key(it["artist"], it["title"])
+        for other in items:
+            if other is it:
+                break
+            if not other.get("existing") and not other.get("unavailable") and same_song(key, song_key(other["artist"], other["title"])):
+                return "listed twice"
+        return None
 
     @app.post("/api/lookup")
     def lookup_one():
@@ -391,8 +423,15 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         path, folders = (b.get("device") or "").strip(), b.get("folders") or []
         if not path or not folders:
             return err(msg("err.pick_import", "Choose the folders to import"))
-        return start_job("import", lambda log, progress, job: device.import_from_device(
-            lib, path, folders, ffmpeg=tools.ffmpeg_path(), log=log, scope=lib.config()["dupe_scope"], progress=progress))
+        def fn(log, progress, job):
+            def report(entry):
+                job["recent"].append(entry)
+                job["current"] = entry["file"]
+            return device.import_from_device(
+                lib, path, folders, ffmpeg=tools.ffmpeg_path(), log=log, scope=lib.config()["dupe_scope"],
+                progress=progress, allow_dupes=bool(b.get("allow_dupes")), report=report,
+                root_name=(b.get("root_name") or "From earphones").strip() or "From earphones")
+        return start_job("import", fn)
 
     @app.post("/api/sync")
     def sync():
