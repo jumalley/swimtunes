@@ -1,0 +1,40 @@
+name: Tidy releases
+
+# Keeps the 3 newest releases (each holds ~550 MB of apps) and deletes older ones with their tags.
+# Installed copies only ever look at the newest release, so nothing depends on the old ones.
+on:
+  workflow_run:
+    workflows: ["Build apps"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/tidy-releases.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KEEP: 3
+    steps:
+      - name: Delete releases older than the newest ${{ env.KEEP }}
+        run: |
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName,createdAt \
+            -q 'sort_by(.createdAt) | reverse | .[].tagName' > releases.txt
+          echo "Releases, newest first:"; cat releases.txt
+          tail -n +$((KEEP + 1)) releases.txt | while read -r tag; do
+            echo "Deleting $tag"
+            gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag
+          done
+      - name: Delete tags left without a release
+        run: |
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName -q '.[].tagName' | sort > kept.txt
+          gh api "repos/${{ github.repository }}/tags?per_page=100" -q '.[].name' | sort > tags.txt
+          comm -23 tags.txt kept.txt | while read -r tag; do
+            echo "Deleting tag $tag"
+            gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag"
+          done

@@ -94,6 +94,9 @@ node tests/browser/smoke.js http://localhost:8799 screenshots/
   - Once a month it rebuilds the same version with the newest yt-dlp as `v<version>.<run number>`, so installed copies
     pick up YouTube fixes.
 
+- [`tidy-releases.yml`](../.github/workflows/tidy-releases.yml) keeps the 3 newest releases after each build and
+  deletes older ones with their tags.
+
 Installed apps compare versions number by number (`v0.9.0.57` > `v0.9.0`, `v0.9.1` > `v0.9.0.57`).
 
 ## Translations
