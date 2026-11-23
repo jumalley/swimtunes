@@ -119,6 +119,34 @@ def register(app, ctx):
         except Exception as e:
             return err(str(e))
 
+    # ---------- optional YouTube token helper ----------
+    @app.get("/api/helper")
+    def helper_status():
+        from .. import potoken
+        return jsonify({**potoken.status(), "enabled": bool(lib.config().get("youtube_helper"))})
+
+    @app.post("/api/helper")
+    def helper_set():
+        """{"enabled": true} installs it if needed (a job), then uses it; false stops using it."""
+        from .. import potoken
+        on = bool(body().get("enabled"))
+        lib.set_config(youtube_helper=on)
+        if not on:
+            potoken.stop()
+            return helper_status()
+        if potoken.installed():
+            return helper_status()
+        return ctx.start_job("helper", lambda log, progress, job: potoken.install(log) or potoken.status())
+
+    @app.post("/api/helper/remove")
+    def helper_remove():
+        from .. import potoken
+        if busy():
+            return err(msg("err.busy_update", "Wait until the current download or copy has finished"))
+        lib.set_config(youtube_helper=False)
+        potoken.remove()
+        return helper_status()
+
     @app.get("/api/report")
     def problem_report():
         """Settings → "Copy a problem report"."""

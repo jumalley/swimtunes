@@ -50,7 +50,8 @@ def build(lib, jobs: dict | None = None) -> str:
     out += ["", f"Library: {st['count']} songs in {len(st['folders'])} folders · earphones size setting {cfg['capacity_gb']} GB",
             f"Settings: bitrate {cfg['bitrate']} · normalize {cfg['normalize']} · duplicates {cfg['dupe_scope']} · "
             f"sort {cfg['sort_mode']} · auto-update {cfg.get('auto_update')} · channel {cfg.get('update_channel', 'stable')}",
-            f"Followed playlists: {len(cfg.get('followed') or [])} · rules: {len(cfg.get('rules') or [])}"]
+            f"Followed playlists: {len(cfg.get('followed') or [])} · rules: {len(cfg.get('rules') or [])} · "
+            f"YouTube helper: {'on' if cfg.get('youtube_helper') else 'off'}"]
     acc = accounts.status()
     out.append(f"Accounts: YouTube {'connected (' + (acc['youtube']['browser'] or 'cookies file') + ')' if acc['youtube']['connected'] else 'not connected'}"
                f" · Spotify {'connected' if acc['spotify']['connected'] else 'not connected'}")

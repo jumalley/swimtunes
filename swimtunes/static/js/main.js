@@ -18,7 +18,7 @@ async function loadStatus() {
   $('f-folder').querySelector('span').textContent = shortPath(s.library);
   $('f-folder').dataset.tipRaw = s.library;
 }
-const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings', follow: 'add' };
+const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings', follow: 'add', helper: 'settings' };
 async function pollActivity() {
   let jobs = [];
   try { const r = await fetch('/api/jobs/active'); if (r.ok) jobs = await r.json(); } catch (e) { return; }
@@ -41,7 +41,7 @@ function showTab(name) {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + name));
   if (name === 'dupes') loadDupes();
   if (name === 'device') { loadDrives(); loadShokz(); }
-  if (name === 'settings') { loadHealth(); loadAccounts(); loadPhone(); if (!UPDATE_SEEN) { UPDATE_SEEN = true; checkUpdate(); } }
+  if (name === 'settings') { loadHealth(); loadAccounts(); loadPhone(); loadHelper(); if (!UPDATE_SEEN) { UPDATE_SEEN = true; checkUpdate(); } }
   try { localStorage.setItem('swimtunes-tab', name); } catch (e) {}
 }
 async function renderAll() {

@@ -138,7 +138,23 @@ class Downloader:
         if deno := tools.deno_path():  # YouTube needs a JavaScript runtime
             base["js_runtimes"] = {"deno": {"path": deno}}
         base.update(self._login_options())   # the user's YouTube login, if connected and readable
-        return yt_dlp.YoutubeDL({**base, **opts})
+        extra = self._helper_options()        # the optional YouTube token helper (Settings)
+        args = {**extra.get("extractor_args", {}), **base.get("extractor_args", {}), **opts.get("extractor_args", {})}
+        merged = {**base, **opts}
+        if args:
+            merged["extractor_args"] = args
+        return yt_dlp.YoutubeDL(merged)
+
+    def _helper_options(self) -> dict:
+        """When "YouTube token helper" is on (Settings), yt-dlp gets proof-of-origin tokens from it."""
+        if not self.lib.config().get("youtube_helper"):
+            return {}
+        from . import potoken
+        try:
+            return potoken.ytdlp_options() if potoken.installed() else {}
+        except Exception as e:   # the helper is a bonus: never let it stop a download
+            self.log(f"YouTube helper unavailable: {e}")
+            return {}
 
     def _login_options(self) -> dict:
         """The YouTube login, checked once. If the browser's login can't be read (Chrome open, or

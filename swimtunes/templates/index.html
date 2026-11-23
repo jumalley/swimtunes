@@ -255,6 +255,14 @@
         <div class="row hidden" id="sp-connected"><span id="sp-user" class="muted"></span><button class="fit danger" onclick="disconnect('spotify')"><i class="fa-solid fa-link-slash"></i><span data-i18n="acc.disconnect">Disconnect</span></button></div>
       </div>
 
+      <div class="panel" id="helper-panel">
+        <h2><i class="fa-solid fa-shield-halved"></i><span data-i18n="helper.title">YouTube token helper (advanced)</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="helper.tip"></i></h2>
+        <p class="muted" style="margin-top:0" data-i18n-html="helper.intro">Only if YouTube keeps refusing downloads (<i>Sign in to confirm you're not a bot</i>, <i>403</i>). This free helper proves to YouTube that requests come from a normal browser.</p>
+        <label class="check"><input type="checkbox" id="helper-on" onchange="setHelper(this.checked)"> <span data-i18n="helper.use">Use the YouTube token helper</span></label>
+        <div id="helper-body"></div>
+        <p class="muted small" data-i18n-html="helper.credits">Made by the open-source <a href="https://github.com/Brainicism/bgutil-ytdlp-pot-provider" target="_blank" rel="noopener">bgutil</a> project (GPL-3.0). It isn't part of SwimTunes: turning it on downloads it onto this computer (about 230 MB) from GitHub and PyPI, checked against known fingerprints.</p>
+      </div>
+
       <div class="panel local-only" id="phone-panel">
         <h2><i class="fa-solid fa-mobile-screen-button"></i><span data-i18n="phone.title">Use from my phone</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="phone.tip"></i></h2>
         <p class="muted" style="margin-top:0" data-i18n="phone.intro">Add music and copy playlists from your phone, on the same Wi-Fi. Nothing to install on the phone: SwimTunes keeps running on this computer, which downloads and copies to the earphones.</p>

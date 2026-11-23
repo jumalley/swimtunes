@@ -46,6 +46,7 @@ DEFAULT_CONFIG = {
     "update_channel": "stable",  # "stable" (everyone) or "beta" (test versions first)
     "skip_version": "",          # a version the user went back from: not installed again by itself
     "followed": [],
+    "youtube_helper": False,     # use the optional YouTube token helper (see potoken.py)
     "phone_access": False,       # also listen on the home network, for phones (see web/phone.py)
     "phone_token": "",           # what a phone's cookie must hold
     "phone_code": "",            # the 6-digit code a phone types once            # playlists whose new songs SwimTunes fetches (see web/follow.py)

@@ -148,6 +148,15 @@ built every month. When YouTube refuses a download, SwimTunes already tries othe
 a bit later. Age-restricted or region-blocked videos can't be downloaded: try another upload of the same song.
 </details>
 
+<details><summary><b>YouTube refuses almost every download ("Sign in to confirm you're not a bot").</b></summary>
+
+YouTube sometimes asks for a "proof of origin" token, like a normal browser sends. Turn on
+**Settings → YouTube token helper (advanced)**: SwimTunes downloads the free, open-source
+[bgutil](https://github.com/Brainicism/bgutil-ytdlp-pot-provider) helper onto your computer (about 230 MB, checked
+against known fingerprints) and uses it for downloads. It isn't part of SwimTunes (it's GPL-licensed), and you can
+remove it in the same place.
+</details>
+
 <details><summary><b>A warning about my YouTube login ("Could not copy Chrome cookie database").</b></summary>
 
 Chrome and Edge lock their login while open and, on Windows, don't share it with other apps. SwimTunes then downloads

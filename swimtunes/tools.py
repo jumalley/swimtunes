@@ -82,4 +82,8 @@ def health() -> list[dict]:
         rows.append({"name": "YouTube challenge solver (yt-dlp-ejs)", "ok": True, "detail": "installed"})
     except ImportError:
         rows.append({"name": "YouTube challenge solver (yt-dlp-ejs)", "ok": False, "detail": "missing"})
+    from . import potoken
+    if potoken.installed():   # optional, only listed once installed
+        rows.append({"name": "YouTube token helper (optional)", "ok": True,
+                     "detail": f"bgutil {potoken.VERSION}" + (" · running" if potoken.running() else "")})
     return rows

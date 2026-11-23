@@ -47,6 +47,7 @@ python -m swimtunes doctor             # check ffmpeg, deno and yt-dlp
 | `swimtunes/shokz.py` | battery / firmware / settings over Bluetooth (RFCOMM; message format from Gadgetbridge) |
 | `swimtunes/updater.py` | updates: release download (apps), `git pull` (source), or the launcher |
 | `swimtunes/app.py`, `tray.py`, `shortcut.py` | starting the app, the clock icon (Windows) / menu-bar icon (Mac), desktop shortcut |
+| `swimtunes/potoken.py` | the optional YouTube token helper (bgutil, GPL): installed on demand on the user's computer, never bundled; pinned plugin hash + server fingerprint |
 | `swimtunes/report.py` | the problem report (Settings → Copy a problem report), with personal details hidden |
 | `swimtunes/text.py`, `tools.py` | song title clean-up and matching; finding ffmpeg/deno, health checks |
 | `SwimTunes.pyw` | one-file launcher for PCs that block unsigned apps (standard library only) |
@@ -70,6 +71,7 @@ ruff check .                # mistakes only: undefined/unused names, likely bugs
 | `test_playlists.py` | playlist cards: pictures, swims, last update, earphone status |
 | `test_bluetooth.py` | the Shokz protocol against simulated earphones |
 | `test_updates.py` | automatic updates, test versions and going back, the launcher, the clock / menu-bar icon |
+| `test_youtube_helper.py` | the token helper: fingerprint checks, how downloads use it, the switch |
 | `test_phone.py` | using SwimTunes from a phone: the switch, the code, guessing limits, computer-only actions |
 | `test_follow_report_eject.py` | followed playlists, the problem report, ejecting the earphones |
 | `test_translations.py` | every language complete, placeholders match, every key used exists |

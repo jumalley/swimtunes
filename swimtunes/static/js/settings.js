@@ -269,3 +269,31 @@ async function waitForRestart(text) {
   }
   showClosed(t('ov.restarting_t'), t('ov.restarting'));
 }
+
+// ---------- optional YouTube token helper ----------
+async function loadHelper() {
+  let h; try { h = await api('/api/helper'); } catch (e) { return; }
+  $('helper-on').checked = h.enabled;
+  $('helper-body').innerHTML = h.installed
+    ? `<div class="row" style="margin-top:6px"><span class="chip ${h.enabled ? 'ok' : ''}">${ICON(h.enabled ? 'fa-solid fa-check' : 'fa-solid fa-pause')}${t(h.enabled ? 'helper.on' : 'helper.off')}</span>
+        <span class="muted small fit">${t('helper.size', { mb: h.size_mb, v: h.version })}</span>
+        <button class="fit small danger" onclick="removeHelper()">${ICON('fa-regular fa-trash-can')}${t('helper.remove')}</button></div>`
+    : '';
+}
+async function setHelper(on) {
+  const r = await api('/api/helper', { method: 'POST', body: { enabled: on } });
+  if (r.id) {   // first time: download and install, with progress
+    $('helper-on').disabled = true;
+    $('helper-body').innerHTML = `<div class="notice">${SPIN}<span id="helper-step">${t('helper.installing')}</span></div>`;
+    const j = await followJob(r.id, { onUpdate: j => { const e = j.log[j.log.length - 1]; if (e && $('helper-step')) $('helper-step').textContent = tEntry(e); } });
+    $('helper-on').disabled = false;
+    if (j.status === 'done') toast(t('helper.ready'));
+    else { await api('/api/helper', { method: 'POST', body: { enabled: false } }); }
+  }
+  loadHelper(); loadHealth();
+}
+async function removeHelper() {
+  if (!confirm(t('helper.remove_confirm'))) return;
+  await api('/api/helper/remove', { method: 'POST' });
+  toast(t('helper.removed')); loadHelper(); loadHealth();
+}
