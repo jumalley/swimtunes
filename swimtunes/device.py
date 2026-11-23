@@ -394,8 +394,8 @@ def eject(path: Path | str, run=None) -> dict:
     if hasattr(os, "sync"):
         os.sync()
     try:
-        if os.name == "nt":
-            drive = str(path.drive or path)[:2]     # "H:"
+        if sys.platform == "win32":
+            drive = str(path)[:2]                   # "H:"
             script = ("$d = (New-Object -ComObject Shell.Application).Namespace(17).ParseName('" + drive + "'); "
                       "if ($d) { $d.InvokeVerb('Eject') } else { exit 2 }")
             r = run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script])

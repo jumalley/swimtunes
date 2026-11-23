@@ -79,7 +79,6 @@ def test_eject(tmp_path, monkeypatch, lib):
     def busy(cmd):
         return subprocess.CompletedProcess(cmd, 1, "", "target is busy")
     monkeypatch.setattr(device.sys, "platform", "linux")
-    monkeypatch.setattr(device.os, "name", "posix")
     assert device.eject(tmp_path, run=ok)["ok"] and calls[0][:3] == ["gio", "mount", "-e"]
     r = device.eject(tmp_path, run=busy)
     assert not r["ok"] and "busy" in r["detail"]
