@@ -20,7 +20,7 @@ from ..downloader import Downloader
 from ..i18n import as_entry, msg
 from ..library import Library, LibraryError
 from ..meta import MetaLookup, country_name, tempo_label
-from . import accounts_routes, adding, earphones, follow, library_routes, system
+from . import accounts_routes, adding, earphones, follow, library_routes, phone, system
 from .common import _newer  # noqa: F401  (used by tests)
 
 def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Flask:
@@ -139,7 +139,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
 
     ctx = SimpleNamespace(lib=lib, jobs=jobs, job_lock=job_lock, err=err, body=body, start_job=start_job, new_job=new_job,
                           busy=busy, lookup=lookup, downloader_cls=downloader_cls)
-    for area in (library_routes, adding, follow, earphones, accounts_routes, system):
+    for area in (phone, library_routes, adding, follow, earphones, accounts_routes, system):   # phone first: its guard
         area.register(app, ctx)
     return app
 

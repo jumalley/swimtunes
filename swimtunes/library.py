@@ -45,7 +45,10 @@ DEFAULT_CONFIG = {
     "auto_update_tried": {},   # {"latest": tag, "time": ...}: never retry the same update in a loop
     "update_channel": "stable",  # "stable" (everyone) or "beta" (test versions first)
     "skip_version": "",          # a version the user went back from: not installed again by itself
-    "followed": [],            # playlists whose new songs SwimTunes fetches (see web/follow.py)
+    "followed": [],
+    "phone_access": False,       # also listen on the home network, for phones (see web/phone.py)
+    "phone_token": "",           # what a phone's cookie must hold
+    "phone_code": "",            # the 6-digit code a phone types once            # playlists whose new songs SwimTunes fetches (see web/follow.py)
 }
 
 FOLDER_COVER = ".swimtunes-cover.jpg"   # a folder's picture (hidden, never copied to the earphones)

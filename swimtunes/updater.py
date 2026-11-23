@@ -151,6 +151,17 @@ def apply(log: Callable[[str], None] = print, release: dict | None = None, chann
     raise RuntimeError("This copy of SwimTunes can't update itself. Download the newest app from GitHub.")
 
 
+def restart_command() -> list[str]:
+    """The command that starts this same version again (e.g. after turning phone access on)."""
+    kind = install_kind()
+    if kind == "launcher":
+        return [os.environ["SWIMTUNES_LAUNCHER_PYTHON"], os.environ["SWIMTUNES_LAUNCHER"]]
+    if kind == "app":
+        exe = Path(sys.executable)
+        return [str(exe)]
+    return [sys.executable, "-m", "swimtunes", "ui", "--no-browser"]
+
+
 def set_launcher_option(name: str, value: str) -> None:
     """SwimTunes.pyw reads these small files when it starts: channel.txt (stable/beta),
     target.txt (install this version once), skip.txt (don't install this version by itself)."""

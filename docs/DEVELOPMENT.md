@@ -33,7 +33,7 @@ python -m swimtunes doctor             # check ffmpeg, deno and yt-dlp
 
 | File | What it does |
 |---|---|
-| `swimtunes/web/` | the dashboard's server: `__init__.py` (app, background jobs) and one module per area: `library_routes`, `adding`, `follow`, `earphones`, `accounts_routes`, `system` |
+| `swimtunes/web/` | the dashboard's server: `__init__.py` (app, background jobs) and one module per area: `phone` (phone access: code, guard), `library_routes`, `adding`, `follow`, `earphones`, `accounts_routes`, `system` |
 | `swimtunes/templates/index.html`, `static/js/*.js`, `static/app.css` | the dashboard page, no build step: `core.js` first, one file per tab, `main.js` last (they share top-level names) |
 | `swimtunes/static/i18n.js` | the page's texts in 6 languages, one block per language, same keys everywhere |
 | `swimtunes/i18n.py` | translatable server messages: `msg("key", "English text", **values)` |
@@ -70,6 +70,7 @@ ruff check .                # mistakes only: undefined/unused names, likely bugs
 | `test_playlists.py` | playlist cards: pictures, swims, last update, earphone status |
 | `test_bluetooth.py` | the Shokz protocol against simulated earphones |
 | `test_updates.py` | automatic updates, test versions and going back, the launcher, the clock / menu-bar icon |
+| `test_phone.py` | using SwimTunes from a phone: the switch, the code, guessing limits, computer-only actions |
 | `test_follow_report_eject.py` | followed playlists, the problem report, ejecting the earphones |
 | `test_translations.py` | every language complete, placeholders match, every key used exists |
 

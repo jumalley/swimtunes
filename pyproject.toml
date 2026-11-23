@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swimtunes"
-version = "0.10.0"
+version = "0.10.1"
 description = "Download YouTube/Spotify music as MP3 for swimming earphones, without duplicates"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -13,6 +13,7 @@ dependencies = [
   "imageio-ffmpeg>=0.6",
   "mutagen>=1.47",
   "flask>=3.0",
+  "segno>=1.6",     # QR code to open SwimTunes on a phone
 ]
 
 [project.optional-dependencies]

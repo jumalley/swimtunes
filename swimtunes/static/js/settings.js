@@ -99,6 +99,7 @@ async function quitApp() {
 }
 async function loadVersion() {
   const v = await api('/api/version');
+  document.body.classList.toggle('remote', !!v.remote);   // opened on a phone: hide what only works on the computer
   if (v.updating) followUpdate(v.updating, true);
   $('quit-btn').classList.toggle('hidden', !v.can_quit);
   showUpdate(v.update);
@@ -218,4 +219,53 @@ async function rollback() {
   if (!ROLLBACK_TO || !confirm(t('upd.rollback_confirm', { v: ROLLBACK_TO }))) return;
   const r = await api('/api/update/rollback', { method: 'POST' });
   await followUpdate(r.id, false);
+}
+
+// ---------- use from my phone ----------
+let PHONE = null;
+async function loadPhone() {
+  try { PHONE = await api('/api/phone'); } catch (e) { return; }
+  $('phone-on').checked = PHONE.enabled;
+  const p = PHONE;
+  let html = '';
+  if (p.enabled && p.listening && p.urls.length) {
+    html = `<div class="phone-grid">
+      <div class="qr" role="img" aria-label="${esc(t('phone.qr_label', { url: p.urls[0] }))}">${p.qr}</div>
+      <ol class="phone-steps">
+        <li>${t('phone.s1')}</li>
+        <li>${t('phone.s2')} <code class="addr">${esc(p.urls[0])}</code></li>
+        <li>${t('phone.s3')} <b class="code">${esc(p.code.slice(0, 3) + ' ' + p.code.slice(3))}</b></li>
+        <li>${t('phone.s4')}</li>
+      </ol></div>
+      <p class="muted small">${t('phone.keep_on')}</p>
+      <p class="muted small">${t('phone.firewall')}</p>
+      <button class="fit small" onclick="newPhoneCode()" data-tip="phone.new_code_tip">${ICON('fa-solid fa-key')}${t('phone.new_code')}</button>`;
+  } else if (p.enabled && !p.urls.length) {
+    html = `<div class="notice">${ICON('fa-solid fa-wifi')}<span>${t('phone.no_network')}</span></div>`;
+  } else if (p.enabled && !p.listening) {
+    html = `<div class="notice">${ICON('fa-solid fa-rotate')}<span>${t(p.can_restart ? 'phone.needs_restart' : 'phone.restart_yourself')}</span></div>`;
+  }
+  $('phone-body').innerHTML = html;
+}
+async function setPhone(on) {
+  const r = await api('/api/phone', { method: 'POST', body: { enabled: on } });
+  if (r.restarting) { await waitForRestart(t('phone.restarting')); return; }
+  loadPhone();
+}
+async function newPhoneCode() {
+  if (!confirm(t('phone.new_code_confirm'))) return;
+  await api('/api/phone', { method: 'POST', body: { new_code: true } });
+  loadPhone();
+}
+// SwimTunes restarts itself (phone access on/off): wait, then reload the page
+async function waitForRestart(text) {
+  UPDATING = true;
+  showClosed(t('ov.restarting_t'), text);
+  const before = Date.now();
+  await new Promise(r => setTimeout(r, 2500));
+  while (Date.now() - before < 60000) {
+    try { const v = await fetch('/api/version'); if (v.ok) { location.reload(); return; } } catch (e) {}
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  showClosed(t('ov.restarting_t'), t('ov.restarting'));
 }

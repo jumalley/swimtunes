@@ -80,7 +80,14 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
     import logging
     logging.getLogger("werkzeug").setLevel(logging.ERROR)  # no request spam in the window
     app = create_app(lib)
-    server = make_server("127.0.0.1", port, app, threaded=True)
+    # "Use from my phone" on: also listen on the home network (phones must type a code, see web/phone.py)
+    lan = bool(lib.config().get("phone_access"))
+    try:
+        server = make_server("0.0.0.0" if lan else "127.0.0.1", port, app, threaded=True)
+    except OSError:
+        lan = False
+        server = make_server("127.0.0.1", port, app, threaded=True)
+    app.config["LAN"] = lan
     app.config["SHUTDOWN"] = lambda: threading.Thread(target=server.shutdown, daemon=True).start()
     app.config["RESTART"] = None  # set by the updater: command that starts the new version
     url = f"http://localhost:{port}"
@@ -119,7 +126,7 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
             pass
     if app.config["RESTART"]:
         from .updater import restart
-        print("Restarting with the new version…", flush=True)
+        print("Restarting SwimTunes…", flush=True)
         cmd = list(app.config["RESTART"])
         if "ui" in cmd:  # running from source: keep the same music folder and port
             i = cmd.index("ui")
@@ -155,7 +162,8 @@ def _idle_watch(app, minutes: float) -> None:
         time.sleep(30)
         idle = time.time() - app.config["LAST_SEEN"]
         busy = any(j["status"] in ("queued", "running") for j in app.config["JOBS"].values())
-        if idle > minutes * 60 and not busy:
+        phone = app.config.get("LAN")      # a phone may come back later: keep running (Quit from the icon or page)
+        if idle > minutes * 60 and not busy and not phone:
             print("No dashboard open for a while: closing SwimTunes.", flush=True)
             app.config["SHUTDOWN"]()
             return

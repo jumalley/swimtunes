@@ -101,6 +101,16 @@ and take them off the charger. Works on Windows and Linux.
 
 <img src="docs/screenshots/battery.png" width="720" alt="Battery, firmware and settings read over Bluetooth">
 
+### From your phone
+
+Nothing to install on the phone. In **Settings → Use from my phone**, tick *Let my phone open SwimTunes*: a QR code and
+a 6-digit code appear. On the same Wi-Fi, scan the QR code with the phone's camera, type the code once, and SwimTunes
+opens in the phone's browser (add it to the home screen to open it like an app). Paste links from the YouTube or
+Spotify app, follow playlists, copy to the earphones plugged into the computer.
+
+The computer does the work, so it has to stay on with SwimTunes running. Only devices that typed the code can use it,
+only on your home network, and quitting or changing these settings is only possible on the computer.
+
 ### Followed playlists
 
 Tick **Follow this playlist** before downloading a playlist. Each time SwimTunes starts (at most every 6 hours),
@@ -180,6 +190,12 @@ keep them close. If your phone is connected to them, turning its Bluetooth off f
 <details><summary><b>Songs play in the wrong order.</b></summary>
 
 The earphones may be on shuffle: **Earphones → Battery and settings** shows it, and **Play in order** switches it back.
+</details>
+
+<details><summary><b>Is there a phone app?</b></summary>
+
+No need: SwimTunes on your computer can be used from your phone's browser (Settings → Use from my phone). A computer is
+needed anyway: it downloads and converts the songs, and the earphones receive them through their USB cable.
 </details>
 
 <details><summary><b>Something doesn't work: how do I report it?</b></summary>

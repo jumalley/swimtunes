@@ -6,7 +6,7 @@ import os
 import sys
 import threading
 
-from flask import jsonify
+from flask import jsonify, request
 
 from .. import TAG, __version__, device, tools, updater
 from ..i18n import msg
@@ -21,7 +21,8 @@ def register(app, ctx):
         u = app.config["UPDATE"] or {}
         return jsonify({"app": "swimtunes", "version": __version__, "tag": TAG,
                         "kind": updater.install_kind(), "update": u if u.get("available") else None,
-                        "can_quit": app.config["SHUTDOWN"] is not None, "updating": app.config.get("AUTO_UPDATE")})
+                        "can_quit": app.config["SHUTDOWN"] is not None, "updating": app.config.get("AUTO_UPDATE"),
+                        "remote": not (request.remote_addr or "").startswith(("127.", "::1"))})
 
     def channel():
         return lib.config().get("update_channel", "stable")

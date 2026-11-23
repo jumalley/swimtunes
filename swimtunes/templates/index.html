@@ -7,6 +7,9 @@
 <link rel="icon" type="image/png" href="/static/icon.png">
 <link rel="stylesheet" href="/static/fa/css/all.min.css">
 <link rel="stylesheet" href="/static/app.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icon.png">
+<meta name="theme-color" content="#086d91">
 </head>
 <body>
 <header>
@@ -18,8 +21,8 @@
   </div>
   <div class="cap" data-tip="tip.capacity_bar"><small class="muted" id="s-cap">–</small><div class="bar" id="s-bar"><i></i></div></div>
   <div class="head-actions">
-    <button onclick="openMusicFolder()" data-tip="tip.music_folder"><i class="fa-solid fa-folder-open"></i><span data-i18n="hd.music_folder">Music folder</span></button>
-    <button id="quit-btn" class="hidden" onclick="quitApp()" data-tip="tip.quit"><i class="fa-solid fa-power-off"></i><span data-i18n="hd.quit">Quit</span></button>
+    <button class="local-only" onclick="openMusicFolder()" data-tip="tip.music_folder"><i class="fa-solid fa-folder-open"></i><span data-i18n="hd.music_folder">Music folder</span></button>
+    <button id="quit-btn" class="hidden local-only" onclick="quitApp()" data-tip="tip.quit"><i class="fa-solid fa-power-off"></i><span data-i18n="hd.quit">Quit</span></button>
   </div>
 </header>
 <div class="banner hidden" id="update">
@@ -252,6 +255,13 @@
         <div class="row hidden" id="sp-connected"><span id="sp-user" class="muted"></span><button class="fit danger" onclick="disconnect('spotify')"><i class="fa-solid fa-link-slash"></i><span data-i18n="acc.disconnect">Disconnect</span></button></div>
       </div>
 
+      <div class="panel local-only" id="phone-panel">
+        <h2><i class="fa-solid fa-mobile-screen-button"></i><span data-i18n="phone.title">Use from my phone</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="phone.tip"></i></h2>
+        <p class="muted" style="margin-top:0" data-i18n="phone.intro">Add music and copy playlists from your phone, on the same Wi-Fi. Nothing to install on the phone: SwimTunes keeps running on this computer, which downloads and copies to the earphones.</p>
+        <label class="check"><input type="checkbox" id="phone-on" onchange="setPhone(this.checked)"> <span data-i18n="phone.allow">Let my phone open SwimTunes</span></label>
+        <div id="phone-body"></div>
+      </div>
+
       <div class="panel">
         <h2><i class="fa-solid fa-sliders"></i><span data-i18n="set.prefs">Preferences</span></h2>
         <div class="row">
@@ -296,7 +306,7 @@
         <h2><i class="fa-solid fa-ellipsis"></i><span data-i18n="set.other">Other</span></h2>
         <label data-i18n="set.saved_in">Your music is saved in</label><div class="row"><input id="cfg-root" disabled aria-label="Music folder"><button onclick="openMusicFolder()"><i class="fa-solid fa-folder-open"></i><span data-i18n="common.open">Open</span></button></div>
         <div class="row" style="margin-top:14px">
-          <button class="fit" onclick="makeShortcut()" data-tip="tip.shortcut"><i class="fa-solid fa-desktop"></i><span data-i18n="set.shortcut">Put a SwimTunes icon on my desktop</span></button>
+          <button class="fit local-only" onclick="makeShortcut()" data-tip="tip.shortcut"><i class="fa-solid fa-desktop"></i><span data-i18n="set.shortcut">Put a SwimTunes icon on my desktop</span></button>
           <button class="fit danger" onclick="emptyTrash()" data-tip="tip.empty_trash"><i class="fa-solid fa-dumpster"></i><span data-i18n="set.empty_trash">Empty trash</span></button>
           <button class="fit" id="report-btn" onclick="copyReport()" data-tip="report.tip"><i class="fa-solid fa-stethoscope"></i><span data-i18n="report.copy">Copy a problem report</span></button>
         </div>
