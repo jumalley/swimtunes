@@ -35,7 +35,7 @@ def fake_helper(monkeypatch, tmp_path):
     w = wheel()
     monkeypatch.setattr(potoken, "PLUGIN_SHA256", hashlib.sha256(w).hexdigest())
     (tmp_path / "ref/src").mkdir(parents=True)
-    (tmp_path / "ref/src/main.ts").write_text("console.log('pot')\n")
+    (tmp_path / "ref/src/main.ts").write_bytes(b"console.log('pot')\n")   # exact bytes, as in the download
     monkeypatch.setattr(potoken, "SERVER_FINGERPRINT", potoken.fingerprint(tmp_path / "ref"))
     monkeypatch.setattr(potoken.tools, "deno_path", lambda: "/usr/bin/deno")
     ran = []
