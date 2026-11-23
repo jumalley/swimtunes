@@ -49,6 +49,9 @@ async function checkUpdate() {
     $('update-list').innerHTML = u.available ? (u.changes || []).map(c => `<li>${esc(c)}</li>`).join('') : '';
     if (u.note) $('update-status').innerHTML += `<br><span class="small">${esc(u.note)}</span>`;
     showUpdate(u.available ? u : null);
+    if (u.available && u.prerelease) $('update-status').innerHTML += ` <span class="chip warn">${t('upd.test_version')}</span>`;
+    $('rollback-wrap').classList.toggle('hidden', !u.previous);
+    if (u.previous) { $('rollback-text').textContent = t('upd.rollback', { v: u.previous }); ROLLBACK_TO = u.previous; }
     loadStatus();
   } catch (e) { $('check-btn').disabled = false; }
 }
@@ -201,4 +204,18 @@ async function copyReport() {
   $('report-box').classList.remove('hidden');
   try { await navigator.clipboard.writeText(r.text); toast(t('report.copied')); }
   catch (e) { $('report-box').open = true; $('report-text').select(); toast(t('report.select')); }
+}
+
+// ---------- versions: test channel and going back ----------
+let ROLLBACK_TO = null, UPDATE_SEEN = false;   // the updates panel checks once per visit
+async function setChannel(ch) {
+  await api('/api/update/channel', { method: 'POST', body: { channel: ch } });
+  LIB.config.update_channel = ch;
+  toast(t(ch === 'beta' ? 'upd.beta_on' : 'upd.stable_on'));
+  checkUpdate();
+}
+async function rollback() {
+  if (!ROLLBACK_TO || !confirm(t('upd.rollback_confirm', { v: ROLLBACK_TO }))) return;
+  const r = await api('/api/update/rollback', { method: 'POST' });
+  await followUpdate(r.id, false);
 }

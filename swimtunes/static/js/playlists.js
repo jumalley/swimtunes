@@ -21,6 +21,7 @@ async function loadLibrary() {
   for (const k of ['capacity_gb', 'bitrate', 'dupe_scope', 'normalize']) $('cfg-' + k).value = String(LIB.config[k]);
   $('cfg-root').value = LIB.root;
   $('cfg-auto_update').checked = LIB.config.auto_update !== false;
+  $('cfg-channel').value = LIB.config.update_channel || 'stable';
   RULES = LIB.config.rules || [];
   $('rules-count').textContent = RULES.length ? t('rules.count', { n: RULES.length }) : t('rules.none');
   const src = $('org-source').value;

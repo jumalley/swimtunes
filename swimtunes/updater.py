@@ -52,11 +52,37 @@ def _asset_name() -> str:
     return "SwimTunes-Mac-AppleSilicon.zip" if platform.machine() == "arm64" else "SwimTunes-Mac-Intel.zip"
 
 
-def _latest_release() -> dict:
-    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
+def _github(path: str):
+    if os.environ.get("SWIMTUNES_OFFLINE"):
+        raise RuntimeError("offline")
+    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/{path}",
                                  headers={"Accept": "application/vnd.github+json", "User-Agent": "SwimTunes"})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.load(r)
+
+
+def _releases() -> list[dict]:
+    """Published releases (test versions included), newest version first."""
+    rels = [r for r in _github("releases?per_page=20") if not r.get("draft") and _tag_tuple(r.get("tag_name", ""))]
+    return sorted(rels, key=lambda r: _tag_tuple(r["tag_name"]), reverse=True)
+
+
+def _latest_release(channel: str = "stable") -> dict:
+    """The newest release for this channel: "stable" (everyone) or "beta" (test versions too)."""
+    if channel == "beta":
+        rels = _releases()
+        if rels:
+            return rels[0]
+    return _github("releases/latest")
+
+
+def previous_release(current: str) -> dict | None:
+    """The newest stable release older than `current`: where "Go back" takes you."""
+    try:
+        cur = _tag_tuple(current)
+        return next((r for r in _releases() if not r.get("prerelease") and cur and _tag_tuple(r["tag_name"]) < cur), None)
+    except Exception:
+        return None
 
 
 def _tag_tuple(tag: str) -> tuple:
@@ -77,7 +103,7 @@ def release_changes(body: str) -> list[str]:
     return [line.strip("-* ").strip() for line in lines if line.strip()][:10]
 
 
-def check() -> dict:
+def check(channel: str = "stable") -> dict:
     """Is there a newer version? Returns what changed, in plain words."""
     kind = install_kind()
     out = {"kind": kind, "current": TAG if TAG != "dev" else __version__, "available": False, "changes": [],
@@ -94,7 +120,8 @@ def check() -> dict:
             if _git("status", "--porcelain", "--untracked-files=no"):
                 out["note"] = "You changed some SwimTunes files yourself; updating keeps your changes if they don't clash."
         else:
-            rel = _latest_release()
+            rel = _latest_release(channel)
+            out["prerelease"] = bool(rel.get("prerelease"))
             out["latest"] = rel.get("tag_name")
             out["available"] = (kind in ("app", "launcher") and _tag_tuple(out["latest"] or "") > _tag_tuple(TAG))
             out["changes"] = release_changes(rel.get("body") or "")
@@ -106,17 +133,35 @@ def check() -> dict:
     return out
 
 
-def apply(log: Callable[[str], None] = print) -> list[str]:
-    """Install the update. Returns the command that starts the new version."""
+def apply(log: Callable[[str], None] = print, release: dict | None = None, channel: str = "stable") -> list[str]:
+    """Install the update (or `release`, e.g. the previous version when going back).
+    Returns the command that starts the new version."""
     kind = install_kind()
     if kind == "git":
+        if release:
+            raise RuntimeError("A copy of the GitHub project goes back with git (git checkout <version>).")
         return _apply_git(log)
     if kind == "app":
-        return _apply_app(log)
+        return _apply_app(log, release or _latest_release(channel))
     if kind == "launcher":   # the launcher installs the new version as it starts again
+        set_launcher_option("target", release["tag_name"] if release else "")
+        set_launcher_option("channel", channel)
         log(msg("log.upd_launcher", "The new version is installed while SwimTunes restarts."))
         return [os.environ["SWIMTUNES_LAUNCHER_PYTHON"], os.environ["SWIMTUNES_LAUNCHER"]]
     raise RuntimeError("This copy of SwimTunes can't update itself. Download the newest app from GitHub.")
+
+
+def set_launcher_option(name: str, value: str) -> None:
+    """SwimTunes.pyw reads these small files when it starts: channel.txt (stable/beta),
+    target.txt (install this version once), skip.txt (don't install this version by itself)."""
+    home = os.environ.get("SWIMTUNES_LAUNCHER_HOME")
+    if not home or not os.path.isdir(home):
+        return
+    p = Path(home) / f"{name}.txt"
+    if value:
+        p.write_text(value, encoding="utf-8")
+    else:
+        p.unlink(missing_ok=True)
 
 
 def _apply_git(log) -> list[str]:
@@ -158,8 +203,7 @@ def _download(url: str, dest: Path, log) -> None:
                 last = pct
 
 
-def _apply_app(log) -> list[str]:
-    rel = _latest_release()
+def _apply_app(log, rel: dict) -> list[str]:
     asset = next((a for a in rel.get("assets", []) if a["name"] == _asset_name()), None)
     if not asset:
         raise RuntimeError(f"The newest release has no {_asset_name()}")

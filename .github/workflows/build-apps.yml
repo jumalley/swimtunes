@@ -1,7 +1,10 @@
 name: Build apps
 
 # Builds the apps and publishes them as a GitHub release.
-#  - When the version in swimtunes/__init__.py changes: release "v<version>" (e.g. v0.9.0).
+#  - When the version in swimtunes/__init__.py changes: release "v<version>" (e.g. v0.9.0) as a
+#    TEST VERSION (pre-release): only copies set to "Test versions first" get it. Check it with
+#    docs/RELEASE_CHECKLIST.md, then run the "Promote a test version" workflow so everyone gets it.
+#    A commit message containing [stable] publishes it for everyone straight away.
 #    Pushes that don't change the version only run the tests (tests.yml).
 #  - Once a month (and when started by hand): the same version rebuilt with the newest
 #    YouTube downloader (yt-dlp), released as "v<version>.<run number>" (e.g. v0.9.0.57),
@@ -26,15 +29,27 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       skip: ${{ steps.tag.outputs.skip }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
       - id: tag
         env:
           GH_TOKEN: ${{ github.token }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           version=$(python3 -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('swimtunes/__init__.py').read()).group(1))")
-          if [ "${{ github.event_name }}" = "push" ]; then tag="v${version}"; else tag="v${version}.${{ github.run_number }}"; fi
+          stable=$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName 2>/dev/null || true)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            tag="v${version}"
+            if printf '%s' "$HEAD_MESSAGE" | grep -q '\[stable\]'; then pre=false; else pre=true; fi
+          else
+            # monthly rebuild with a fresh yt-dlp: stable if this version is already the stable one
+            tag="v${version}.${{ github.run_number }}"
+            case "$stable" in "v${version}"|"v${version}".*) pre=false ;; *) pre=true ;; esac
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$pre" >> "$GITHUB_OUTPUT"
+          echo "Current stable release: ${stable:-none}. This one is a test version: $pre"
           if gh release view "$tag" --repo "${{ github.repository }}" > /dev/null 2>&1; then
             echo "skip=true" >> "$GITHUB_OUTPUT"; echo "$tag is already released: nothing to build."
           else
@@ -60,6 +75,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SWIMTUNES_TAG: ${{ needs.version.outputs.tag }}
+      # signing switches on by itself once these secrets exist (docs/SIGNING.md)
+      SIGNPATH_ORGANIZATION_ID: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -76,21 +94,94 @@ jobs:
       - name: Build
         run: pyinstaller packaging/swimtunes.spec --noconfirm
 
-      - name: Check and package (Windows)
+      # ---- Windows: check, sign (when SignPath is set up, see docs/SIGNING.md), installer ----
+      - name: Check (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: ./dist/SwimTunes.exe doctor
+      - name: Upload the app for signing
+        id: unsigned-exe
+        if: runner.os == 'Windows' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-exe
+          path: dist/SwimTunes.exe
+      - name: Sign the app (SignPath)
+        if: runner.os == 'Windows' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'swimtunes' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned-exe.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-exe
+      - name: Use the signed app
+        if: runner.os == 'Windows' && env.SIGNPATH_ORGANIZATION_ID != ''
+        shell: bash
+        run: cp signed-exe/SwimTunes.exe dist/SwimTunes.exe && ./dist/SwimTunes.exe doctor
+      - name: Build the installer (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          ./dist/SwimTunes.exe doctor
           # the installer (Start menu, desktop icon, uninstall in Settings > Apps)
           ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
           if [ ! -f "$ISCC" ]; then choco install innosetup -y --no-progress; fi
           "$ISCC" //DAppVersion="${SWIMTUNES_TAG#v}" //DSourceExe="$(cygpath -w "$PWD/dist/SwimTunes.exe")" packaging/windows-installer.iss
+      - name: Upload the installer for signing
+        id: unsigned-setup
+        if: runner.os == 'Windows' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-setup
+          path: dist/SwimTunes-Setup.exe
+      - name: Sign the installer (SignPath)
+        if: runner.os == 'Windows' && env.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'swimtunes' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed-setup
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          if [ -f signed-setup/SwimTunes-Setup.exe ]; then cp signed-setup/SwimTunes-Setup.exe dist/SwimTunes-Setup.exe; fi
           mv dist/SwimTunes-Setup.exe "${{ matrix.extra }}"
           mv dist/SwimTunes.exe "${{ matrix.asset }}"
+
+      # ---- Mac: sign and notarize (when an Apple Developer ID is set up, see docs/SIGNING.md), package ----
+      - name: Sign and notarize (Apple)
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > cert.p12
+          security create-keychain -p build build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p build build.keychain
+          security import cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k build build.keychain > /dev/null
+          rm cert.p12
+          codesign --force --deep --options runtime --timestamp --entitlements packaging/entitlements.plist \
+            --sign "$APPLE_SIGNING_IDENTITY" dist/SwimTunes.app
+          ditto -c -k --keepParent dist/SwimTunes.app notarize.zip
+          xcrun notarytool submit notarize.zip --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple dist/SwimTunes.app
       - name: Check and package (Mac)
         if: runner.os == 'macOS'
         run: |
-          codesign --force --deep --sign - dist/SwimTunes.app
+          # not signed with an Apple Developer ID: sign it "ad hoc" so macOS lets it run after "Open Anyway"
+          codesign --verify --deep dist/SwimTunes.app 2>/dev/null || codesign --force --deep --sign - dist/SwimTunes.app
           ./dist/SwimTunes.app/Contents/MacOS/SwimTunes doctor
           ditto -c -k --keepParent dist/SwimTunes.app "${{ matrix.asset }}"
           # a disk image: open it and drag SwimTunes onto Applications
@@ -126,6 +217,12 @@ jobs:
           # "What's new" = the commit titles since the previous release (the app shows these in its update banner)
           prev=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName -q '.[0].tagName')
           {
+            if [ "${{ needs.version.outputs.prerelease }}" = "true" ]; then
+              echo "> **Test version.** Only copies set to *Test versions first* get it. Before everyone does: go through the"
+              echo "> [release checklist](https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_CHECKLIST.md),"
+              echo "> then run **Actions → Promote a test version**."
+              echo
+            fi
             echo "## What's new"
             echo
             if [ -n "$prev" ] && git -C src rev-parse -q --verify "refs/tags/$prev" > /dev/null; then
@@ -149,5 +246,6 @@ jobs:
           TAG: ${{ needs.version.outputs.tag }}
         run: |
           ls -la assets
+          if [ "${{ needs.version.outputs.prerelease }}" = "true" ]; then kind="--prerelease --latest=false"; title="SwimTunes $TAG (test version)"; else kind="--latest"; title="SwimTunes $TAG"; fi
           gh release create "$TAG" assets/* --repo "${{ github.repository }}" --target "${{ github.sha }}" \
-            --title "SwimTunes $TAG" --latest --notes-file notes.md
+            --title "$title" $kind --notes-file notes.md

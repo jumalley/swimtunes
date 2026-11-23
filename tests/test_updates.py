@@ -13,7 +13,7 @@ from swimtunes.web import create_app
 def test_auto_update_at_launch(lib, monkeypatch):
     from swimtunes import updater
     applied = []
-    monkeypatch.setattr(updater, "apply", lambda log: applied.append(1) or ["restart"])
+    monkeypatch.setattr(updater, "apply", lambda log, **kw: applied.append(kw) or ["restart"])
     app = create_app(lib)
     c = app.test_client()
     auto = app.config["MAYBE_AUTO_UPDATE"]
@@ -23,7 +23,7 @@ def test_auto_update_at_launch(lib, monkeypatch):
     stopped = []
     app.config["SHUTDOWN"] = lambda: stopped.append(1)
     jid = auto(new, wait=0)
-    assert wait(c, jid)["status"] == "done" and applied == [1]
+    assert wait(c, jid)["status"] == "done" and len(applied) == 1
     assert c.get("/api/version").get_json()["updating"] == jid
     time.sleep(1.2)
     assert stopped == [1] and app.config["RESTART"] == ["restart"]
@@ -75,3 +75,57 @@ def test_update_banner_lists_only_whats_new():
     body = "## What's new\n\n- Faster downloads\n- Battery in the status bar\n\n## Download\n\n- **Windows:** SwimTunes-Setup.exe\n"
     assert release_changes(body) == ["Faster downloads", "Battery in the status bar"]
     assert release_changes("- Old style note") == ["Old style note"]
+
+
+RELEASES = [  # what GitHub answers, newest first
+    {"tag_name": "v0.10.0", "prerelease": True, "draft": False, "body": "## What's new\n- Test version"},
+    {"tag_name": "v0.9.0", "prerelease": False, "draft": False, "body": "## What's new\n- Stable"},
+    {"tag_name": "v0.8.15", "prerelease": False, "draft": False, "body": ""},
+]
+
+
+def fake_github(path):
+    if path.startswith("releases?"):
+        return RELEASES
+    if path == "releases/latest":
+        return RELEASES[1]
+    raise AssertionError(path)
+
+
+def test_channels_and_going_back(monkeypatch):
+    from swimtunes import updater
+    monkeypatch.setattr(updater, "_github", fake_github)
+    monkeypatch.setattr(updater, "install_kind", lambda: "app")
+    monkeypatch.setattr(updater, "TAG", "v0.9.0")
+    assert updater.check("stable")["available"] is False                    # 0.9.0 is the newest stable
+    beta = updater.check("beta")
+    assert beta["available"] and beta["latest"] == "v0.10.0" and beta["prerelease"]
+    assert beta["changes"] == ["Test version"]
+    assert updater.previous_release("v0.10.0")["tag_name"] == "v0.9.0"     # going back skips test versions
+    assert updater.previous_release("v0.9.0")["tag_name"] == "v0.8.15"
+    assert updater.previous_release("v0.8.15") is None
+
+
+def test_go_back_through_the_dashboard(lib, monkeypatch, tmp_path):
+    from swimtunes import updater
+    from swimtunes.web import system
+    monkeypatch.setattr(updater, "_github", fake_github)
+    monkeypatch.setattr(updater, "install_kind", lambda: "launcher")
+    monkeypatch.setattr(system, "TAG", "v0.10.0")
+    monkeypatch.setattr(updater, "TAG", "v0.10.0")
+    home = tmp_path / "launcher"
+    home.mkdir()
+    monkeypatch.setenv("SWIMTUNES_LAUNCHER", "/x/SwimTunes.pyw")
+    monkeypatch.setenv("SWIMTUNES_LAUNCHER_PYTHON", "/usr/bin/pythonw")
+    monkeypatch.setenv("SWIMTUNES_LAUNCHER_HOME", str(home))
+    app = create_app(lib)
+    c = app.test_client()
+    u = c.post("/api/update/channel", json={"channel": "beta"}).get_json()
+    assert u["channel"] == "beta" and (home / "channel.txt").read_text() == "beta" and u["previous"] == "v0.9.0"
+    assert c.post("/api/update/rollback").get_json()["key"] == "err.cant_update_here"
+    app.config["SHUTDOWN"] = lambda: None
+    j = wait(c, c.post("/api/update/rollback").get_json()["id"])
+    assert j["status"] == "done" and j["result"]["latest"] == "v0.9.0"
+    assert (home / "target.txt").read_text() == "v0.9.0" and (home / "skip.txt").read_text() == "v0.10.0"
+    assert lib.config()["skip_version"] == "v0.10.0"
+    assert app.config["MAYBE_AUTO_UPDATE"]({"available": True, "kind": "app", "latest": "v0.10.0"}, wait=0) is None

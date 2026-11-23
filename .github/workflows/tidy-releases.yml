@@ -1,6 +1,7 @@
 name: Tidy releases
 
-# Keeps the 3 newest releases (each holds ~550 MB of apps) and deletes older ones with their tags.
+# Keeps the 3 newest releases (each holds ~550 MB of apps), plus the current stable one, and deletes
+# older ones with their tags.
 # Installed copies only ever look at the newest release, so nothing depends on the old ones.
 on:
   workflow_run:
@@ -23,10 +24,11 @@ jobs:
     steps:
       - name: Delete releases older than the newest ${{ env.KEEP }}
         run: |
-          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName,createdAt \
-            -q 'sort_by(.createdAt) | reverse | .[].tagName' > releases.txt
-          echo "Releases, newest first:"; cat releases.txt
-          tail -n +$((KEEP + 1)) releases.txt | while read -r tag; do
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName,createdAt,isLatest \
+            -q 'sort_by(.createdAt) | reverse | .[] | "\(.tagName) \(.isLatest)"' > releases.txt
+          echo "Releases, newest first (tag, is the stable one):"; cat releases.txt
+          # never delete the current stable release, even when test versions are newer
+          tail -n +$((KEEP + 1)) releases.txt | awk '$2 != "true" {print $1}' | while read -r tag; do
             echo "Deleting $tag"
             gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag
           done

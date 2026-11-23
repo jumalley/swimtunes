@@ -60,7 +60,8 @@ Some Windows 11 PCs only run apps signed by a known company. Use the Python vers
 </details>
 
 **Updates are automatic**: when SwimTunes starts and a new version exists, it installs it and restarts (about a
-minute). You can turn this off in **Settings → Updates**.
+minute). You can turn this off in **Settings → Updates**, choose to get **test versions first**, or **go back** to the
+previous version.
 
 ## How it works
 

@@ -175,12 +175,28 @@ def installed_version():
         return None
 
 
-def latest_version():
+def option(name):
+    """channel.txt / target.txt / skip.txt, written by SwimTunes (Settings → Updates)."""
     try:
-        req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
+        with open(os.path.join(HOME, name + ".txt"), encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def latest_version():
+    """The newest version for this computer's channel ("stable", or "beta" for test versions)."""
+    beta = option("channel") == "beta"
+    path = "releases?per_page=20" if beta else "releases/latest"
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/{path}",
                                      headers={"User-Agent": "SwimTunes-launcher", "Accept": "application/vnd.github+json"})
         with urllib.request.urlopen(req, timeout=6) as r:
-            return json.load(r).get("tag_name")
+            data = json.load(r)
+        if beta:
+            tags = [x["tag_name"] for x in data if not x.get("draft") and _tag(x.get("tag_name"))]
+            return max(tags, key=_tag) if tags else None
+        return data.get("tag_name")
     except Exception as e:
         log(f"update check failed: {e}")
         return None
@@ -265,14 +281,19 @@ def main():
 
     def work():
         have = installed_version()
-        latest = latest_version()
+        target = option("target")            # "Go back to version X" in SwimTunes
+        latest = target or latest_version()
         if not have and not latest:
             raise RuntimeError(T["offline"])
-        if latest and (not have or _tag(latest) > _tag(have)):
+        if latest and latest == option("skip") and have and not target:
+            latest = None                     # the user went back from this version: don't reinstall it by itself
+        if latest and (not have or _tag(latest) > _tag(have) or (target and latest != have)):
             win.say(T["update"].format(v=latest) if have else T["setup"])
             try:
                 install(latest)
                 have = latest
+                if target:
+                    os.remove(os.path.join(HOME, "target.txt"))
             except Exception:
                 if not have:
                     raise

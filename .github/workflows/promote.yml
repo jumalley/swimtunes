@@ -1,0 +1,34 @@
+name: Promote a test version
+
+# Makes a test version (pre-release) the stable release, so every copy of SwimTunes updates to it.
+# Run it from the Actions tab once the release checklist (docs/RELEASE_CHECKLIST.md) is done.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version to promote (e.g. v0.10.0). Empty = the newest test version."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Make it the stable release
+        run: |
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release list --repo "$REPO" --limit 50 --json tagName,isPrerelease,createdAt \
+                  -q '[.[] | select(.isPrerelease)] | sort_by(.createdAt) | last | .tagName // ""')
+          fi
+          if [ -z "$TAG" ]; then echo "No test version to promote."; exit 1; fi
+          echo "Promoting $TAG"
+          gh release view "$TAG" --repo "$REPO" --json body -q .body \
+            | sed '/^> \*\*Test version\.\*\*/,/^$/d' > notes.md
+          gh release edit "$TAG" --repo "$REPO" --prerelease=false --latest --title "SwimTunes $TAG" --notes-file notes.md
+          echo "$TAG is now the stable release: every copy of SwimTunes will update to it."

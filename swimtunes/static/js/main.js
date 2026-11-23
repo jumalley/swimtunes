@@ -41,7 +41,7 @@ function showTab(name) {
   document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + name));
   if (name === 'dupes') loadDupes();
   if (name === 'device') { loadDrives(); loadShokz(); }
-  if (name === 'settings') { loadHealth(); loadAccounts(); }
+  if (name === 'settings') { loadHealth(); loadAccounts(); if (!UPDATE_SEEN) { UPDATE_SEEN = true; checkUpdate(); } }
   try { localStorage.setItem('swimtunes-tab', name); } catch (e) {}
 }
 async function renderAll() {

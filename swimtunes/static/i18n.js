@@ -651,6 +651,17 @@ I18N.en = {
   "report.tip": "Copies your SwimTunes version, the health checks, recent errors and the end of the logs, to paste when asking for help. No logins or personal details; nothing is sent.",
   "report.copied": "Problem report copied: paste it where you ask for help",
   "report.select": "Select the report below and copy it",
+  "upd.channel": "Versions",
+  "upd.stable": "Stable (recommended)",
+  "upd.beta": "Test versions first",
+  "upd.channel_tip": "Stable: you get new versions once they've been tried. Test versions first: you get them earlier, to try them on your earphones; if something breaks, use Go back.",
+  "upd.rollback": "Go back to {v}",
+  "upd.rollback_tip": "Installs the previous version and restarts. The version you leave isn't installed again by itself.",
+  "upd.rollback_confirm": "Go back to {v}? SwimTunes restarts; your music and settings stay.",
+  "upd.test_version": "test version",
+  "upd.beta_on": "You'll get test versions first",
+  "upd.stable_on": "You'll get stable versions only",
+  "err.no_previous": "There is no earlier version to go back to",
 };
 
 I18N.fr = {
@@ -1300,6 +1311,17 @@ I18N.fr = {
   "report.tip": "Copie votre version de SwimTunes, les vérifications, les erreurs récentes et la fin des journaux, à coller quand vous demandez de l’aide. Aucune connexion ni donnée personnelle ; rien n’est envoyé.",
   "report.copied": "Rapport copié : collez-le là où vous demandez de l’aide",
   "report.select": "Sélectionnez le rapport ci-dessous et copiez-le",
+  "upd.channel": "Versions",
+  "upd.stable": "Stables (recommandé)",
+  "upd.beta": "Versions de test en premier",
+  "upd.channel_tip": "Stables : vous recevez les nouvelles versions une fois qu’elles ont été essayées. Versions de test en premier : vous les recevez plus tôt pour les essayer avec vos écouteurs ; en cas de souci, utilisez Revenir.",
+  "upd.rollback": "Revenir à {v}",
+  "upd.rollback_tip": "Installe la version précédente et redémarre. La version quittée n’est pas réinstallée toute seule.",
+  "upd.rollback_confirm": "Revenir à {v} ? SwimTunes redémarre ; votre musique et vos réglages restent.",
+  "upd.test_version": "version de test",
+  "upd.beta_on": "Vous recevrez les versions de test en premier",
+  "upd.stable_on": "Vous recevrez seulement les versions stables",
+  "err.no_previous": "Il n’y a pas de version précédente",
 };
 
 I18N.es = {
@@ -1949,6 +1971,17 @@ I18N.es = {
   "report.tip": "Copia tu versión de SwimTunes, las comprobaciones, los errores recientes y el final de los registros, para pegarlo al pedir ayuda. Sin inicios de sesión ni datos personales; no se envía nada.",
   "report.copied": "Informe copiado: pégalo donde pidas ayuda",
   "report.select": "Selecciona el informe de abajo y cópialo",
+  "upd.channel": "Versiones",
+  "upd.stable": "Estables (recomendado)",
+  "upd.beta": "Versiones de prueba primero",
+  "upd.channel_tip": "Estables: recibes las versiones nuevas cuando ya se han probado. Versiones de prueba primero: las recibes antes para probarlas con tus auriculares; si algo falla, usa Volver.",
+  "upd.rollback": "Volver a {v}",
+  "upd.rollback_tip": "Instala la versión anterior y reinicia. La versión que dejas no se vuelve a instalar sola.",
+  "upd.rollback_confirm": "¿Volver a {v}? SwimTunes se reinicia; tu música y ajustes se quedan.",
+  "upd.test_version": "versión de prueba",
+  "upd.beta_on": "Recibirás primero las versiones de prueba",
+  "upd.stable_on": "Solo recibirás versiones estables",
+  "err.no_previous": "No hay una versión anterior",
 };
 
 I18N.de = {
@@ -2598,6 +2631,17 @@ I18N.de = {
   "report.tip": "Kopiert deine SwimTunes-Version, die Prüfungen, letzte Fehler und das Ende der Protokolle, zum Einfügen, wenn du um Hilfe bittest. Keine Anmeldungen oder persönlichen Daten; nichts wird gesendet.",
   "report.copied": "Bericht kopiert: füge ihn dort ein, wo du um Hilfe bittest",
   "report.select": "Markiere den Bericht unten und kopiere ihn",
+  "upd.channel": "Versionen",
+  "upd.stable": "Stabil (empfohlen)",
+  "upd.beta": "Testversionen zuerst",
+  "upd.channel_tip": "Stabil: du bekommst neue Versionen, wenn sie ausprobiert wurden. Testversionen zuerst: du bekommst sie früher, um sie mit deinen Kopfhörern zu testen; wenn etwas nicht klappt, nutze Zurück.",
+  "upd.rollback": "Zurück zu {v}",
+  "upd.rollback_tip": "Installiert die vorige Version und startet neu. Die verlassene Version wird nicht von selbst wieder installiert.",
+  "upd.rollback_confirm": "Zurück zu {v}? SwimTunes startet neu; Musik und Einstellungen bleiben.",
+  "upd.test_version": "Testversion",
+  "upd.beta_on": "Du bekommst Testversionen zuerst",
+  "upd.stable_on": "Du bekommst nur stabile Versionen",
+  "err.no_previous": "Es gibt keine frühere Version",
 };
 
 I18N.it = {
@@ -3247,6 +3291,17 @@ I18N.it = {
   "report.tip": "Copia la tua versione di SwimTunes, i controlli, gli errori recenti e la fine dei log, da incollare quando chiedi aiuto. Nessun accesso né dato personale; non viene inviato nulla.",
   "report.copied": "Rapporto copiato: incollalo dove chiedi aiuto",
   "report.select": "Seleziona il rapporto qui sotto e copialo",
+  "upd.channel": "Versioni",
+  "upd.stable": "Stabili (consigliato)",
+  "upd.beta": "Prima le versioni di prova",
+  "upd.channel_tip": "Stabili: ricevi le nuove versioni dopo che sono state provate. Prima le versioni di prova: le ricevi prima per provarle con i tuoi auricolari; se qualcosa non va, usa Torna indietro.",
+  "upd.rollback": "Torna a {v}",
+  "upd.rollback_tip": "Installa la versione precedente e riavvia. La versione che lasci non viene reinstallata da sola.",
+  "upd.rollback_confirm": "Tornare a {v}? SwimTunes si riavvia; musica e impostazioni restano.",
+  "upd.test_version": "versione di prova",
+  "upd.beta_on": "Riceverai prima le versioni di prova",
+  "upd.stable_on": "Riceverai solo versioni stabili",
+  "err.no_previous": "Non c’è una versione precedente",
 };
 
 I18N.pt = {
@@ -3896,4 +3951,15 @@ I18N.pt = {
   "report.tip": "Copia sua versão do SwimTunes, as verificações, os erros recentes e o fim dos registros, para colar ao pedir ajuda. Sem logins nem dados pessoais; nada é enviado.",
   "report.copied": "Relatório copiado: cole onde você pedir ajuda",
   "report.select": "Selecione o relatório abaixo e copie",
+  "upd.channel": "Versões",
+  "upd.stable": "Estáveis (recomendado)",
+  "upd.beta": "Versões de teste primeiro",
+  "upd.channel_tip": "Estáveis: você recebe as versões novas depois de testadas. Versões de teste primeiro: você recebe antes para testar com seus fones; se algo der errado, use Voltar.",
+  "upd.rollback": "Voltar para {v}",
+  "upd.rollback_tip": "Instala a versão anterior e reinicia. A versão que você deixou não é reinstalada sozinha.",
+  "upd.rollback_confirm": "Voltar para {v}? O SwimTunes reinicia; suas músicas e configurações ficam.",
+  "upd.test_version": "versão de teste",
+  "upd.beta_on": "Você vai receber as versões de teste primeiro",
+  "upd.stable_on": "Você vai receber só versões estáveis",
+  "err.no_previous": "Não há uma versão anterior",
 };

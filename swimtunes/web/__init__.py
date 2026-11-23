@@ -34,7 +34,7 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         return meta_lookup or MetaLookup(lib.root / ".swimtunes-meta.json")
 
     def _bg_update_check():
-        app.config["UPDATE"] = u = updater.check()
+        app.config["UPDATE"] = u = updater.check(lib.config().get("update_channel", "stable"))
         maybe_auto_update(u)
 
     def maybe_auto_update(u, wait=15.0):
@@ -42,6 +42,8 @@ def create_app(lib: Library, downloader_cls=Downloader, meta_lookup=None) -> Fla
         cfg = lib.config()
         if not (u.get("available") and cfg.get("auto_update") and u.get("kind") in ("app", "git")):
             return None
+        if u.get("latest") and u.get("latest") == cfg.get("skip_version"):
+            return None                     # the user went back from this version
         end = time.time() + wait            # the app sets SHUTDOWN just after creating the dashboard
         while app.config["SHUTDOWN"] is None and time.time() < end:
             time.sleep(0.1)

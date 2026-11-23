@@ -23,10 +23,39 @@ def register(app, ctx):
                         "kind": updater.install_kind(), "update": u if u.get("available") else None,
                         "can_quit": app.config["SHUTDOWN"] is not None, "updating": app.config.get("AUTO_UPDATE")})
 
+    def channel():
+        return lib.config().get("update_channel", "stable")
+
     @app.get("/api/update")
     def update_check():
-        app.config["UPDATE"] = updater.check()
-        return jsonify(app.config["UPDATE"])
+        u = updater.check(channel())
+        if u.get("kind") in ("app", "launcher"):
+            prev = updater.previous_release(u.get("current") or TAG)
+            u["previous"] = prev["tag_name"] if prev else None
+        u["channel"] = channel()
+        app.config["UPDATE"] = u
+        return jsonify(u)
+
+    @app.post("/api/update/channel")
+    def update_channel():
+        ch = "beta" if body().get("channel") == "beta" else "stable"
+        lib.set_config(update_channel=ch)
+        updater.set_launcher_option("channel", ch)
+        return update_check()
+
+    @app.post("/api/update/rollback")
+    def update_rollback():
+        """Go back to the previous version (and don't install the current one again by itself)."""
+        if app.config["SHUTDOWN"] is None:
+            return err(msg("err.cant_update_here", "Start SwimTunes with the app or `swimtunes ui` to update from here"))
+        if busy():
+            return err(msg("err.busy_update", "Wait until the current download or copy has finished"))
+        prev = updater.previous_release(TAG)
+        if not prev:
+            return err(msg("err.no_previous", "There is no earlier version to go back to"))
+        lib.set_config(skip_version=TAG)
+        updater.set_launcher_option("skip", TAG)
+        return jsonify({"id": run_update(release=prev)})
 
     @app.post("/api/update/apply")
     def update_apply():
@@ -37,15 +66,15 @@ def register(app, ctx):
 
         return jsonify({"id": run_update()})
 
-    def run_update(auto=False):
+    def run_update(auto=False, release=None):
         def fn(log, progress, job):
             u = app.config["UPDATE"] or {}
-            job["current"] = u.get("latest")
-            cmd = updater.apply(log)
+            job["current"] = release["tag_name"] if release else u.get("latest")
+            cmd = updater.apply(log, release=release, channel=channel())
             log(msg("log.upd_restart", "Restarting SwimTunes… this page reloads by itself."))
             app.config["RESTART"] = cmd
             threading.Timer(1.0, app.config["SHUTDOWN"]).start()
-            return {"restart": True, "auto": auto, "latest": u.get("latest")}
+            return {"restart": True, "auto": auto, "latest": job["current"]}
         return new_job("update", fn)
 
     health_cache: dict = {}

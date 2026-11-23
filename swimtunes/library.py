@@ -43,6 +43,8 @@ DEFAULT_CONFIG = {
     "shokz": {},               # last battery / firmware reading of the earphones (Bluetooth)
     "auto_update": True,       # install new versions by itself when SwimTunes starts
     "auto_update_tried": {},   # {"latest": tag, "time": ...}: never retry the same update in a loop
+    "update_channel": "stable",  # "stable" (everyone) or "beta" (test versions first)
+    "skip_version": "",          # a version the user went back from: not installed again by itself
     "followed": [],            # playlists whose new songs SwimTunes fetches (see web/follow.py)
 }
 

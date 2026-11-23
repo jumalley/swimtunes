@@ -90,12 +90,16 @@ node tests/browser/smoke.js http://localhost:8799 screenshots/
 - [`build-apps.yml`](../.github/workflows/build-apps.yml) builds the Windows app and installer and the Mac apps, checks
   each with `doctor`, and publishes a release:
   - **To release, change `__version__` in `swimtunes/__init__.py`** (and `version` in `pyproject.toml`). The push
-    publishes `v<version>`. Pushes that don't change the version only run the tests.
+    publishes `v<version>` as a **test version**: only copies set to *Test versions first* get it. Go through
+    [the release checklist](RELEASE_CHECKLIST.md), then run **Actions → Promote a test version** so everyone gets it.
+    A commit message containing `[stable]` skips the test step. Pushes that don't change the version only run the tests.
+  - Signing switches on with secrets: see [SIGNING.md](SIGNING.md).
   - Once a month it rebuilds the same version with the newest yt-dlp as `v<version>.<run number>`, so installed copies
     pick up YouTube fixes.
 
-- [`tidy-releases.yml`](../.github/workflows/tidy-releases.yml) keeps the 3 newest releases after each build and
-  deletes older ones with their tags.
+- [`promote.yml`](../.github/workflows/promote.yml) makes a test version the stable release (run it by hand).
+- [`tidy-releases.yml`](../.github/workflows/tidy-releases.yml) keeps the 3 newest releases (and always the stable one)
+  after each build and deletes older ones with their tags.
 
 Installed apps compare versions number by number (`v0.9.0.57` > `v0.9.0`, `v0.9.1` > `v0.9.0.57`).
 
