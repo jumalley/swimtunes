@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from collections import Counter
 
-from .meta import country_name, decade_label, facts, tempo_label
 from .i18n import msg
+from .meta import country_name, decade_label, facts, tempo_label
 from .text import safe_name
 
 MODES = {

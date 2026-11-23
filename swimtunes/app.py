@@ -63,6 +63,7 @@ def _port_free(port: int) -> bool:
 def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
           idle_minutes: float | None = None) -> int:
     from werkzeug.serving import make_server
+
     from .web import create_app
 
     if _running_swimtunes(port):  # already open: just show it again

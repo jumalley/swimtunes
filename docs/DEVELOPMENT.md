@@ -33,8 +33,8 @@ python -m swimtunes doctor             # check ffmpeg, deno and yt-dlp
 
 | File | What it does |
 |---|---|
-| `swimtunes/web.py` | the dashboard's server: API, background jobs with live progress, status bar |
-| `swimtunes/templates/index.html`, `static/app.js`, `static/app.css` | the dashboard page (no build step, no framework) |
+| `swimtunes/web/` | the dashboard's server: `__init__.py` (app, background jobs) and one module per area: `library_routes`, `adding`, `earphones`, `accounts_routes`, `system` |
+| `swimtunes/templates/index.html`, `static/js/*.js`, `static/app.css` | the dashboard page, no build step: `core.js` first, one file per tab, `main.js` last (they share top-level names) |
 | `swimtunes/static/i18n.js` | the page's texts in 6 languages, one block per language, same keys everywhere |
 | `swimtunes/i18n.py` | translatable server messages: `msg("key", "English text", **values)` |
 | `swimtunes/downloader.py` | find the songs behind a link, download from YouTube, convert to MP3, save in order |

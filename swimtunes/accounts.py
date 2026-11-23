@@ -16,8 +16,8 @@ import base64
 import hashlib
 import json
 import os
-import sys
 import secrets
+import sys
 import threading
 import time
 import urllib.error

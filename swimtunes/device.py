@@ -219,6 +219,7 @@ def import_from_device(lib: Library, device: Path | str, folders: list[str], *, 
     """Copy songs from the earphones into SwimTunes, keeping folders and play order,
     converting other formats to MP3 and skipping songs SwimTunes already has."""
     import subprocess
+
     from .library import read_track, unique_path, write_tags
     from .text import safe_name, split_artist_title
     device = Path(device)

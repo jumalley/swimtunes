@@ -45,7 +45,8 @@ def test_every_language_is_complete(i18n):
 
 def test_every_text_the_page_uses_exists(i18n):
     en = i18n["I18N"]["en"]
-    page = (PKG / "static" / "app.js").read_text(encoding="utf-8") + (PKG / "templates" / "index.html").read_text(encoding="utf-8")
+    page = "".join(f.read_text(encoding="utf-8") for f in sorted((PKG / "static" / "js").glob("*.js")))
+    page += (PKG / "templates" / "index.html").read_text(encoding="utf-8")
     used = set(re.findall(r"""\bt\(\s*'([a-z_]+\.[a-z0-9_]+)'""", page))
     used |= set(re.findall(r"""data-(?:i18n(?:-html|-ph)?|tip)="([a-z_]+\.[a-z0-9_]+)\"""", page))
     missing = unknown(used, en)
@@ -62,6 +63,6 @@ def test_every_server_message_has_a_translation(i18n):
 
 
 def test_page_scripts_are_valid_javascript():
-    for f in ("app.js", "i18n.js"):
-        r = subprocess.run([NODE, "--check", str(PKG / "static" / f)], capture_output=True, text=True)
+    for f in [PKG / "static" / "i18n.js", *sorted((PKG / "static" / "js").glob("*.js"))]:
+        r = subprocess.run([NODE, "--check", str(f)], capture_output=True, text=True)
         assert r.returncode == 0, r.stderr

@@ -50,6 +50,7 @@ def suggest(tracks: list, folder: str, query: str | None = None, fetch=None) -> 
     import os
     from collections import Counter
     from urllib.parse import quote
+
     from .meta import _DEEZER, _get
 
     fetch = fetch or (lambda url: _get(url, _DEEZER, tries=2))

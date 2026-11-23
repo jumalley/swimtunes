@@ -23,7 +23,7 @@ from mutagen.id3 import APIC, ID3, TALB, TBPM, TCON, TDRC, TIT2, TPE1, TRCK, TXX
 from mutagen.mp3 import MP3
 
 from .i18n import msg
-from .text import same_song, safe_name, song_key, split_artist_title
+from .text import safe_name, same_song, song_key, split_artist_title
 
 SOURCE_TAG = "swimtunes_source"
 META_TAG = "swimtunes_meta"

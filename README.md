@@ -185,5 +185,6 @@ Only download music you're allowed to: your own uploads, free music, or what the
 Run from source, the command line, how the code is organized, tests and releases:
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
+SwimTunes is free and open source under the [MIT license](LICENSE).
 Icons: [Font Awesome Free](https://fontawesome.com) (CC BY 4.0 / SIL OFL / MIT). Bluetooth protocol:
 [Gadgetbridge](https://codeberg.org/Freeyourgadget/Gadgetbridge) (AGPL; SwimTunes reimplements the message format, no code is copied).

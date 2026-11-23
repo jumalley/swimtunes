@@ -16,8 +16,7 @@ from . import i18n, spotify, tools
 from .i18n import msg
 from .library import Library, unique_path, write_cover, write_tags
 from .meta import estimate_bpm, tempo_label
-from .text import (channel_artist, clean_title, looks_like_id, norm_title, safe_name, same_song, song_key,
-                   split_artist_title)
+from .text import channel_artist, clean_title, looks_like_id, norm_title, safe_name, same_song, song_key, split_artist_title
 
 # Words that mean "a different version" — avoided when matching Spotify songs on YouTube
 _VERSION_WORDS = ("live", "cover", "karaoke", "remix", "sped up", "slowed", "nightcore", "8d",

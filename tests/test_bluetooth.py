@@ -133,7 +133,7 @@ def test_bluetooth_endpoints(lib, monkeypatch):
     dev = {"name": "OpenSwim Pro by Shokz", "address": "AA:BB:CC:DD:EE:FF", "channel": None}
     monkeypatch.setattr(shokz, "paired_devices", lambda: [dev])
     monkeypatch.setattr(shokz, "can_connect", lambda: True)
-    monkeypatch.setattr("swimtunes.web.sys.platform", "linux")
+    monkeypatch.setattr("swimtunes.web.earphones.sys.platform", "linux")
     seen = {}
 
     def fake_read(address, *, name, channel, mp3_mode=None):
