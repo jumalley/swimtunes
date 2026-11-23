@@ -662,6 +662,10 @@ I18N.en = {
   "upd.beta_on": "You'll get test versions first",
   "upd.stable_on": "You'll get stable versions only",
   "err.no_previous": "There is no earlier version to go back to",
+  "log.dl_alt_upload": "{song}: that upload can't be downloaded, used another one ({title})",
+  "st.alt_upload": "other upload",
+  "st.alt_upload_tip": "YouTube refused the first upload of this song (blocked, private, region or age), so SwimTunes downloaded another upload of the same song.",
+  "a11y.select_all": "Select every song",
 };
 
 I18N.fr = {
@@ -1322,6 +1326,10 @@ I18N.fr = {
   "upd.beta_on": "Vous recevrez les versions de test en premier",
   "upd.stable_on": "Vous recevrez seulement les versions stables",
   "err.no_previous": "Il n’y a pas de version précédente",
+  "log.dl_alt_upload": "{song} : cette vidéo ne peut pas être téléchargée, une autre a été utilisée ({title})",
+  "st.alt_upload": "autre vidéo",
+  "st.alt_upload_tip": "YouTube a refusé la première vidéo de ce titre (bloquée, privée, région ou âge) : SwimTunes a téléchargé une autre vidéo du même titre.",
+  "a11y.select_all": "Sélectionner tous les titres",
 };
 
 I18N.es = {
@@ -1982,6 +1990,10 @@ I18N.es = {
   "upd.beta_on": "Recibirás primero las versiones de prueba",
   "upd.stable_on": "Solo recibirás versiones estables",
   "err.no_previous": "No hay una versión anterior",
+  "log.dl_alt_upload": "{song}: ese vídeo no se puede descargar, se usó otro ({title})",
+  "st.alt_upload": "otro vídeo",
+  "st.alt_upload_tip": "YouTube rechazó el primer vídeo de esta canción (bloqueado, privado, región o edad), así que SwimTunes descargó otro vídeo de la misma canción.",
+  "a11y.select_all": "Seleccionar todas las canciones",
 };
 
 I18N.de = {
@@ -2642,6 +2654,10 @@ I18N.de = {
   "upd.beta_on": "Du bekommst Testversionen zuerst",
   "upd.stable_on": "Du bekommst nur stabile Versionen",
   "err.no_previous": "Es gibt keine frühere Version",
+  "log.dl_alt_upload": "{song}: dieses Video lässt sich nicht laden, ein anderes wurde genutzt ({title})",
+  "st.alt_upload": "anderes Video",
+  "st.alt_upload_tip": "YouTube hat das erste Video dieses Titels abgelehnt (gesperrt, privat, Region oder Alter), also hat SwimTunes ein anderes Video desselben Titels geladen.",
+  "a11y.select_all": "Alle Titel auswählen",
 };
 
 I18N.it = {
@@ -3302,6 +3318,10 @@ I18N.it = {
   "upd.beta_on": "Riceverai prima le versioni di prova",
   "upd.stable_on": "Riceverai solo versioni stabili",
   "err.no_previous": "Non c’è una versione precedente",
+  "log.dl_alt_upload": "{song}: quel video non si può scaricare, ne è stato usato un altro ({title})",
+  "st.alt_upload": "altro video",
+  "st.alt_upload_tip": "YouTube ha rifiutato il primo video di questo brano (bloccato, privato, regione o età), quindi SwimTunes ha scaricato un altro video dello stesso brano.",
+  "a11y.select_all": "Seleziona tutti i brani",
 };
 
 I18N.pt = {
@@ -3962,4 +3982,8 @@ I18N.pt = {
   "upd.beta_on": "Você vai receber as versões de teste primeiro",
   "upd.stable_on": "Você vai receber só versões estáveis",
   "err.no_previous": "Não há uma versão anterior",
+  "log.dl_alt_upload": "{song}: esse vídeo não pode ser baixado, outro foi usado ({title})",
+  "st.alt_upload": "outro vídeo",
+  "st.alt_upload_tip": "O YouTube recusou o primeiro vídeo desta música (bloqueado, privado, região ou idade), então o SwimTunes baixou outro vídeo da mesma música.",
+  "a11y.select_all": "Selecionar todas as músicas",
 };

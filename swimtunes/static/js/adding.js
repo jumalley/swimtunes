@@ -93,6 +93,7 @@ function dlState(d) {
     stopped: ['', ICON('fa-solid fa-ban'), t('st.stopped')],
   }[d.status] || ['', '', d.status];
   const tip = d.status === 'failed' ? `${t('dlerr_help.' + (d.error_kind || 'other'))}\n\n${d.error || ''}` : d.status === 'skipped' ? t('st.already_in', { where: d.where || '' }) : '';
+  if (d.status === 'done' && d.alt_of) return `<span class="state ok" data-tip="st.alt_upload_tip">${S[1]}${S[2]} <span class="chip">${t('st.alt_upload')}</span></span>`;
   return `<span class="state ${S[0]}"${tip ? ` data-tip-raw="${esc(tip)}"` : ''}>${S[1]}${S[2]}</span>`;
 }
 function renderPreview(nowId) {

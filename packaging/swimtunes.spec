@@ -26,10 +26,10 @@ a = Analysis(
     binaries=[(os.path.join(stage, "ffmpeg" + EXT), "bin"), (os.path.join(stage, "deno" + EXT), "bin")],
     datas=[(os.path.join(ROOT, "swimtunes", "templates"), os.path.join("swimtunes", "templates")),
            (os.path.join(ROOT, "swimtunes", "static"), os.path.join("swimtunes", "static"))],
-    hiddenimports=collect_submodules("swimtunes") + (collect_submodules("pystray") if sys.platform == "win32" else []),
+    hiddenimports=collect_submodules("swimtunes") + (collect_submodules("pystray") if sys.platform in ("win32", "darwin") else []),
     # the helper programs are bundled above; don't pull in their (large) Python packages too
-    # (Pillow is kept on Windows: the icon next to the clock needs it)
-    excludes=["imageio_ffmpeg", "deno", "tkinter", "pytest"] + ([] if sys.platform == "win32" else ["PIL"]),
+    # (Pillow is kept on Windows and Mac: the clock / menu-bar icon needs it)
+    excludes=["imageio_ffmpeg", "deno", "tkinter", "pytest"] + ([] if sys.platform in ("win32", "darwin") else ["PIL"]),
     noarchive=False,
 )
 pyz = PYZ(a.pure)

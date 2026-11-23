@@ -225,14 +225,14 @@ function renderSongs() {
   const rows = SONGS.filter(s => !q || (s.title + ' ' + s.artist + ' ' + (s.meta?.genre || '')).toLowerCase().includes(q));
   const opts = LIB.folders.map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
   $('songs').innerHTML = rows.length ? rows.map((s, i) => `<tr>
-    <td><input type="checkbox" data-p="${esc(s.path)}" ${SELECTED.has(s.path) ? 'checked' : ''}></td>
+    <td><input type="checkbox" data-p="${esc(s.path)}" ${SELECTED.has(s.path) ? 'checked' : ''} aria-label="${esc(s.title)}"></td>
     <td class="muted">${s.track_no ?? i + 1}</td>
     <td class="cv">${s.has_cover ? coverImg(null, null, 36, s.path) : coverImg(s.meta, null)}</td>
     <td class="t">${esc(s.title)}<small>${esc(s.artist)}</small></td>
     <td>${esc(s.meta?.genre || '')}</td><td class="num">${s.meta?.bpm ? (s.meta.bpm_measured ? '~' : '') + s.meta.bpm : ''}</td>
     <td class="${CURRENT === null ? '' : 'hidden'}">${esc(s.folder)}</td>
     <td class="num">${dur(s.duration)}</td><td class="num muted">${size(s.size)}</td>
-    <td><select data-move="${esc(s.path)}"><option value="">—</option>${opts}</select></td></tr>`).join('')
+    <td><select data-move="${esc(s.path)}" aria-label="${esc(t('col.move_to') + ': ' + s.title)}"><option value="">—</option>${opts}</select></td></tr>`).join('')
     : `<tr><td colspan="10" class="empty">${SONGS.length ? t('common.no_matches') : t('songs.empty')}</td></tr>`;
   $('songs').querySelectorAll('input[data-p]').forEach(cb => cb.onchange = () => { cb.checked ? SELECTED.add(cb.dataset.p) : SELECTED.delete(cb.dataset.p); updateSel(); });
   $('songs').querySelectorAll('select[data-move]').forEach(sel => sel.onchange = async () => {

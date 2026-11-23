@@ -84,10 +84,13 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
+        shell: bash
         run: |
           pip install --upgrade "yt-dlp[default,deno]"
           pip install . pyinstaller pillow
           pip install pystray
+          # the Mac menu-bar icon needs Apple's Cocoa bindings
+          if [ "$RUNNER_OS" = "macOS" ]; then pip install pyobjc-framework-Cocoa pyobjc-framework-Quartz; fi
       - name: Stamp version
         shell: bash
         run: echo "TAG = \"$SWIMTUNES_TAG\"" > swimtunes/_build.py

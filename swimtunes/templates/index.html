@@ -135,7 +135,7 @@
         </div>
       </div>
       <div class="table-wrap"><table>
-        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)"></th><th>#</th><th></th><th data-i18n="col.song">Song</th>
+        <thead><tr><th><input type="checkbox" id="sel-all" onchange="selectAll(this.checked)" data-tip="a11y.select_all"></th><th>#</th><th></th><th data-i18n="col.song">Song</th>
           <th data-i18n="col.genre">Genre</th><th class="num"><span data-i18n="col.tempo">Tempo</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.col_tempo"></i></th>
           <th id="th-folder" data-i18n="col.folder">Folder</th><th class="num" data-i18n="col.length">Length</th><th class="num" data-i18n="col.size">Size</th>
           <th><span data-i18n="col.move_to">Move to</span><i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.move_to"></i></th></tr></thead>
@@ -294,7 +294,7 @@
 
       <div class="panel">
         <h2><i class="fa-solid fa-ellipsis"></i><span data-i18n="set.other">Other</span></h2>
-        <label data-i18n="set.saved_in">Your music is saved in</label><div class="row"><input id="cfg-root" disabled><button onclick="openMusicFolder()"><i class="fa-solid fa-folder-open"></i><span data-i18n="common.open">Open</span></button></div>
+        <label data-i18n="set.saved_in">Your music is saved in</label><div class="row"><input id="cfg-root" disabled aria-label="Music folder"><button onclick="openMusicFolder()"><i class="fa-solid fa-folder-open"></i><span data-i18n="common.open">Open</span></button></div>
         <div class="row" style="margin-top:14px">
           <button class="fit" onclick="makeShortcut()" data-tip="tip.shortcut"><i class="fa-solid fa-desktop"></i><span data-i18n="set.shortcut">Put a SwimTunes icon on my desktop</span></button>
           <button class="fit danger" onclick="emptyTrash()" data-tip="tip.empty_trash"><i class="fa-solid fa-dumpster"></i><span data-i18n="set.empty_trash">Empty trash</span></button>
@@ -332,7 +332,7 @@
   <span class="grow"></span>
   <button class="item activity hidden" id="f-activity"><i class="fa-solid fa-circle-notch fa-spin"></i><span></span></button>
   <span class="sep"></span>
-  <span class="item" data-tip="tip.lang"><i class="fa-solid fa-language"></i><select id="f-lang" class="lang-select" onchange="setLanguage(this.value)"></select></span>
+  <span class="item" data-tip="tip.lang"><i class="fa-solid fa-language"></i><select id="f-lang" class="lang-select" onchange="setLanguage(this.value)" aria-label="Language"></select></span>
 </footer>
 
 <dialog id="pic-dlg" class="wide">
@@ -351,7 +351,7 @@
 </dialog>
 
 <datalist id="folder-names"></datalist>
-<div id="tip" role="tooltip"></div>
+<div id="tip" role="tooltip" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 <div class="overlay hidden" id="overlay"><div><h2 id="ov-title"></h2><p class="muted" id="ov-text"></p></div></div>
 

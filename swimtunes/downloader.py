@@ -423,7 +423,14 @@ class Downloader:
         meta = dict(it.get("meta") or {}) or None
         tmp = Path(tempfile.mkdtemp(prefix="swimtunes-"))
         try:
-            src = self.fetch_audio(video_id, tmp)
+            try:
+                src = self.fetch_audio(video_id, tmp)
+            except Exception as e:
+                # YouTube refuses this upload (blocked, private, region, age…): try another upload of the song
+                alt = self._another_upload(it, video_id, e, tmp)
+                if not alt:
+                    raise
+                video_id, src = alt
             part = tmp / "song.mp3"
             it["status"] = "converting"
             try:
@@ -444,6 +451,35 @@ class Downloader:
         except Exception:
             shutil.rmtree(tmp, ignore_errors=True)
             raise
+
+    ALT_KINDS = ("blocked", "bot", "private", "region", "age", "unavailable", "format")
+
+    def _another_upload(self, it: dict, failed_id: str, error: Exception, tmp: Path):
+        """When one upload can't be downloaded, the same song is usually on YouTube several times.
+        Returns (video_id, file) of the first other upload that works, or None."""
+        if error_kind(str(error)) not in self.ALT_KINDS or not (it.get("title") or "").strip():
+            return None
+        artist, title = it.get("artist") or "", it["title"]
+        it["status"] = "searching"
+        try:
+            results = [e for e in self.search(f"{artist} - {title}" if artist else title) if e.get("id") != failed_id]
+        except Exception:
+            return None
+        duration = it.get("duration") or 0
+        results.sort(key=lambda e: score_search_result(e, artist, title, duration))
+        for e in results[:3]:
+            if duration and e.get("duration") and abs(e["duration"] - duration) > max(30, duration * 0.25):
+                continue                    # too long or too short: probably not the same recording
+            try:
+                it["status"], it["pct"] = "downloading", 0
+                src = self.fetch_audio(e["id"], tmp)
+            except Exception:
+                continue
+            self.log(msg("log.dl_alt_upload", "{song}: that upload can't be downloaded, used another one ({title})",
+                         song=self._label(it), title=e.get("title") or e["id"]))
+            it["video_id"], it["alt_of"] = e["id"], failed_id
+            return e["id"], src
+        return None
 
     def _save(self, it: dict, work: dict, res: Result, i: int, n: int) -> None:
         """In list order: last duplicate check, then tag and move the MP3 into its folder."""

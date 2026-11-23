@@ -229,3 +229,39 @@ def test_sync_keeps_unknown_songs_in_sub_folders(lib, tmp_path):
     s = device.sync(lib, dev, folders=["doomer"], log=lambda _: None)
     assert s["protected"] == [{"folder": "doomer", "only_on_earphones": 2}]
     assert (dev / "doomer" / "Etazhi" / "Molchat Doma - Kletka.mp3").exists()
+
+
+def test_refused_upload_is_replaced_by_another_upload(lib):
+    """YouTube refuses one upload (403, private, region…): the same song is taken from another upload."""
+    tried = []
+
+    class Refused(FakeDownloader):
+        def fetch_audio(self, vid, tmpdir):
+            tried.append(vid)
+            if vid == "v2":
+                raise RuntimeError("ERROR: [youtube] v2: Video unavailable. This video is not available in your country")
+            return super().fetch_audio(vid, tmpdir)
+
+        def search(self, query, n=6):
+            return [{"id": "v2", "title": query, "channel": "x", "duration": 248},               # the refused one
+                    {"id": "alt-live", "title": query + " (Live)", "channel": "x", "duration": 120},   # too short
+                    {"id": "alt-good", "title": query + " (Official Audio)", "channel": "x", "duration": 250}]
+    logs = []
+    d = Refused(lib, log=logs.append)
+    it = {"video_id": "v2", "artist": "Daft Punk", "title": "Get Lucky", "duration": 248, "folder": "Swim"}
+    res = d.download_items([it])
+    assert res.downloaded == ["Daft Punk - Get Lucky"] and not res.failed
+    assert tried == ["v2", "alt-good"] and it["alt_of"] == "v2"
+    assert lib.tracks("Swim")[0].source == "youtube:alt-good"
+    assert any(getattr(m, "key", "") == "log.dl_alt_upload" for m in logs)
+
+
+def test_no_other_upload_for_network_errors(lib):
+    class Offline(FakeDownloader):
+        def fetch_audio(self, vid, tmpdir):
+            raise RuntimeError("ERROR: unable to download: <urlopen error [Errno -3] Temporary failure in name resolution> connection")
+
+        def search(self, query, n=6):
+            raise AssertionError("no search for a network problem")
+    res = Offline(lib, log=lambda _: None).download_items([{"video_id": "v1", "artist": "A", "title": "B", "folder": "F"}])
+    assert res.failed and not res.downloaded

@@ -129,3 +129,36 @@ def test_go_back_through_the_dashboard(lib, monkeypatch, tmp_path):
     assert (home / "target.txt").read_text() == "v0.9.0" and (home / "skip.txt").read_text() == "v0.10.0"
     assert lib.config()["skip_version"] == "v0.10.0"
     assert app.config["MAYBE_AUTO_UPDATE"]({"available": True, "kind": "app", "latest": "v0.10.0"}, wait=0) is None
+
+
+def test_mac_menu_bar_icon_and_server_stop_together():
+    import threading as th
+    from swimtunes import app as app_mod
+    from swimtunes import tray
+
+    class Server:
+        def __init__(self):
+            self.done = th.Event()
+
+        def serve_forever(self):
+            self.done.wait(5)
+
+    class Icon:
+        def __init__(self, broken=False):
+            self.stopped, self.broken = th.Event(), broken
+
+        def run(self):
+            if self.broken:
+                raise RuntimeError("no menu bar here")
+            self.stopped.wait(5)
+
+        def stop(self):
+            self.stopped.set()
+    s, icon = Server(), Icon()
+    th.Timer(0.2, s.done.set).start()            # "Quit" stops the server…
+    app_mod._serve_with_menu_bar_icon(s, icon)
+    assert icon.stopped.is_set()                  # …and the icon goes away
+    s, icon = Server(), Icon(broken=True)
+    th.Timer(0.2, s.done.set).start()
+    app_mod._serve_with_menu_bar_icon(s, icon)    # a broken icon doesn't stop SwimTunes
+    assert tray.menu_labels("fr") == ("Ouvrir SwimTunes", "Quitter SwimTunes")

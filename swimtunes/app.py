@@ -93,15 +93,22 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
     print("=" * 56, flush=True)
 
     tray = None
-    if tools.is_frozen():   # the Windows app has no window: an icon next to the clock shows it's running
+    if tools.is_frozen():   # no window of its own: an icon next to the clock / in the menu bar shows it's running
         from . import tray as tray_mod
-        tray = tray_mod.start(url, app.config["SHUTDOWN"])
+        language = lib.config().get("language", "auto")
+        if sys.platform == "darwin":
+            tray = tray_mod.create(url, app.config["SHUTDOWN"], language)   # runs below, on the main thread
+        else:
+            tray = tray_mod.start(url, app.config["SHUTDOWN"], language)
     if open_browser and not os.environ.pop("SWIMTUNES_NO_BROWSER", None):
         threading.Timer(0.8, webbrowser.open, [url]).start()
     if idle_minutes:
         threading.Thread(target=_idle_watch, args=(app, idle_minutes), daemon=True).start()
     try:
-        server.serve_forever()
+        if tray is not None and sys.platform == "darwin":
+            _serve_with_menu_bar_icon(server, tray)
+        else:
+            server.serve_forever()
     except KeyboardInterrupt:
         pass
     server.server_close()
@@ -120,6 +127,27 @@ def serve(lib: Library, port: int = DEFAULT_PORT, open_browser: bool = True,
             cmd += ["--port", str(port)]
         restart(cmd)
     return 0
+
+
+def _serve_with_menu_bar_icon(server, icon) -> None:
+    """Mac: the menu-bar icon needs the main thread, so the dashboard's server runs in another one.
+    When the server stops (Quit, update, idle), the icon goes away; if the icon can't run, the
+    server just keeps going."""
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
+
+    def stop_icon_when_server_stops():
+        worker.join()
+        try:
+            icon.stop()
+        except Exception:
+            pass
+    threading.Thread(target=stop_icon_when_server_stops, daemon=True).start()
+    try:
+        icon.run()
+    except Exception as e:
+        print(f"Menu-bar icon unavailable ({e}); SwimTunes keeps running.", flush=True)
+    worker.join()
 
 
 def _idle_watch(app, minutes: float) -> None:

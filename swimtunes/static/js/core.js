@@ -43,6 +43,7 @@ function applyI18n() {
   });
   fillModes($('pv-mode'), $('pv-mode').value || LIB?.config.sort_mode);
   fillModes($('org-mode'), $('org-mode').value || 'rules');
+  nameIcons(); nameFields();
 }
 async function setLanguage(v) {
   await api('/api/config', { method: 'POST', body: { language: v } });
@@ -81,6 +82,7 @@ function showTip(el) {
   const host = el.closest('dialog') || document.body;  // a dialog sits above everything else
   if (TIP.parentNode !== host) host.appendChild(TIP);
   TIP.textContent = text; tipFor = el;
+  TIP.setAttribute('aria-hidden', 'false'); el.setAttribute('aria-describedby', 'tip');   // read aloud with the element
   TIP.style.left = '0px'; TIP.style.top = '0px'; TIP.classList.add('show');
   const r = el.getBoundingClientRect(), w = TIP.offsetWidth, h = TIP.offsetHeight;
   let x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
@@ -88,7 +90,7 @@ function showTip(el) {
   if (y + h > window.innerHeight - 8) y = r.top - h - 8;
   TIP.style.left = x + 'px'; TIP.style.top = Math.max(8, y) + 'px';
 }
-function hideTip() { TIP.classList.remove('show'); tipFor = null; }
+function hideTip() { TIP.classList.remove('show'); TIP.setAttribute('aria-hidden', 'true'); if (tipFor) tipFor.removeAttribute('aria-describedby'); tipFor = null; }
 document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip],[data-tip-raw]'); if (el && el !== tipFor) showTip(el); else if (!el && tipFor) hideTip(); });
 document.addEventListener('focusin', e => { const el = e.target.closest('[data-tip],[data-tip-raw]'); if (el) showTip(el); });
 document.addEventListener('focusout', hideTip);
@@ -212,3 +214,31 @@ async function followJob(id, { log, progress, btn, onUpdate } = {}) {
 }
 async function cancelJob(id) { await api(`/api/jobs/${id}/cancel`, { method: 'POST' }); toast(t('live.stopping')); }
 
+
+// ---------- accessibility: every icon-only control gets a spoken name ----------
+// Buttons and help icons that show only an icon are named after their tooltip, in the page's language.
+function nameIcons(root = document) {
+  root.querySelectorAll('button, [role="button"], .help, a').forEach(el => {
+    if (el.getAttribute('aria-label') && !el.dataset.autoLabel) return;
+    const visible = [...el.childNodes].some(n => (n.nodeType === 3 && n.textContent.trim()) ||
+      (n.nodeType === 1 && n.tagName !== 'I' && n.textContent.trim() && getComputedStyle(n).display !== 'none'));
+    if (visible) { if (el.dataset.autoLabel) { el.removeAttribute('aria-label'); delete el.dataset.autoLabel; } return; }
+    const name = el.dataset.tip ? t(el.dataset.tip) : el.dataset.tipRaw || el.title || '';
+    if (name) { el.setAttribute('aria-label', name.split('\n')[0]); el.dataset.autoLabel = '1'; }
+    if (el.classList.contains('help')) el.setAttribute('role', 'img');
+  });
+}
+// Form fields whose visible label sits next to them (not linked with for=…) get that label as their name.
+function nameFields(root = document) {
+  root.querySelectorAll('select, input:not([type=hidden]), textarea').forEach(el => {
+    if (el.labels?.length || el.closest('label') || (el.getAttribute('aria-label') && !el.dataset.autoLabel)) return;
+    const box = el.parentElement;
+    const lab = box?.querySelector(':scope > label') || box?.parentElement?.querySelector(':scope > label');
+    let name = lab ? lab.textContent.trim() : '';
+    if (!name && box) name = [...box.childNodes].filter(n => n !== el && !(n.nodeType === 1 && n.matches('select,input,option'))).map(n => n.textContent).join(' ').trim();
+    if (!name) name = el.dataset.tip ? t(el.dataset.tip) : el.placeholder || '';
+    if (name) { el.setAttribute('aria-label', name.replace(/\s+/g, ' ')); el.dataset.autoLabel = '1'; }
+  });
+}
+new MutationObserver(muts => { for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) { nameIcons(n.parentNode || n); nameFields(n.parentNode || n); } })
+  .observe(document.documentElement, { childList: true, subtree: true });

@@ -6,6 +6,8 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 
 const URL = process.argv[2] || 'http://localhost:8799';
+let AXE = null;   // accessibility checker (npm install axe-core); skipped when not installed
+try { AXE = require.resolve('axe-core/axe.min.js', { paths: [process.cwd(), __dirname] }); } catch (e) {}
 const OUT = process.argv[3] || '';
 const TABS = ['add', 'songs', 'organize', 'device', 'dupes', 'settings'];
 const problems = [];
@@ -29,6 +31,13 @@ async function check(page, where) {
   // nothing wider than the screen (no sideways scrolling)
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (wide > 2) problems.push(`${where}: page is ${wide}px wider than the screen`);
+  // accessibility (WCAG 2 A and AA): serious and critical problems fail the test
+  if (AXE) {
+    await page.addScriptTag({ path: AXE });
+    const bad = await page.evaluate(async () => (await axe.run(document, { runOnly: ['wcag2a', 'wcag2aa'] })).violations
+      .filter(v => ['serious', 'critical'].includes(v.impact)).map(v => `${v.id}: ${v.nodes[0].html.slice(0, 100)}`));
+    for (const b of bad) problems.push(`${where}: accessibility ${b}`);
+  }
 }
 
 (async () => {
@@ -78,9 +87,10 @@ async function check(page, where) {
     }
   }
   await browser.close();
+  if (!AXE) console.log('(accessibility not checked: npm install axe-core to include it)');
   if (problems.length) {
     console.error('Problems found:\n- ' + problems.join('\n- '));
     process.exit(1);
   }
-  console.log('Browser smoke test passed: every tab, computer and phone, English and French.');
+  console.log('Browser smoke test passed: every tab, computer and phone, English and French' + (AXE ? ', accessibility included.' : '.'));
 })().catch(e => { console.error(e); process.exit(1); });
