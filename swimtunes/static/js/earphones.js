@@ -62,6 +62,17 @@ async function startSync() {
   await followJob(r.id, { log: 'dev-log', progress: 'dev-progress', btn: $('sync-btn') });
   await loadDevice();
   EAR_AT = 0;
+  $('dev-live').innerHTML = `<div class="notice">${ICON('fa-solid fa-eject')}<span>${t('dev.eject_now')}</span>
+    <button class="small primary fit" onclick="ejectEarphones()">${ICON('fa-solid fa-eject')}${t('dev.eject')}</button></div>`;
+}
+async function ejectEarphones() {
+  if (!DRIVE) { toast(t('dev.pick_first')); return; }
+  const b = $('eject-btn'); b.disabled = true;
+  try {
+    await api('/api/eject', { method: 'POST', body: { device: DRIVE } });
+    $('dev-live').innerHTML = `<div class="notice ok-n">${ICON('fa-solid fa-circle-check')}<span>${t('dev.ejected')}</span></div>`;
+    DRIVE = null; $('dev-info').classList.add('hidden'); loadStatus(); setTimeout(loadDrives, 1500);
+  } catch (e) { /* the message is shown by api() */ } finally { b.disabled = false; }
 }
 
 // ---------- earphones over Bluetooth ----------

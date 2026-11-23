@@ -23,6 +23,10 @@ async function startPreview() {
   PV.loading = false;
   PV.name = j.result.name === 'Downloads' && !j.name ? t('fl.downloads') : j.result.name;
   $('pv-folder').value = PV.name;
+  // one playlist link: offer to follow it
+  PV.url = urls.split(/\s+/).length === 1 && PV.items.length > 1 ? (urls.match(/(?:https?:\/\/|spotify:)\S+/) || [null])[0] : null;
+  $('follow-opt').classList.toggle('hidden', !PV.url);
+  $('follow-this').checked = !!PV.url && FOLLOWED.some(f => f.url === PV.url);
   const looked = PV.items.filter(it => !it.existing);
   const found = looked.filter(it => it.meta && (it.meta.genre || (it.meta.tags || []).length)).length;
   const genres = {}; looked.forEach(it => { if (it.meta?.genre) genres[it.meta.genre] = (genres[it.meta.genre] || 0) + 1; });
@@ -197,6 +201,11 @@ async function startDownload(only) {
     if (j.progress) loadLibrary();
   } });
   DL_JOB = null;
+  if (j.status === 'done' && PV.url && $('follow-this').checked && !FOLLOWED.some(f => f.url === PV.url)) {
+    const folder = $('pv-mode').value === 'one' ? ($('pv-folder').value.trim() || PV.name) : PV.name;
+    FOLLOWED = await api('/api/follow', { method: 'POST', body: { url: PV.url, name: PV.name, folder, total: PV.items.length } });
+    renderFollowed(); toast(t('follow.added', { name: PV.name, folder }));
+  }
   if (j.status === 'done') {
     const res = j.result;
     PV.items.forEach(it => { if (it.dl && it.dl.status === 'done') { it.existing = 'just'; it.checked = false; } });
@@ -219,3 +228,52 @@ function loginNotice(j) {
     <button class="small fit" onclick="showTab('settings')">${ICON('fa-solid fa-gear')}${t('acc.fix_login')}</button></div>`);
 }
 
+
+// ---------- followed playlists ----------
+let FOLLOWED = [];
+async function loadFollowed() {
+  try { FOLLOWED = await api('/api/follow'); } catch (e) { return; }
+  renderFollowed();
+}
+function renderFollowed() {
+  $('follow-panel').classList.toggle('hidden', !FOLLOWED.length);
+  $('follow-list').innerHTML = FOLLOWED.map((f, i) => {
+    const state = f.error ? `<span class="chip bad" data-tip-raw="${esc(f.error)}">${ICON('fa-solid fa-triangle-exclamation')}${t('follow.error')}</span>`
+      : f.new ? `<span class="chip info">${ICON('fa-solid fa-circle-plus')}${t('follow.n_new', { n: f.new })}</span>`
+      : `<span class="chip ok">${ICON('fa-solid fa-check')}${t('follow.up_to_date')}</span>`;
+    return `<li><div class="f-what"><b>${esc(f.name)}</b><small class="muted">${ICON('fa-regular fa-folder')} ${esc(f.folder)} · ${esc(t('follow.checked', { when: ago(f.checked) }))}</small></div>
+      ${state}
+      <label class="check fit" data-tip="follow.auto_tip"><input type="checkbox" data-auto="${i}" ${f.auto ? 'checked' : ''}> ${t('follow.auto')}</label>
+      ${f.new && !f.auto ? `<button class="small primary" data-get="${i}">${ICON('fa-solid fa-download')}${t('follow.get')}</button>` : ''}
+      <button class="small" data-unfollow="${i}" aria-label="${esc(t('follow.unfollow'))}" data-tip="follow.unfollow">${ICON('fa-solid fa-xmark')}</button></li>`;
+  }).join('');
+  $('follow-list').querySelectorAll('[data-auto]').forEach(cb => cb.onchange = async () => {
+    FOLLOWED = await api('/api/follow/update', { method: 'POST', body: { url: FOLLOWED[+cb.dataset.auto].url, auto: cb.checked } }); renderFollowed();
+  });
+  $('follow-list').querySelectorAll('[data-get]').forEach(b => b.onclick = () => checkFollowed(FOLLOWED[+b.dataset.get].url, true));
+  $('follow-list').querySelectorAll('[data-unfollow]').forEach(b => b.onclick = async () => {
+    const f = FOLLOWED[+b.dataset.unfollow];
+    if (!confirm(t('follow.confirm_unfollow', { name: f.name }))) return;
+    FOLLOWED = await api('/api/follow/remove', { method: 'POST', body: { url: f.url } }); renderFollowed();
+  });
+  const pending = FOLLOWED.reduce((a, f) => a + (f.auto ? 0 : f.new || 0), 0);
+  const tab = document.querySelector('#tabs button[data-tab="add"]');
+  let badge = tab.querySelector('.badge');
+  if (pending && !badge) { badge = document.createElement('span'); badge.className = 'badge'; tab.appendChild(badge); }
+  if (badge) { badge.textContent = pending; badge.classList.toggle('hidden', !pending); }
+}
+async function checkFollowed(url, download, quiet) {
+  const r = await api('/api/follow/check', { method: 'POST', body: { url, download } });
+  const j = await followJob(r.id, { btn: $('follow-check'), log: 'pv-log' });
+  await loadFollowed();
+  if (j.status === 'done') {
+    if (j.result.downloaded) { toast(t('follow.downloaded', { n: j.result.downloaded })); await refresh(); }
+    else if (!quiet) toast(FOLLOWED.some(f => f.new) ? t('follow.found') : t('follow.nothing_new'));
+  }
+}
+// at start: look for new songs at most every 6 hours, in the background
+async function autoCheckFollowed() {
+  await loadFollowed();
+  const due = FOLLOWED.some(f => !f.checked || Date.now() / 1000 - f.checked > 6 * 3600);
+  if (due) checkFollowed(null, false, true).catch(() => {});
+}

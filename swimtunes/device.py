@@ -371,3 +371,44 @@ def find_drives() -> list[dict]:
     drives = [d for d in drives if d["total"] and not (d.get("fixed") and d["total"] > 300e9 and not d["likely"])]
     drives.sort(key=lambda d: (not d["likely"], d["total"] > 64e9, d["label"].lower()))
     return drives
+
+
+# ---------- ejecting ----------
+def _gone(path: Path, seconds: float = 8.0) -> bool:
+    import time
+    end = time.time() + seconds
+    while time.time() < end:
+        if not path.exists():
+            return True
+        time.sleep(0.5)
+    return not path.exists()
+
+
+def eject(path: Path | str, run=None) -> dict:
+    """Eject the earphones, like "Safely remove" / "Eject" in the file manager.
+    Returns {"ok": bool, "detail": text}. Unplugging after this can't damage the files."""
+    import subprocess
+    run = run or (lambda cmd: subprocess.run(cmd, capture_output=True, text=True, timeout=45,
+                                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)))
+    path = Path(path)
+    if hasattr(os, "sync"):
+        os.sync()
+    try:
+        if os.name == "nt":
+            drive = str(path.drive or path)[:2]     # "H:"
+            script = ("$d = (New-Object -ComObject Shell.Application).Namespace(17).ParseName('" + drive + "'); "
+                      "if ($d) { $d.InvokeVerb('Eject') } else { exit 2 }")
+            r = run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script])
+            ok = _gone(path)
+        elif sys.platform == "darwin":
+            r = run(["diskutil", "eject", str(path)])
+            ok = r.returncode == 0
+        else:
+            r = run(["gio", "mount", "-e", str(path)])
+            if r.returncode != 0:
+                r = run(["umount", str(path)])
+            ok = r.returncode == 0
+    except (OSError, subprocess.SubprocessError) as e:
+        return {"ok": False, "detail": str(e)}
+    detail = ((r.stderr or "") + (r.stdout or "")).strip()[:300]
+    return {"ok": ok, "detail": detail}

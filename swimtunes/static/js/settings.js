@@ -193,3 +193,12 @@ async function openMyPlaylists() {
   });
 }
 
+
+// ---------- problem report ----------
+async function copyReport() {
+  const r = await api('/api/report');
+  $('report-text').value = r.text;
+  $('report-box').classList.remove('hidden');
+  try { await navigator.clipboard.writeText(r.text); toast(t('report.copied')); }
+  catch (e) { $('report-box').open = true; $('report-text').select(); toast(t('report.select')); }
+}

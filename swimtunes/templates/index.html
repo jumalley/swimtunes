@@ -59,6 +59,12 @@
         <div class="progress hidden" id="pv-progress"><div class="bar"><i></i></div><small></small></div>
       </div>
 
+      <div class="panel hidden" id="follow-panel">
+        <div class="folder-head"><h2><i class="fa-solid fa-satellite-dish"></i><span data-i18n="follow.title">Followed playlists</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="follow.tip"></i></h2>
+          <button class="fit" id="follow-check" onclick="checkFollowed()"><i class="fa-solid fa-rotate"></i><span data-i18n="follow.check">Check for new songs</span></button></div>
+        <ul class="follow-list" id="follow-list"></ul>
+      </div>
+
       <div id="how" class="how" style="margin-bottom:20px">
         <div class="step"><span class="num">1</span><i class="fa-solid fa-link"></i><b data-i18n="how.1t">Paste a link</b><p data-i18n="how.1">A YouTube video or playlist, or a Spotify playlist, album or song.</p></div>
         <div class="step"><span class="num">2</span><i class="fa-solid fa-list-check"></i><b data-i18n="how.2t">Check the songs</b><p data-i18n="how.2">SwimTunes looks up each song's genre, style, tempo and country, and skips songs you already have.</p></div>
@@ -97,6 +103,7 @@
         </table></div>
         <p class="muted small" data-i18n="add.tip_folder">Tip: you can type any folder name for a song. A new folder is created for it.</p>
         <div class="row" style="margin-top:12px"><button class="primary big" id="dl-btn" onclick="startDownload()" data-tip="tip.download"><i class="fa-solid fa-download"></i><span id="dl-btn-text" data-i18n="add.download">Download</span></button><span class="muted" id="dl-summary"></span></div>
+        <label class="check hidden" id="follow-opt"><input type="checkbox" id="follow-this"> <span data-i18n="follow.this">Follow this playlist: get its new songs automatically</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="follow.tip"></i></label>
         <details class="log-details"><summary data-i18n="common.details">Technical details</summary><div class="log" id="pv-log"></div><div class="log" id="dl-log"></div></details>
       </div>
     </section>
@@ -188,6 +195,7 @@
         <div class="row" style="margin-top:12px">
           <button id="import-btn" onclick="startImport()" data-tip="tip.import"><i class="fa-solid fa-file-import"></i><span data-i18n="dev.import">Import ticked folders into SwimTunes</span></button>
           <button class="primary" id="sync-btn" onclick="startSync()" data-tip="tip.sync"><i class="fa-solid fa-upload"></i><span data-i18n="dev.sync">Copy to earphones</span></button>
+          <button id="eject-btn" onclick="ejectEarphones()" data-tip="dev.eject_tip"><i class="fa-solid fa-eject"></i><span data-i18n="dev.eject">Eject</span></button>
         </div>
         <label class="check"><input type="checkbox" id="imp-dupes"> <span data-i18n="dev.import_dupes">Import songs even if SwimTunes already has them</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.import_dupes"></i></label>
         <label class="check"><input type="checkbox" id="mirror"> <span data-i18n="dev.mirror">Also remove folders from the earphones that aren't in SwimTunes</span> <i class="fa-regular fa-circle-question help" tabindex="0" data-tip="tip.mirror"></i></label>
@@ -287,7 +295,9 @@
         <div class="row" style="margin-top:14px">
           <button class="fit" onclick="makeShortcut()" data-tip="tip.shortcut"><i class="fa-solid fa-desktop"></i><span data-i18n="set.shortcut">Put a SwimTunes icon on my desktop</span></button>
           <button class="fit danger" onclick="emptyTrash()" data-tip="tip.empty_trash"><i class="fa-solid fa-dumpster"></i><span data-i18n="set.empty_trash">Empty trash</span></button>
+          <button class="fit" id="report-btn" onclick="copyReport()" data-tip="report.tip"><i class="fa-solid fa-stethoscope"></i><span data-i18n="report.copy">Copy a problem report</span></button>
         </div>
+        <details id="report-box" class="hidden"><summary data-i18n="report.show">Show the report</summary><textarea id="report-text" readonly rows="12" aria-label="Problem report"></textarea></details>
         <p class="muted small" data-i18n-html="set.trash_note">Deleted songs and folders go to <code>.trash</code> inside the music folder until you empty it.</p>
       </div>
     </section>

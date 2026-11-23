@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
     "shokz": {},               # last battery / firmware reading of the earphones (Bluetooth)
     "auto_update": True,       # install new versions by itself when SwimTunes starts
     "auto_update_tried": {},   # {"latest": tag, "time": ...}: never retry the same update in a loop
+    "followed": [],            # playlists whose new songs SwimTunes fetches (see web/follow.py)
 }
 
 FOLDER_COVER = ".swimtunes-cover.jpg"   # a folder's picture (hidden, never copied to the earphones)

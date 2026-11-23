@@ -18,7 +18,7 @@ async function loadStatus() {
   $('f-folder').querySelector('span').textContent = shortPath(s.library);
   $('f-folder').dataset.tipRaw = s.library;
 }
-const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings' };
+const JOB_TAB = { playlists: 'add', preview: 'add', download: 'add', analyze: 'organize', suggest: 'organize', import: 'device', sync: 'device', shokz: 'device', update: 'settings', follow: 'add' };
 async function pollActivity() {
   let jobs = [];
   try { const r = await fetch('/api/jobs/active'); if (r.ok) jobs = await r.json(); } catch (e) { return; }
@@ -69,4 +69,6 @@ setInterval(() => { if ($('overlay').classList.contains('hidden')) loadStatus();
   let tab = null; try { tab = localStorage.getItem('swimtunes-tab'); } catch (e) {}
   showTab(tab && $('tab-' + tab) ? tab : (LIB.count ? 'songs' : 'add'));
   loadVersion(); loadStatus(); pollActivity(); loadAccounts().catch(() => {});
+  loadFollowed();
+  setTimeout(() => { if (!UPDATING) autoCheckFollowed(); }, 4000);   // after a possible update at launch
 })();

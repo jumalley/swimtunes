@@ -13,7 +13,7 @@ from ..i18n import msg
 
 
 def register(app, ctx):
-    lib, err, body, start_job = (ctx.lib, ctx.err, ctx.body, ctx.start_job)
+    lib, err, body, start_job, busy = (ctx.lib, ctx.err, ctx.body, ctx.start_job, ctx.busy)
 
     # ---------- earphones ----------
     @app.get("/api/drives")
@@ -72,6 +72,19 @@ def register(app, ctx):
             lib.set_config(synced={k: v for k, v in synced.items() if k in set(lib.folders())})
             return summary
         return start_job("sync", run)
+
+    @app.post("/api/eject")
+    def eject():
+        path = (body().get("device") or lib.config()["device_path"]).strip()
+        if not path:
+            return err(msg("err.pick_earphones", "Pick your earphones first"))
+        if busy():
+            return err(msg("err.busy_eject", "Wait until the copy has finished"))
+        r = device.eject(path)
+        if not r["ok"]:
+            return err(msg("err.eject", "Couldn't eject the earphones ({detail}). Close any window showing them, "
+                           "then try again, or use Safely Remove / Eject in your computer.", detail=r["detail"] or "busy"))
+        return jsonify(r)
 
     # ---------- earphones over Bluetooth (battery, firmware) ----------
     @app.get("/api/shokz")

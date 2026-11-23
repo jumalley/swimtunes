@@ -89,6 +89,12 @@ def register(app, ctx):
         except Exception as e:
             return err(str(e))
 
+    @app.get("/api/report")
+    def problem_report():
+        """Settings → "Copy a problem report"."""
+        from .. import report
+        return jsonify({"text": report.build(lib, app.config["JOBS"])})
+
     @app.post("/api/ping")
     def ping():
         return jsonify({"ok": True})

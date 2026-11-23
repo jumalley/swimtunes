@@ -279,3 +279,11 @@ button.chip { cursor: pointer; font-size: 12px; padding: 2px 9px; }
   .cards .pic-btn span { display: none; }
 }
 @media (max-width: 600px) { .panel .row > div { flex-basis: 100%; } }
+
+/* followed playlists */
+.follow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.follow-list li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.follow-list .f-what { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
+.follow-list .check { margin: 0; }
+.notice.ok-n { background: var(--ok-soft); color: var(--ok); }
+#report-box textarea { margin-top: 8px; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; }

@@ -79,7 +79,7 @@ Then click **Download**. Songs download three at a time and appear in your playl
 ![Songs sorted into folders by rules, before downloading](docs/screenshots/sorting.png)
 
 **4. Copy to your earphones.** In **Earphones**, click **Copy to earphones**. Only folders that changed are copied,
-in playlist order (the earphones play songs in the order they were copied). Eject them when it says *Sync finished*.
+in playlist order (the earphones play songs in the order they were copied). Then click **Eject** and unplug them.
 
 ### Your playlists
 
@@ -99,6 +99,12 @@ the firmware, MP3 or Bluetooth mode, sound mode and volume. If they're on **shuf
 and take them off the charger. Works on Windows and Linux.
 
 <img src="docs/screenshots/battery.png" width="720" alt="Battery, firmware and settings read over Bluetooth">
+
+### Followed playlists
+
+Tick **Follow this playlist** before downloading a playlist. Each time SwimTunes starts (at most every 6 hours),
+it looks for new songs in it and downloads them into the same folder; or untick *Download automatically* to just see
+"3 new songs" and get them with one click. Followed playlists are listed in **Add music**.
 
 ### Private playlists
 
@@ -173,6 +179,13 @@ keep them close. If your phone is connected to them, turning its Bluetooth off f
 <details><summary><b>Songs play in the wrong order.</b></summary>
 
 The earphones may be on shuffle: **Earphones → Battery and settings** shows it, and **Play in order** switches it back.
+</details>
+
+<details><summary><b>Something doesn't work: how do I report it?</b></summary>
+
+**Settings → Other → Copy a problem report**, then paste it in your message (or a
+[GitHub issue](https://github.com/jumalley/swimtunes/issues)). It contains your version, the health checks, recent
+errors and the end of the logs; no logins, no Bluetooth address, and your user folder is replaced by `~`.
 </details>
 
 <details><summary><b>Is this allowed?</b></summary>

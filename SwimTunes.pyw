@@ -230,7 +230,7 @@ def running():
 
 def start_app(version):
     env = dict(os.environ, SWIMTUNES_TAG=version, SWIMTUNES_LAUNCHER=os.path.abspath(__file__),
-               SWIMTUNES_LAUNCHER_PYTHON=sys.executable, PYTHONIOENCODING="utf-8")
+               SWIMTUNES_LAUNCHER_PYTHON=sys.executable, SWIMTUNES_LAUNCHER_HOME=HOME, PYTHONIOENCODING="utf-8")
     out = open(APP_LOG, "a", encoding="utf-8")
     kw = {"creationflags": NO_WINDOW | getattr(subprocess, "DETACHED_PROCESS", 0)} if sys.platform == "win32" \
         else {"start_new_session": True}
