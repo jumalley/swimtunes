@@ -229,7 +229,7 @@ jobs:
             echo "## What's new"
             echo
             if [ -n "$prev" ] && git -C src rev-parse -q --verify "refs/tags/$prev" > /dev/null; then
-              git -C src log --no-merges --format='- %s' "$prev..HEAD" | head -15
+              git -C src log --no-merges --format='- %s' "$prev..HEAD" | sed 's/ *\[stable\]//' | head -15
             fi
             if [ "${{ github.event_name }}" != "push" ]; then echo "- The newest YouTube downloader (yt-dlp), for YouTube changes"; fi
             echo
