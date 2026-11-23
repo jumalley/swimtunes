@@ -80,6 +80,7 @@ def fingerprint(server_dir: Path) -> str:
             p = Path(root) / f
             rel = p.relative_to(server_dir).as_posix()
             rows.append(f"{rel}\0{hashlib.sha256(p.read_bytes()).hexdigest()}\n")
+    fingerprint.files = sorted(r.split("\0")[0] for r in rows)    # for the log when a check fails
     return hashlib.sha256("".join(sorted(rows)).encode()).hexdigest()
 
 
@@ -116,7 +117,8 @@ def install(log: Callable[[str], None] = print, fetch=_download, run=None) -> No
                     dest = tmp / "server" / name[len(prefix):]
                     dest.parent.mkdir(parents=True, exist_ok=True)
                     dest.write_bytes(z.read(name))
-        if fingerprint(tmp / "server") != SERVER_FINGERPRINT:
+        if (got := fingerprint(tmp / "server")) != SERVER_FINGERPRINT:
+            log(f"Helper fingerprint {got[:12]} instead of {SERVER_FINGERPRINT[:12]}; files: {', '.join(fingerprint.files)}")
             raise RuntimeError(msg("err.helper_check", "The downloaded helper isn't the expected file. Nothing was installed."))
         log(msg("log.helper_deps", "Installing what the helper needs (about a minute, ~230 MB)…"))
         run = run or (lambda cmd, cwd: subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=900,

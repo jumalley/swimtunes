@@ -49,7 +49,10 @@ def fake_helper(monkeypatch, tmp_path):
 def test_install_checks_fingerprints(fake_helper):
     w, run, ran = fake_helper
     logs = []
-    potoken.install(logs.append, fetch=lambda url: w if url == potoken.PLUGIN_URL else source(), run=run)
+    try:
+        potoken.install(logs.append, fetch=lambda url: w if url == potoken.PLUGIN_URL else source(), run=run)
+    except RuntimeError:
+        raise AssertionError(f"{logs}; reference files: {potoken.fingerprint.__dict__}") from None
     assert potoken.installed()
     assert (potoken.home() / "plugins/bgutil/yt_dlp_plugins/extractor/getpot_bgutil_http.py").exists()
     assert (potoken.home() / "server/src/main.ts").exists() and not (potoken.home() / "server/README.md").exists()
