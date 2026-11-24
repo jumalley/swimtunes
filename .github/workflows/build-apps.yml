@@ -189,7 +189,12 @@ jobs:
           ditto -c -k --keepParent dist/SwimTunes.app "${{ matrix.asset }}"
           # a disk image: open it and drag SwimTunes onto Applications
           mkdir dmg && cp -R dist/SwimTunes.app dmg/ && ln -s /Applications dmg/Applications
-          hdiutil create -volname SwimTunes -srcfolder dmg -ov -format UDZO "${{ matrix.extra }}"
+          # hdiutil sometimes fails with "Resource busy" on GitHub's Macs: try again a few times
+          for i in 1 2 3 4 5; do
+            hdiutil create -volname SwimTunes -srcfolder dmg -ov -format UDZO "${{ matrix.extra }}" && break
+            [ "$i" = 5 ] && exit 1
+            echo "hdiutil failed, retrying in 10 s"; sleep 10
+          done
 
       - uses: actions/upload-artifact@v4
         with:
