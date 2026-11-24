@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swimtunes"
-version = "0.10.2"
+version = "0.10.3"
 description = "Download YouTube/Spotify music as MP3 for swimming earphones, without duplicates"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -26,7 +26,7 @@ swimtunes = "swimtunes.cli:main"
 swimtunes-app = "swimtunes.app:main"
 
 [tool.setuptools]
-packages = ["swimtunes"]
+packages = ["swimtunes", "swimtunes.web"]   # every sub-package must be listed (tests/test_package.py checks)
 
 [tool.setuptools.package-data]
 swimtunes = ["templates/*.html", "static/*", "static/js/*", "static/fa/*", "static/fa/css/*", "static/fa/webfonts/*"]

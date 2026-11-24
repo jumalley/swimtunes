@@ -104,7 +104,7 @@ class Window:
             self.root.resizable(False, False)
             frame = ttk.Frame(self.root, padding=18)
             frame.pack()
-            self.label = ttk.Label(frame, text=T["check"], width=58)
+            self.label = ttk.Label(frame, text=T["check"], wraplength=420, justify="left")   # long texts wrap
             self.label.pack(anchor="w")
             bar = ttk.Progressbar(frame, mode="indeterminate", length=420)
             bar.pack(pady=(12, 0))
