@@ -116,7 +116,8 @@ async function loadAccounts() {
   $('yt-browser').innerHTML = `<option value="">${esc(t('acc.choose_browser'))}</option>` + ACC.browsers.map(b => `<option value="${b}">${esc(BROWSER_NAMES[b] || b)}${ACC.platform === 'win32' && CHROMIUM.includes(b) ? ' ' + esc(t('acc.blocked_windows')) : b === 'firefox' ? ' ' + esc(t('acc.recommended')) : ''}</option>`).join('');
   $('yt-browser').value = yt.browser || '';
   $('yt-status').className = 'chip ' + (yt.connected ? 'ok' : '');
-  $('yt-status').textContent = yt.connected ? (yt.browser ? t('acc.yt_via', { browser: BROWSER_NAMES[yt.browser] || yt.browser }) : t('acc.yt_via_file')) : t('acc.not_connected');
+  $('yt-status').textContent = yt.connected ? (yt.browser ? t('acc.yt_via', { browser: BROWSER_NAMES[yt.browser] || yt.browser }) : yt.window ? t('acc.yt_via_window') : t('acc.yt_via_file')) : t('acc.not_connected');
+  api('/api/accounts/youtube/window').then(w => $('yt-easy').classList.toggle('hidden', !w.browser)).catch(() => {});
   $('sp-status').className = 'chip ' + (sp.connected ? 'ok' : '');
   $('sp-status').textContent = sp.connected ? t('acc.connected') : t('acc.not_connected');
   $('sp-setup').classList.toggle('hidden', sp.connected);
@@ -296,4 +297,28 @@ async function removeHelper() {
   if (!confirm(t('helper.remove_confirm'))) return;
   await api('/api/helper/remove', { method: 'POST' });
   toast(t('helper.removed')); loadHelper(); loadHealth();
+}
+
+// ---------- YouTube: sign in with a SwimTunes window (Chrome/Edge) ----------
+let YT_WINDOW_JOB = null;
+async function ytWindowLogin() {
+  if (YT_WINDOW_JOB) return;
+  const r = await api('/api/accounts/youtube/window', { method: 'POST' });
+  YT_WINDOW_JOB = r.id;
+  const show = text => { const html = `<div class="notice">${SPIN}<span>${esc(text)}</span>
+    <button class="small fit" onclick="cancelJob('${r.id}')">${ICON('fa-solid fa-xmark')}${t('common.cancel')}</button></div>`;
+    for (const id of ['yt-window-live', 'pv-yt-live']) if ($(id)) $(id).innerHTML = html; };
+  show(t('log.yt_window_open'));
+  toast(t('log.yt_window_open'));
+  const j = await followJob(r.id, { onUpdate: j => { const e = j.log[j.log.length - 1]; if (e) show(tEntry(e)); } });
+  YT_WINDOW_JOB = null;
+  for (const id of ['yt-window-live', 'pv-yt-live']) if ($(id)) $(id).innerHTML = j.status === 'done'
+    ? `<div class="notice ok-n">${ICON('fa-solid fa-circle-check')}<span>${t('acc.yt_window_done')}</span></div>` : '';
+  if (j.status === 'done') { toast(t('acc.yt_window_done')); document.querySelectorAll('.login-notice').forEach(n => n.remove()); }
+  loadAccounts().catch(() => {});
+}
+async function onlyPublicSongs() {
+  await api('/api/accounts/youtube', { method: 'DELETE' });
+  document.querySelectorAll('.login-notice').forEach(n => n.remove());
+  toast(t('acc.public_only_done')); loadAccounts().catch(() => {});
 }

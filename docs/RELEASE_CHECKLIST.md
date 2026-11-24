@@ -15,6 +15,8 @@ versions as soon as they're built (others don't).
 - [ ] **A download works.** Add music → paste a short playlist (3–5 songs) → Find songs → Download. The songs
       appear in their playlist with a cover.
 - [ ] **Settings → Is everything working?** All green.
+- [ ] **YouTube sign-in.** Settings → Accounts → **Sign in to YouTube**: a window opens; sign in, close it → *Connected
+      (SwimTunes window)*. A private playlist of yours then shows its songs.
 
 ## With your earphones
 

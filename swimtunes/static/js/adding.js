@@ -226,7 +226,9 @@ function loginNotice(j) {
   const e = (j.log || []).find(e => (e.k || '').startsWith('log.yt_login_skipped'));
   if (!e || $('pv-live').querySelector('.login-notice')) return;
   $('pv-live').insertAdjacentHTML('beforeend', `<div class="notice warn-n login-notice">${ICON('fa-solid fa-user-lock')}<span>${esc(tEntry(e))}</span>
-    <button class="small fit" onclick="showTab('settings')">${ICON('fa-solid fa-gear')}${t('acc.fix_login')}</button></div>`);
+    <button class="small primary fit" onclick="ytWindowLogin()">${ICON('fa-brands fa-youtube')}${t('acc.yt_window')}</button>
+    <button class="small fit" onclick="onlyPublicSongs()" data-tip="acc.public_only_tip">${ICON('fa-solid fa-globe')}${t('acc.public_only')}</button></div>
+    <div id="pv-yt-live"></div>`);
 }
 
 

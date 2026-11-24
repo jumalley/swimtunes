@@ -67,6 +67,7 @@ def status() -> dict:
     return {
         "youtube": {"browser": yt.get("browser") or "", "profile": yt.get("profile") or "",
                     "cookies_file": bool(yt.get("cookies_file")) and cookies_path().exists(),
+                    "window": bool(yt.get("window")) and cookies_path().exists(),
                     "connected": bool(yt.get("browser")) or (bool(yt.get("cookies_file")) and cookies_path().exists())},
         "spotify": {"client_id": sp.get("client_id") or "", "connected": bool(sp.get("refresh_token")),
                     "user": sp.get("user") or ""},
@@ -103,7 +104,7 @@ def set_youtube_cookies(text: str) -> None:
         pass
     a = load()
     yt = a.setdefault("youtube", {})
-    yt.update(cookies_file=True, browser="", profile="")
+    yt.update(cookies_file=True, browser="", profile="", window=False)
     save(a)
 
 
@@ -112,6 +113,8 @@ def disconnect_youtube() -> None:
     a.pop("youtube", None)
     save(a)
     cookies_path().unlink(missing_ok=True)
+    from . import ytlogin
+    ytlogin.forget()          # also sign out of SwimTunes' YouTube window
 
 
 def ytdlp_options() -> dict:

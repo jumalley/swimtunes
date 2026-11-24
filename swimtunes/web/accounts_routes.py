@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from flask import jsonify, render_template, request
 
 from .. import accounts
@@ -24,6 +26,35 @@ def register(app, ctx):
         except ValueError as e:
             return err(str(e))
         return jsonify(accounts.status())
+
+    @app.get("/api/accounts/youtube/window")
+    def youtube_window_available():
+        from .. import ytlogin
+        b = ytlogin.find_browser()
+        return jsonify({"browser": b[0] if b else None})
+
+    @app.post("/api/accounts/youtube/window")
+    def youtube_window():
+        """Open a SwimTunes window to sign in to YouTube; when it's closed, save the login."""
+        from .. import ytlogin
+        if not ytlogin.find_browser():
+            return err(msg("err.no_chrome", "No Chrome, Edge or Brave on this computer. Use Firefox or a cookies.txt file instead."))
+
+        def run(log, progress, job):
+            proc = ytlogin.open_window()
+            log(msg("log.yt_window_open", "A window opened: sign in to YouTube there, then close the window."))
+            end = time.time() + 30 * 60
+            while proc.poll() is None:
+                if job["cancel"] or time.time() > end:
+                    proc.terminate()
+                    raise RuntimeError(msg("err.yt_window_stopped", "Signing in was stopped."))
+                time.sleep(1)
+            log(msg("log.yt_window_reading", "Window closed: reading your YouTube login…"))
+            time.sleep(1.5)            # let the browser finish writing its profile
+            ytlogin.export()
+            log(msg("log.yt_window_done", "Connected to YouTube"))
+            return accounts.status()
+        return start_job("yt_login", run, exclusive=False)
 
     @app.post("/api/accounts/youtube/cookies")
     def youtube_cookies():

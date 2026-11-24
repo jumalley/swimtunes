@@ -160,6 +160,10 @@ class Downloader:
         """The YouTube login, checked once. If the browser's login can't be read (Chrome open, or
         Chrome/Edge on Windows refusing), carry on without it instead of failing every song."""
         from . import accounts
+        if not getattr(self, "_refreshed", False):   # signed in with SwimTunes' window: keep that login fresh
+            self._refreshed = True
+            from . import ytlogin
+            ytlogin.refresh_if_stale()
         opts = accounts.ytdlp_options()
         if "cookiesfrombrowser" not in opts:
             return opts
@@ -181,7 +185,7 @@ class Downloader:
                         "other": "Couldn't read your YouTube login from {browser}.",
                     }
                     self.log(msg("log.yt_login_skipped_" + kind, texts[kind] + " Downloading without it: public songs "
-                                 "work, private ones won't. To fix it, use Firefox or a cookies.txt file in Settings → Accounts.",
+                                 "work, private ones won't. To fix it, click Sign in to YouTube.",
                                  browser=BROWSER_NAMES.get(opts["cookiesfrombrowser"][0], opts["cookiesfrombrowser"][0])))
         return opts if self._login_ok else {}
 

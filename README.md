@@ -119,7 +119,7 @@ it looks for new songs in it and downloads them into the same folder; or untick 
 
 ### Private playlists
 
-In **Settings → Accounts**, connect **YouTube** (through Firefox, or a cookies.txt file) and **Spotify** (a free
+In **Settings → Accounts**, connect **YouTube** (click **Sign in to YouTube**: a window opens, sign in, close it) and **Spotify** (a free
 "Client ID", about 2 minutes, steps on the page). Then **My playlists** next to *Find songs* lists your own playlists,
 private ones and Liked Songs included. Your logins stay on your computer.
 
@@ -157,10 +157,11 @@ against known fingerprints) and uses it for downloads. It isn't part of SwimTune
 remove it in the same place.
 </details>
 
-<details><summary><b>A warning about my YouTube login ("Could not copy Chrome cookie database").</b></summary>
+<details><summary><b>A warning about my YouTube login ("Chrome is open…").</b></summary>
 
-Chrome and Edge lock their login while open and, on Windows, don't share it with other apps. SwimTunes then downloads
-without it (public songs work). To use your login, choose **Firefox** or a **cookies.txt** file in Settings → Accounts.
+Chrome and Edge lock their login and, on Windows, don't share it with other apps. Click **Sign in to YouTube** (in the
+warning, or Settings → Accounts): a separate window opens, you sign in to YouTube, close it, and SwimTunes uses that
+login from then on. Only need public songs? Click **Only public songs**.
 </details>
 
 <details><summary><b>A song has wrong or missing genre info.</b></summary>

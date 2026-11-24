@@ -1,5 +1,5 @@
 """SwimTunes: download music as MP3 for swimming earphones and keep the folders tidy."""
-__version__ = "0.10.3"
+__version__ = "0.10.4"
 REPO = "jumalley/swimtunes"
 
 try:  # written by the release build, e.g. "v0.2.14"

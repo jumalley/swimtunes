@@ -40,7 +40,7 @@ def test_youtube_cookies_file_is_private(home):
     if os.name != "nt":
         assert stat.S_IMODE(p.stat().st_mode) == 0o600
     st = accounts.status()
-    assert st["youtube"] == {"browser": "", "profile": "", "cookies_file": True, "connected": True}
+    assert st["youtube"] == {"browser": "", "profile": "", "cookies_file": True, "window": False, "connected": True}
     accounts.disconnect_youtube()
     assert not p.exists() and accounts.ytdlp_options() == {}
 

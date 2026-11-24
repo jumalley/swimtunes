@@ -227,6 +227,11 @@
         <p class="muted" style="margin-top:0" data-i18n="acc.help">Connect your accounts to use your private playlists. Your logins stay on this computer.</p>
 
         <h3><i class="fa-brands fa-youtube" style="color:#ff0033"></i> YouTube <span id="yt-status" class="chip"></span></h3>
+        <div class="yt-easy hidden" id="yt-easy">
+          <button class="primary fit" id="yt-window-btn" onclick="ytWindowLogin()"><i class="fa-brands fa-youtube"></i><span data-i18n="acc.yt_window">Sign in to YouTube</span></button>
+          <span class="muted small" data-i18n="acc.yt_window_help">Easiest: a separate window opens; sign in to YouTube, close it, done. Works with Chrome and Edge.</span>
+        </div>
+        <div id="yt-window-live"></div>
         <p class="muted small" data-i18n-html="acc.yt_help">YouTube doesn't let apps log in directly, so SwimTunes uses the YouTube login of a web browser on this computer. Sign in to YouTube in that browser first. <b>Firefox works best</b>: on Windows, Chrome and Edge lock their logins so other apps can't use them.</p>
         <div class="row">
           <div><label data-i18n="acc.yt_browser">Browser where you're signed in to YouTube</label><select id="yt-browser"></select></div>
